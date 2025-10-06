@@ -150,6 +150,60 @@ export type Database = {
           },
         ]
       }
+      clinical_protocols: {
+        Row: {
+          category: string
+          clinical_references: string[] | null
+          complications: string[] | null
+          content: string
+          contraindications: string[] | null
+          created_at: string | null
+          criteria: Json | null
+          id: string
+          indications: string[] | null
+          last_updated: string | null
+          monitoring_parameters: Json | null
+          procedure_steps: Json | null
+          protocol_name: string
+          source: string
+          version: string | null
+        }
+        Insert: {
+          category: string
+          clinical_references?: string[] | null
+          complications?: string[] | null
+          content: string
+          contraindications?: string[] | null
+          created_at?: string | null
+          criteria?: Json | null
+          id?: string
+          indications?: string[] | null
+          last_updated?: string | null
+          monitoring_parameters?: Json | null
+          procedure_steps?: Json | null
+          protocol_name: string
+          source: string
+          version?: string | null
+        }
+        Update: {
+          category?: string
+          clinical_references?: string[] | null
+          complications?: string[] | null
+          content?: string
+          contraindications?: string[] | null
+          created_at?: string | null
+          criteria?: Json | null
+          id?: string
+          indications?: string[] | null
+          last_updated?: string | null
+          monitoring_parameters?: Json | null
+          procedure_steps?: Json | null
+          protocol_name?: string
+          source?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       diagnoses: {
         Row: {
           created_at: string | null

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Plus, Activity, Users, FileText, TrendingUp } from "lucide-react";
+import { LogOut, Plus, Activity, Users, FileText, TrendingUp, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 interface Patient {
@@ -110,6 +110,10 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={() => navigate("/protocols")} className="gap-2">
+              <BookOpen className="w-4 h-4" />
+              <span className="hidden sm:inline">Protocolos</span>
+            </Button>
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium">{userName}</p>
               <p className="text-xs text-muted-foreground">Médico Tratante</p>
