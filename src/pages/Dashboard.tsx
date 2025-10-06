@@ -185,10 +185,16 @@ const Dashboard = () => {
         {/* Patients Section */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Pacientes Hospitalizados</h2>
-          <Button onClick={() => navigate("/patient/new")} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Nuevo Paciente
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate("/patient/new")} variant="outline" className="gap-2">
+              <Plus className="w-4 h-4" />
+              Nuevo Paciente
+            </Button>
+            <Button onClick={() => navigate("/admission/new")} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Nuevo Ingreso
+            </Button>
+          </div>
         </div>
 
         {loading ? (

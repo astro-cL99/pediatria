@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      admissions: {
+        Row: {
+          admission_date: string | null
+          admission_diagnoses: string[] | null
+          admission_source: string
+          admitted_by: string | null
+          allergies: string | null
+          chief_complaint: string | null
+          created_at: string | null
+          current_medications: string | null
+          dau_file_path: string | null
+          discharge_date: string | null
+          family_history: string | null
+          id: string
+          imaging_results: string | null
+          lab_results: Json | null
+          medications: Json | null
+          nursing_orders: string | null
+          patient_id: string | null
+          personal_history: string | null
+          physical_exam: string | null
+          present_illness: string | null
+          status: string | null
+          treatment_plan: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admission_date?: string | null
+          admission_diagnoses?: string[] | null
+          admission_source?: string
+          admitted_by?: string | null
+          allergies?: string | null
+          chief_complaint?: string | null
+          created_at?: string | null
+          current_medications?: string | null
+          dau_file_path?: string | null
+          discharge_date?: string | null
+          family_history?: string | null
+          id?: string
+          imaging_results?: string | null
+          lab_results?: Json | null
+          medications?: Json | null
+          nursing_orders?: string | null
+          patient_id?: string | null
+          personal_history?: string | null
+          physical_exam?: string | null
+          present_illness?: string | null
+          status?: string | null
+          treatment_plan?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admission_date?: string | null
+          admission_diagnoses?: string[] | null
+          admission_source?: string
+          admitted_by?: string | null
+          allergies?: string | null
+          chief_complaint?: string | null
+          created_at?: string | null
+          current_medications?: string | null
+          dau_file_path?: string | null
+          discharge_date?: string | null
+          family_history?: string | null
+          id?: string
+          imaging_results?: string | null
+          lab_results?: Json | null
+          medications?: Json | null
+          nursing_orders?: string | null
+          patient_id?: string | null
+          personal_history?: string | null
+          physical_exam?: string | null
+          present_illness?: string | null
+          status?: string | null
+          treatment_plan?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admissions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anthropometric_data: {
         Row: {
           bmi: number | null
