@@ -49,9 +49,9 @@ export default function NewAdmission() {
     setIsExtracting(true);
 
     try {
-      // Import PDF.js dynamically
-      const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      // Import PDF.js dynamically (named exports for reliability)
+      const { getDocument, GlobalWorkerOptions, version } = await import('pdfjs-dist');
+      GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
 
       // Upload to storage first
       const filePath = `dau/${Date.now()}_${file.name}`;
@@ -63,7 +63,7 @@ export default function NewAdmission() {
 
       // Convert PDF to image
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pdf = await getDocument({ data: arrayBuffer }).promise;
       
       // Render first page to canvas
       const page = await pdf.getPage(1);
