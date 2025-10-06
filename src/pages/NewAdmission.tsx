@@ -49,27 +49,46 @@ export default function NewAdmission() {
     setIsExtracting(true);
 
     try {
+      // Import PDF.js dynamically
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
       // Upload to storage first
       const filePath = `dau/${Date.now()}_${file.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('medical-documents')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // Convert PDF to base64 for AI processing
+      // Convert PDF to image
       const arrayBuffer = await file.arrayBuffer();
-      const base64 = btoa(
-        new Uint8Array(arrayBuffer).reduce(
-          (data, byte) => data + String.fromCharCode(byte),
-          ''
-        )
-      );
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      // Render first page to canvas
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 2.0 });
+      
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('No se pudo crear el canvas');
+      
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      // @ts-ignore - pdfjs types issue
+      await page.render({
+        canvasContext: context,
+        viewport: viewport
+      }).promise;
+      
+      // Convert canvas to base64 image (PNG)
+      const imageBase64 = canvas.toDataURL('image/png').split(',')[1];
 
-      // Call edge function to extract data with base64 PDF
+      // Call edge function to extract data with image
       const { data: extractedData, error: extractError } = await supabase.functions.invoke(
         'extract-dau-data',
-        { body: { pdfBase64: base64, fileName: file.name } }
+        { body: { imageBase64, fileName: file.name } }
       );
 
       if (extractError) throw extractError;

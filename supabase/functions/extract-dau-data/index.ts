@@ -12,10 +12,10 @@ serve(async (req) => {
   }
 
   try {
-    const { pdfBase64, fileName } = await req.json();
+    const { imageBase64, fileName } = await req.json();
     
-    if (!pdfBase64) {
-      throw new Error('No se proporcionó el PDF');
+    if (!imageBase64) {
+      throw new Error('No se proporcionó la imagen del DAU');
     }
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -95,7 +95,7 @@ REGLAS:
               {
                 type: 'image_url',
                 image_url: {
-                  url: `data:application/pdf;base64,${pdfBase64}`
+                  url: `data:image/png;base64,${imageBase64}`
                 }
               }
             ]
