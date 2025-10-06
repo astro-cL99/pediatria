@@ -25,6 +25,27 @@ const Dashboard = () => {
   useEffect(() => {
     checkUser();
     fetchPatients();
+    
+    // Set up realtime subscription
+    const channel = supabase
+      .channel('patients-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'patients'
+        },
+        (payload) => {
+          console.log('Cambio en pacientes:', payload);
+          fetchPatients(); // Refresh patient list on any change
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const checkUser = async () => {

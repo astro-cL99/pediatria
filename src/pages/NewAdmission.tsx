@@ -49,25 +49,27 @@ export default function NewAdmission() {
     setIsExtracting(true);
 
     try {
-      // Read PDF as text (simplified - in production use pdf.js)
-      const formDataUpload = new FormData();
-      formDataUpload.append('file', file);
-
       // Upload to storage first
       const filePath = `dau/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('medical-documents')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // Read file as text for AI extraction
-      const text = await file.text();
-      
-      // Call edge function to extract data
+      // Convert PDF to base64 for AI processing
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(arrayBuffer).reduce(
+          (data, byte) => data + String.fromCharCode(byte),
+          ''
+        )
+      );
+
+      // Call edge function to extract data with base64 PDF
       const { data: extractedData, error: extractError } = await supabase.functions.invoke(
         'extract-dau-data',
-        { body: { pdfText: text } }
+        { body: { pdfBase64: base64, fileName: file.name } }
       );
 
       if (extractError) throw extractError;

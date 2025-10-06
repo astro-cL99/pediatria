@@ -12,7 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { pdfText } = await req.json();
+    const { pdfBase64, fileName } = await req.json();
+    
+    if (!pdfBase64) {
+      throw new Error('No se proporcionó el PDF');
+    }
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -20,38 +24,56 @@ serve(async (req) => {
     }
 
     console.log('Extrayendo datos del DAU con IA...');
+    console.log('Archivo:', fileName);
 
-    const systemPrompt = `Eres un asistente médico especializado en extraer datos estructurados de documentos DAU (Dato de Atención de Urgencia) chilenos.
+    const systemPrompt = `Eres un asistente médico especializado en extraer datos de documentos DAU (Dato de Atención de Urgencia) del sistema público de salud chileno.
 
-Extrae la siguiente información del documento DAU y devuélvela en formato JSON estricto:
+FORMATO DE RESPUESTA: Debes responder ÚNICAMENTE con un objeto JSON válido, sin bloques de código markdown, sin explicaciones adicionales.
+
+ESTRUCTURA DEL DAU CHILENO:
+- Encabezado con datos del hospital y paciente
+- Sección de identificación: nombre, RUT, fecha nacimiento, edad, sexo, dirección
+- Números de contacto y previsión (FONASA)
+- Motivo de consulta
+- Datos del acompañante
+- Categorización de urgencia
+- Signos vitales: Peso, FR, PA, SAT O2, FC, Temperatura
+- Anamnesis y examen físico
+- Antecedentes (AM, Cx, Hosp, RAM)
+- Impresión diagnóstica
+
+EXTRAE LOS SIGUIENTES DATOS Y DEVUELVE ESTE JSON EXACTO:
 {
-  "patientName": "nombre completo del paciente",
-  "rut": "RUT del paciente",
-  "dateOfBirth": "fecha de nacimiento en formato YYYY-MM-DD",
-  "age": "edad del paciente",
+  "patientName": "nombre completo del paciente (ej: NOEMÍ TRINIDAD SOLÍS SALAZAR)",
+  "rut": "RUT del paciente con guión (ej: 27986894-3)",
+  "dateOfBirth": "fecha nacimiento YYYY-MM-DD (ej: 2022-11-18)",
+  "age": "edad en formato texto (ej: 002A 10m 18d)",
   "sex": "MASCULINO o FEMENINO",
-  "admissionDate": "fecha de ingreso en formato YYYY-MM-DD",
-  "admissionTime": "hora de ingreso HH:MM",
-  "chiefComplaint": "motivo de consulta",
-  "presentIllness": "resumen de anamnesis próxima y enfermedad actual",
+  "admissionDate": "fecha ingreso YYYY-MM-DD",
+  "admissionTime": "hora ingreso HH:MM",
+  "chiefComplaint": "texto del motivo de consulta",
+  "presentIllness": "descripción completa de enfermedad actual desde anamnesis",
   "vitalSigns": {
-    "weight": "peso en kg (solo número)",
-    "temperature": "temperatura (solo número)",
-    "heartRate": "frecuencia cardíaca (solo número)",
-    "respiratoryRate": "frecuencia respiratoria (solo número)",
-    "bloodPressure": "presión arterial",
-    "saturation": "saturación O2 (solo número)"
+    "weight": "peso en Kg como número",
+    "temperature": "temperatura axilar como número",
+    "heartRate": "FC como número",
+    "respiratoryRate": "FR como número",
+    "bloodPressure": "PA en formato ej: 118/62",
+    "saturation": "SAT O2 como número"
   },
-  "allergies": "alergias mencionadas o 'No refiere'",
-  "personalHistory": "antecedentes mórbidos, quirúrgicos, hospitalizaciones",
-  "physicalExam": "resumen del examen físico",
-  "labResults": "exámenes de laboratorio si están presentes",
-  "imagingResults": "imagenología si está presente",
-  "provisionalDiagnosis": "diagnósticos mencionados"
+  "allergies": "alergias o 'No refiere'",
+  "personalHistory": "antecedentes mórbidos, quirúrgicos, hospitalizaciones previas",
+  "physicalExam": "descripción del examen físico completo",
+  "labResults": "exámenes de laboratorio si aparecen",
+  "imagingResults": "imagenología si aparece",
+  "provisionalDiagnosis": "impresión diagnóstica o diagnósticos"
 }
 
-Si algún dato no está presente en el documento, usa null o una cadena vacía según corresponda.
-IMPORTANTE: Responde SOLO con el JSON, sin texto adicional antes o después.`;
+REGLAS:
+- Si un dato no aparece en el documento, usa null
+- Extrae TODOS los datos que encuentres
+- Responde SOLO el JSON, sin markdown
+- Mantén el formato exacto del JSON mostrado`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -63,9 +85,23 @@ IMPORTANTE: Responde SOLO con el JSON, sin texto adicional antes o después.`;
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Extrae los datos de este DAU:\n\n${pdfText}` }
+          { 
+            role: 'user', 
+            content: [
+              {
+                type: 'text',
+                text: 'Extrae los datos estructurados de este documento DAU chileno:'
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:application/pdf;base64,${pdfBase64}`
+                }
+              }
+            ]
+          }
         ],
-        temperature: 0.3,
+        temperature: 0.2,
       }),
     });
 
@@ -88,20 +124,24 @@ IMPORTANTE: Responde SOLO con el JSON, sin texto adicional antes o después.`;
     
     console.log('Datos extraídos exitosamente');
 
-    // Parse JSON response
+    // Parse JSON response - handle markdown code blocks
     let parsedData;
+    const cleanedData = extractedData.trim();
+    
     try {
-      parsedData = JSON.parse(extractedData);
+      // First try to extract from markdown code blocks
+      const jsonMatch = cleanedData.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        console.log('Extracted JSON from markdown block');
+        parsedData = JSON.parse(jsonMatch[1].trim());
+      } else {
+        // Try direct parse
+        parsedData = JSON.parse(cleanedData);
+      }
     } catch (e) {
       console.error('Error parsing JSON:', e);
-      // Try to extract JSON from markdown code blocks
-      const jsonMatch = extractedData.match(/```json\n([\s\S]*?)\n```/) || 
-                       extractedData.match(/```\n([\s\S]*?)\n```/);
-      if (jsonMatch) {
-        parsedData = JSON.parse(jsonMatch[1]);
-      } else {
-        throw new Error('No se pudo parsear la respuesta de IA');
-      }
+      console.error('Raw response:', cleanedData.substring(0, 500));
+      throw new Error('No se pudo parsear la respuesta de IA');
     }
 
     return new Response(
