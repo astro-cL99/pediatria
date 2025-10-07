@@ -482,8 +482,7 @@ export function PediatricOrdersForm({ value, onChange, patientWeight, patientHei
                           return typeof result === 'number' ? `${result} mg` : result.dose;
                         }
                         return selectedMedInfo.dosage?.[0] || "Ej: 500 mg";
-                          : selectedMedInfo.dosage?.[0] || "Dosis"
-                      }
+                      })()}
                       value={medicationDetails.dosage}
                       onChange={(e) => setMedicationDetails({ ...medicationDetails, dosage: e.target.value })}
                     />
