@@ -1,13 +1,14 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { useUploadDocument } from "@/hooks/useClinicalDocuments";
+import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, X } from "lucide-react";
+import { useUploadDocument, useClinicalDocuments } from "@/hooks/useClinicalDocuments";
+import { ProcessedDocumentsTable } from "@/components/ProcessedDocumentsTable";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface FileWithStatus {
   file: File;
@@ -19,6 +20,8 @@ interface FileWithStatus {
 const DocumentUpload = () => {
   const [files, setFiles] = useState<FileWithStatus[]>([]);
   const uploadMutation = useUploadDocument();
+  const { data: processedDocuments = [], isLoading: isLoadingDocuments, refetch } = useClinicalDocuments();
+  const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles.map((file) => ({
@@ -60,6 +63,11 @@ const DocumentUpload = () => {
               : f
           )
         );
+
+        toast({
+          title: "Documento procesado",
+          description: `${files[i].file.name} se procesó correctamente`,
+        });
       } catch (error: any) {
         setFiles((prev) =>
           prev.map((f, idx) =>
@@ -72,8 +80,34 @@ const DocumentUpload = () => {
               : f
           )
         );
+
+        toast({
+          title: "Error al procesar",
+          description: error.message,
+          variant: "destructive",
+        });
       }
     }
+
+    // Auto-refresh processed documents after all files are done
+    setTimeout(() => {
+      refetch();
+    }, 1000);
+  };
+
+  // Auto-clear successful files after 3 seconds
+  useEffect(() => {
+    const successFiles = files.filter((f) => f.status === "success");
+    if (successFiles.length > 0) {
+      const timer = setTimeout(() => {
+        setFiles((prev) => prev.filter((f) => f.status !== "success"));
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [files]);
+
+  const clearSuccessfulFiles = () => {
+    setFiles((prev) => prev.filter((f) => f.status !== "success"));
   };
 
   const removeFile = (index: number) => {
@@ -165,22 +199,34 @@ const DocumentUpload = () => {
               <div className="mt-6 space-y-2">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-medium">
-                    Archivos cargados ({files.length})
+                    Archivos en Cola ({files.length})
                   </h3>
-                  {pendingCount > 0 && (
-                    <Button onClick={processAllFiles} disabled={processingCount > 0}>
-                      {processingCount > 0 ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Procesando...
-                        </>
-                      ) : (
-                        <>
-                          Procesar Todos ({pendingCount})
-                        </>
-                      )}
-                    </Button>
-                  )}
+                  <div className="flex gap-2">
+                    {successCount > 0 && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={clearSuccessfulFiles}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Limpiar Exitosos
+                      </Button>
+                    )}
+                    {pendingCount > 0 && (
+                      <Button onClick={processAllFiles} disabled={processingCount > 0}>
+                        {processingCount > 0 ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Procesando...
+                          </>
+                        ) : (
+                          <>
+                            Procesar Todos ({pendingCount})
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -232,6 +278,12 @@ const DocumentUpload = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Documentos Procesados desde la Base de Datos */}
+        <ProcessedDocumentsTable 
+          documents={processedDocuments} 
+          isLoading={isLoadingDocuments}
+        />
       </div>
     </AppLayout>
   );
