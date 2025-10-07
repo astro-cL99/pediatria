@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileText, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PediatricOrdersForm } from "@/components/PediatricOrdersForm";
 
 export default function NewAdmission() {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ export default function NewAdmission() {
     contactNumbers: "",
     caregiver: "",
     caregiverRut: "",
+    patientWeight: undefined as number | undefined,
     admissionSource: "emergency",
     chiefComplaint: "",
     presentIllness: "",
@@ -393,7 +395,7 @@ export default function NewAdmission() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>Persona a Cargo</Label>
                   <Input
@@ -408,6 +410,16 @@ export default function NewAdmission() {
                     value={formData.caregiverRut}
                     onChange={(e) => setFormData({ ...formData, caregiverRut: e.target.value })}
                     placeholder="12345678-9"
+                  />
+                </div>
+                <div>
+                  <Label>Peso del Paciente (kg)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={formData.patientWeight || ""}
+                    onChange={(e) => setFormData({ ...formData, patientWeight: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    placeholder="Peso en kg"
                   />
                 </div>
               </div>
@@ -549,28 +561,23 @@ export default function NewAdmission() {
             </CardContent>
           </Card>
 
+          <PediatricOrdersForm
+            value={formData.nursingOrders}
+            onChange={(value) => setFormData({ ...formData, nursingOrders: value })}
+            patientWeight={formData.patientWeight}
+          />
+
           <Card>
             <CardHeader>
-              <CardTitle>Plan de Manejo</CardTitle>
+              <CardTitle>Plan de Tratamiento (Opcional)</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Plan de Tratamiento</Label>
-                <Textarea
-                  value={formData.treatmentPlan}
-                  onChange={(e) => setFormData({ ...formData, treatmentPlan: e.target.value })}
-                  rows={4}
-                />
-              </div>
-
-              <div>
-                <Label>Indicaciones de Enfermería</Label>
-                <Textarea
-                  value={formData.nursingOrders}
-                  onChange={(e) => setFormData({ ...formData, nursingOrders: e.target.value })}
-                  rows={4}
-                />
-              </div>
+            <CardContent>
+              <Textarea
+                value={formData.treatmentPlan}
+                onChange={(e) => setFormData({ ...formData, treatmentPlan: e.target.value })}
+                rows={4}
+                placeholder="Notas adicionales sobre el plan de tratamiento..."
+              />
             </CardContent>
           </Card>
 
