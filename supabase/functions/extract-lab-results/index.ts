@@ -22,28 +22,33 @@ serve(async (req) => {
     }
 
     const systemPrompt = `Eres un asistente especializado en extraer datos de exámenes de laboratorio médicos.
-Analiza la imagen del reporte de laboratorio y extrae la siguiente información en formato JSON:
+Analiza TODAS las páginas del reporte de laboratorio y extrae la siguiente información en formato JSON:
 
 {
   "procedencia": "origen del examen (ej: URGENCIA PEDIATRICA, otro hospital, etc)",
   "fechaToma": "fecha de toma de muestra en formato DD/MM/YYYY",
-  "resultados": "texto resumido agrupado por sistemas, por ejemplo: Glucosa 111 LDH 383// CK total 31 CK-MB 14 // Crea 0.35 BUN 9.6 // PCR 0.31 // Albúmina 4.2 GOT 118 Col-T 103 BT 0.41 FA 213 // TP 73% INR 1.2 TTPA 25 seg // Leucocitos 18.200 Segmentados 15% PQT 286.000 Hb 12.6 Hcto 38.1 // Sedimento urinario no inflamatorio // GSV: pH 7.39 pCO2 39 pO2 42.3 HCO3 23 EB -1.7 // Na 138.3 K 4.2 Cl 99.5 Ca. iónico 1.19 Fósforo 4.2 Calcio 9.2"
+  "resultados": "texto con TODOS los resultados encontrados en TODAS las páginas, agrupados por sistemas. Ejemplo: Glucosa 79 LDH 152 // CK total 54 CK-MB <3.0 Troponina <0.01 // Creatinina 0.74 BUN 12.1 // PCR 0.11 // BT 1.46 BD 0.32 BI 1.14 GOT 24 GPT 13 GGT 14 FA 192 Proteínas totales 7.2 Albúmina 4.3 Globulina 2.9 // Colesterol 165 Triglicéridos 40 HDL 58 LDL 99 // Leucocitos 7.800 Eos 100 Bac 0 Seg 5.600 Linf 1.600 Mono 500 Hb 12.8 Hcto 39 VCM 82.1 HCM 27 CHCM 32.9 Plaquetas 352.000"
 }
 
-Agrupa los resultados de forma lógica:
-- Metabolismo (Glucosa, LDH)
-- Enzimas cardíacas (CK total, CK-MB, Troponina)
-- Función renal (Creatinina, BUN)
-- Inflamación (PCR)
-- Hepáticas (Albúmina, GOT, GPT, Bilirrubina, Fosfatasa alcalina)
-- Coagulación (TP, INR, TTPA)
-- Hemograma (Leucocitos, Hb, Hcto, Plaquetas)
-- Gases (pH, pCO2, pO2, HCO3, EB)
-- Electrolitos (Na, K, Cl, Ca, P)
-- Otros hallazgos relevantes
-
-Usa // para separar grupos. Incluye solo valores anormales o clínicamente relevantes.
-Si hay múltiples fechas, usa la fecha de toma de muestra más reciente.`;
+INSTRUCCIONES CRÍTICAS:
+1. LEE TODAS LAS PÁGINAS DEL DOCUMENTO - no solo la primera
+2. Extrae TODOS los exámenes que encuentres en cada página
+3. Agrupa los resultados de forma lógica por sistemas:
+   - Metabolismo (Glucosa, LDH)
+   - Enzimas cardíacas (CK total, CK-MB, Troponina)
+   - Función renal (Creatinina, BUN)
+   - Inflamación (PCR)
+   - Hepáticas (Bilirrubinas, GOT, GPT, GGT, FA, Proteínas totales, Albúmina, Globulina)
+   - Lípidos (Colesterol total, Triglicéridos, HDL, LDL)
+   - Coagulación (TP, INR, TTPA)
+   - Hemograma (Leucocitos con diferencial, Hb, Hcto, VCM, HCM, CHCM, Plaquetas)
+   - Gases arteriales (pH, pCO2, pO2, HCO3, EB, Lactato)
+   - Electrolitos (Na, K, Cl, Ca, P, Mg)
+   - Orina (Sedimento, densidad, pH, proteínas, glucosa, etc.)
+4. Usa // para separar grupos de sistemas
+5. Incluye TODOS los valores, tanto normales como anormales
+6. Si un valor está fuera de rango, márcalo con > o < según corresponda
+7. Si hay múltiples fechas, usa la fecha de toma de muestra más reciente`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
