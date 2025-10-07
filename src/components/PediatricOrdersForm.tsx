@@ -577,7 +577,7 @@ export function PediatricOrdersForm({ value, onChange, patientWeight, patientHei
         {/* Preview */}
         <div className="p-3 bg-muted/30 rounded-lg">
           <Label className="text-xs text-muted-foreground">Vista Previa</Label>
-          <pre className="text-xs mt-2 whitespace-pre-wrap">{value || "Las indicaciones se generarán automáticamente..."}</pre>
+          <div className="text-xs mt-2 whitespace-pre-wrap">{value || "Las indicaciones se generarán automáticamente..."}</div>
         </div>
       </CardContent>
     </Card>

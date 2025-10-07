@@ -185,7 +185,7 @@ export function MedicalAdmissionPreview({ formData }: MedicalAdmissionPreviewPro
       </CardHeader>
       <CardContent>
         <div className="bg-muted/30 p-6 rounded-lg border border-border">
-          <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed">{previewText}</pre>
+          <pre className="whitespace-pre-wrap text-sm leading-relaxed">{previewText}</pre>
         </div>
       </CardContent>
     </Card>

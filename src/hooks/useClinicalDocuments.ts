@@ -59,9 +59,12 @@ export function useUploadDocument() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("No autenticado");
 
-      // Subir archivo a storage
+      // Sanitizar nombre de archivo (remover espacios y caracteres especiales)
       const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}_${file.name}`;
+      const sanitizedName = file.name
+        .replace(/[^a-zA-Z0-9.-]/g, "_")
+        .replace(/_{2,}/g, "_");
+      const fileName = `${Date.now()}_${sanitizedName}`;
       const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -75,7 +78,8 @@ export function useUploadDocument() {
       
       if (file.type === "application/pdf") {
         const pdfjsLib = await import("pdfjs-dist");
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        // Usar worker de jsdelivr como alternativa más estable
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;

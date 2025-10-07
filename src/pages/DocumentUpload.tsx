@@ -101,13 +101,6 @@ const DocumentUpload = () => {
   return (
     <AppLayout>
       <div className="container mx-auto p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Carga Masiva de Documentos</h1>
-          <p className="text-muted-foreground mt-2">
-            Sube múltiples documentos médicos para procesamiento automático con IA
-          </p>
-        </div>
-
         <div className="grid gap-6 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
@@ -137,9 +130,9 @@ const DocumentUpload = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Subir Archivos</CardTitle>
+            <CardTitle>Carga Masiva de Documentos</CardTitle>
             <CardDescription>
-              Formatos soportados: PDF, Word (.docx), Excel (.xls, .xlsx)
+              Sube múltiples documentos médicos (PDF, Word, Excel) para procesamiento automático con IA
             </CardDescription>
           </CardHeader>
           <CardContent>
