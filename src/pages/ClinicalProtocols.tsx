@@ -61,19 +61,13 @@ export default function ClinicalProtocols() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-6">
+    <div className="p-6 animate-fade-in">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Volver
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-4xl font-bold text-primary mb-2">Protocolos Clínicos</h1>
-            <p className="text-muted-foreground">
-              Basados en guías MINSAL Chile y Academia Española de Pediatría (AEP)
-            </p>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-primary mb-2">Protocolos Clínicos</h1>
+          <p className="text-muted-foreground">
+            Basados en guías MINSAL Chile y Academia Española de Pediatría (AEP)
+          </p>
         </div>
 
         {loading ? (

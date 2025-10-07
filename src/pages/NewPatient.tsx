@@ -136,17 +136,7 @@ const NewPatient = () => {
   const bsa = calculateBodySurfaceArea(parseFloat(weightKg || "0"), parseFloat(heightCm || "0"));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-background">
-      <header className="border-b bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            Volver al Dashboard
-          </Button>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="p-6 max-w-4xl mx-auto animate-fade-in">
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Nuevo Paciente</CardTitle>
@@ -321,7 +311,6 @@ const NewPatient = () => {
             </Form>
           </CardContent>
         </Card>
-      </main>
     </div>
   );
 };

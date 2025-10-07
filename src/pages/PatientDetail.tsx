@@ -11,6 +11,7 @@ import { DailyEvolutionForm } from "@/components/DailyEvolutionForm";
 import { EvolutionsList } from "@/components/EvolutionsList";
 import { GrowthChart } from "@/components/GrowthChart";
 import { AllergyAlert } from "@/components/AllergyAlert";
+import { PatientTimeline } from "@/components/PatientTimeline";
 
 interface Admission {
   id: string;
@@ -197,10 +198,11 @@ const PatientDetail = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="evolutions" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="evolutions">Evoluciones</TabsTrigger>
             <TabsTrigger value="anthropometry">Antropometría</TabsTrigger>
             <TabsTrigger value="growth">Gráficas</TabsTrigger>
+            <TabsTrigger value="timeline">Historial</TabsTrigger>
             <TabsTrigger value="diagnoses">Diagnósticos</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
           </TabsList>
@@ -316,6 +318,17 @@ const PatientDetail = () => {
 
           <TabsContent value="growth">
             <GrowthChart patientId={id!} />
+          </TabsContent>
+
+          <TabsContent value="timeline">
+            <Card>
+              <CardHeader>
+                <CardTitle>Línea de Tiempo Clínica</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PatientTimeline patientId={id!} />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="diagnoses">

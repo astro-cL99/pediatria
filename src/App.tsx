@@ -2,37 +2,80 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Suspense, lazy } from "react";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { LoadingFallback } from "./components/LoadingFallback";
+import { AppLayout } from "./components/layout/AppLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import NewPatient from "./pages/NewPatient";
 import NewAdmission from "./pages/NewAdmission";
 import PatientDetail from "./pages/PatientDetail";
-import ClinicalProtocols from "./pages/ClinicalProtocols";
 import AdmissionPrint from "./pages/AdmissionPrint";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Lazy load heavy components
+const ClinicalProtocols = lazy(() => import("./pages/ClinicalProtocols"));
+const Statistics = lazy(() => import("./pages/Statistics"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+      retry: 3,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+    },
+  },
+});
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <Toaster />
-    <Sonner />
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/patient/new" element={<NewPatient />} />
-        <Route path="/admission/new" element={<NewAdmission />} />
-        <Route path="/patient/:id" element={<PatientDetail />} />
-        <Route path="/protocols" element={<ClinicalProtocols />} />
-        <Route path="/admission/:id/print" element={<AdmissionPrint />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
+          
+          {/* Protected routes with AppLayout */}
+          <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
+          <Route path="/patient/new" element={<AppLayout><NewPatient /></AppLayout>} />
+          <Route path="/admission/new" element={<AppLayout><NewAdmission /></AppLayout>} />
+          <Route path="/patient/:id" element={<AppLayout><PatientDetail /></AppLayout>} />
+          <Route path="/admission/:id/print" element={<AdmissionPrint />} />
+          
+          {/* Lazy loaded routes */}
+          <Route
+            path="/protocols"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <ClinicalProtocols />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/stats"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Statistics />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

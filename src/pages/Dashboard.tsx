@@ -5,12 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { LogOut, Plus, Activity, Users, FileText, TrendingUp, BookOpen, Search, Download, Clock } from "lucide-react";
+import { Plus, Activity, Search, Download, Clock, Users, BookOpen, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardStats } from "@/components/DashboardStats";
 import { RoleManagement } from "@/components/RoleManagement";
 import { calculateDaysHospitalized, formatDaysHospitalized } from "@/utils/calculateDaysHospitalized";
 import { exportPatientDataToCSV } from "@/utils/exportToPDF";
+import { exportPatientsToExcel, exportDailyCensusToExcel } from "@/utils/exportToExcel";
+import { usePatients } from "@/hooks/usePatients";
+import { SkeletonCard, SkeletonTable } from "@/components/ui/skeleton-card";
 
 interface Patient {
   id: string;
@@ -155,47 +158,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-background">
-      {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <Activity className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">PediaMed</h1>
-              <p className="text-sm text-muted-foreground">Servicio de Pediatría</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            {isAdmin && (
-              <Button 
-                variant={showRoles ? "default" : "outline"} 
-                onClick={() => setShowRoles(!showRoles)} 
-                className="gap-2"
-              >
-                <Users className="w-4 h-4" />
-                {showRoles ? "Ver Pacientes" : "Gestión de Roles"}
-              </Button>
-            )}
-            <Button variant="outline" onClick={() => navigate("/protocols")} className="gap-2">
-              <BookOpen className="w-4 h-4" />
-              <span className="hidden sm:inline">Protocolos</span>
-            </Button>
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium">{userName}</p>
-              <p className="text-xs text-muted-foreground">Médico Tratante</p>
-            </div>
-            <Button variant="ghost" size="icon" onClick={handleLogout}>
-              <LogOut className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+    <div className="p-6 space-y-6 animate-fade-in">
         {showRoles ? (
           <RoleManagement />
         ) : (
@@ -329,9 +292,8 @@ const Dashboard = () => {
           )}
           </>
         )}
-        </>
-      )}
-      </main>
+          </>
+        )}
     </div>
   );
 };
