@@ -171,27 +171,25 @@ export default function NewAdmission() {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await getDocument({ data: arrayBuffer }).promise;
       
-      const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 2.0 });
-      
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      if (!context) throw new Error('No se pudo crear el canvas');
-      
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      
-      // @ts-ignore - pdfjs types issue
-      await page.render({
-        canvasContext: context,
-        viewport: viewport
-      }).promise;
-      
-      const imageBase64 = canvas.toDataURL('image/png').split(',')[1];
+      // Renderizar TODAS las páginas del PDF y convertirlas a imágenes base64
+      const images: string[] = [];
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const viewport = page.getViewport({ scale: 2.0 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('No se pudo crear el canvas');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        // @ts-ignore - pdfjs types issue
+        await page.render({ canvasContext: context, viewport }).promise;
+        const img = canvas.toDataURL('image/png').split(',')[1];
+        images.push(img);
+      }
 
       const { data: extractedData, error: extractError } = await supabase.functions.invoke(
         'extract-lab-results',
-        { body: { imageBase64, fileName: file.name } }
+        { body: { imageBase64List: images, fileName: file.name } }
       );
 
       if (extractError) throw extractError;
@@ -199,8 +197,10 @@ export default function NewAdmission() {
       if (extractedData?.success && extractedData?.data) {
         const data = extractedData.data;
         
-        // Format lab results with date and source
-        const formattedResults = `- ${data.fechaToma} ${data.procedencia}: ${data.resultados}`;
+        // Formatear resultados por secciones
+        const sections = (data.resultados || '').split('//').map((s: string) => s.trim()).filter(Boolean);
+        const formattedSections = sections.map((s: string) => `  - ${s}`).join('\n');
+        const formattedResults = `- ${data.fechaToma} ${data.procedencia}:\n${formattedSections}`;
         
         // Append to existing lab results or replace
         setFormData(prev => ({

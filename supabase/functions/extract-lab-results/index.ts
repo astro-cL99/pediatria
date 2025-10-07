@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64, fileName } = await req.json();
+    const { imageBase64, imageBase64List, fileName } = await req.json();
     console.log('Extrayendo datos de laboratorio...');
     console.log('Archivo:', fileName);
 
@@ -50,6 +50,26 @@ INSTRUCCIONES CRÍTICAS:
 6. Si un valor está fuera de rango, márcalo con > o < según corresponda
 7. Si hay múltiples fechas, usa la fecha de toma de muestra más reciente`;
 
+    // Construir contenido con una o varias imágenes (todas las páginas)
+    const content: any[] = [{ type: 'text', text: systemPrompt }];
+    if (Array.isArray(imageBase64List) && imageBase64List.length > 0) {
+      for (const img of imageBase64List) {
+        content.push({
+          type: 'image_url',
+          image_url: { url: `data:image/png;base64,${img}` }
+        });
+      }
+      console.log('Páginas recibidas:', imageBase64List.length);
+    } else if (imageBase64) {
+      content.push({
+        type: 'image_url',
+        image_url: { url: `data:image/png;base64,${imageBase64}` }
+      });
+      console.log('Páginas recibidas:', 1);
+    } else {
+      throw new Error('No se recibió ninguna imagen para procesar');
+    }
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -59,18 +79,7 @@ INSTRUCCIONES CRÍTICAS:
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: systemPrompt },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/png;base64,${imageBase64}`
-                }
-              }
-            ]
-          }
+          { role: 'user', content }
         ],
         response_format: { type: 'json_object' }
       }),
