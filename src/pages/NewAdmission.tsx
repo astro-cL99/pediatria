@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, FileText, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PediatricOrdersForm } from "@/components/PediatricOrdersForm";
+import { PhysicalExamForm } from "@/components/PhysicalExamForm";
 
 export default function NewAdmission() {
   const navigate = useNavigate();
@@ -505,18 +506,10 @@ export default function NewAdmission() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Examen Físico</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={formData.physicalExam}
-                onChange={(e) => setFormData({ ...formData, physicalExam: e.target.value })}
-                rows={6}
-              />
-            </CardContent>
-          </Card>
+          <PhysicalExamForm
+            value={formData.physicalExam}
+            onChange={(value) => setFormData({ ...formData, physicalExam: value })}
+          />
 
           <Card>
             <CardHeader>
