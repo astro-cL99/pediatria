@@ -19,6 +19,15 @@ export default function NewAdmission() {
   
   const [formData, setFormData] = useState({
     patientId: "",
+    patientName: "",
+    age: "",
+    rut: "",
+    dateOfBirth: "",
+    gender: "",
+    address: "",
+    contactNumbers: "",
+    caregiver: "",
+    caregiverRut: "",
     admissionSource: "emergency",
     chiefComplaint: "",
     presentIllness: "",
@@ -99,6 +108,15 @@ export default function NewAdmission() {
         // Auto-fill form with extracted data
         setFormData(prev => ({
           ...prev,
+          patientName: data.patientName || prev.patientName,
+          age: data.age || prev.age,
+          rut: data.rut || prev.rut,
+          dateOfBirth: data.dateOfBirth || prev.dateOfBirth,
+          gender: data.gender || prev.gender,
+          address: data.address || prev.address,
+          contactNumbers: data.contactNumbers || prev.contactNumbers,
+          caregiver: data.caregiver || prev.caregiver,
+          caregiverRut: data.caregiverRut || prev.caregiverRut,
           chiefComplaint: data.chiefComplaint || prev.chiefComplaint,
           presentIllness: data.presentIllness || prev.presentIllness,
           allergies: data.allergies || prev.allergies,
@@ -228,13 +246,91 @@ export default function NewAdmission() {
               <CardTitle>Datos Administrativos</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Nombre del Paciente</Label>
+                  <Input
+                    value={formData.patientName}
+                    onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+                    placeholder="Nombre completo"
+                  />
+                </div>
+                <div>
+                  <Label>RUT</Label>
+                  <Input
+                    value={formData.rut}
+                    onChange={(e) => setFormData({ ...formData, rut: e.target.value })}
+                    placeholder="12345678-9"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label>Edad</Label>
+                  <Input
+                    value={formData.age}
+                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                    placeholder="Ej: 06A 05m"
+                  />
+                </div>
+                <div>
+                  <Label>Fecha de Nacimiento</Label>
+                  <Input
+                    value={formData.dateOfBirth}
+                    onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                    placeholder="DD/MM/YYYY"
+                  />
+                </div>
+                <div>
+                  <Label>Sexo</Label>
+                  <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card z-50">
+                      <SelectItem value="Masculino">Masculino</SelectItem>
+                      <SelectItem value="Femenino">Femenino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div>
-                <Label>ID del Paciente</Label>
+                <Label>Dirección</Label>
                 <Input
-                  value={formData.patientId}
-                  onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
-                  placeholder="Seleccionar paciente..."
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Dirección completa"
                 />
+              </div>
+
+              <div>
+                <Label>Números de Contacto</Label>
+                <Input
+                  value={formData.contactNumbers}
+                  onChange={(e) => setFormData({ ...formData, contactNumbers: e.target.value })}
+                  placeholder="Teléfonos de contacto"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Persona a Cargo</Label>
+                  <Input
+                    value={formData.caregiver}
+                    onChange={(e) => setFormData({ ...formData, caregiver: e.target.value })}
+                    placeholder="Nombre y relación"
+                  />
+                </div>
+                <div>
+                  <Label>RUT Persona a Cargo</Label>
+                  <Input
+                    value={formData.caregiverRut}
+                    onChange={(e) => setFormData({ ...formData, caregiverRut: e.target.value })}
+                    placeholder="12345678-9"
+                  />
+                </div>
               </div>
 
               <div>

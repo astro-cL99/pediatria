@@ -44,11 +44,15 @@ ESTRUCTURA DEL DAU CHILENO:
 
 EXTRAE LOS SIGUIENTES DATOS Y DEVUELVE ESTE JSON EXACTO:
 {
-  "patientName": "nombre completo del paciente (ej: NOEMÍ TRINIDAD SOLÍS SALAZAR)",
-  "rut": "RUT del paciente con guión (ej: 27986894-3)",
-  "dateOfBirth": "fecha nacimiento YYYY-MM-DD (ej: 2022-11-18)",
-  "age": "edad en formato texto (ej: 002A 10m 18d)",
-  "sex": "MASCULINO o FEMENINO",
+  "patientName": "nombre completo del paciente (ej: SANTIAGO AGUSTÍN DELGADO CABEZAS)",
+  "rut": "RUT del paciente con guión (ej: 26809578-0)",
+  "dateOfBirth": "fecha nacimiento en formato DD/MM/YYYY (ej: 29/04/2019)",
+  "age": "edad en formato texto (ej: 06A 05m)",
+  "gender": "Masculino o Femenino",
+  "address": "dirección completa (ej: EL MANZANO 0 ,ZUÑIGA , SAN VICENTE)",
+  "contactNumbers": "números de contacto (ej: 941147491)",
+  "caregiver": "nombre de persona a cargo y relación (ej: KARINA ANDREA CABEZAS VARGAS - madre)",
+  "caregiverRut": "RUT de persona a cargo (ej: 15110755-9)",
   "admissionDate": "fecha ingreso YYYY-MM-DD",
   "admissionTime": "hora ingreso HH:MM",
   "chiefComplaint": "texto del motivo de consulta",
@@ -70,8 +74,9 @@ EXTRAE LOS SIGUIENTES DATOS Y DEVUELVE ESTE JSON EXACTO:
 }
 
 REGLAS:
-- Si un dato no aparece en el documento, usa null
+- Si un dato no aparece en el documento, usa cadena vacía ""
 - Extrae TODOS los datos que encuentres
+- Para la persona a cargo, incluye nombre completo y relación (padre/madre/tutor)
 - Responde SOLO el JSON, sin markdown
 - Mantén el formato exacto del JSON mostrado`;
 
