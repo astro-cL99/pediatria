@@ -780,6 +780,32 @@ export type Database = {
         Args: { "": string } | { "": unknown } | { "": unknown }
         Returns: string
       }
+      search_clinical_documents: {
+        Args: {
+          filter_patient_id?: string
+          filter_type?: string
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          admission_date: string
+          admission_id: string
+          confidence_score: number
+          document_type: string
+          extracted_data: Json
+          file_name: string
+          file_path: string
+          id: string
+          notes: string
+          patient_id: string
+          patient_name: string
+          patient_rut: string
+          similarity: number
+          uploaded_at: string
+          uploaded_by: string
+        }[]
+      }
       sparsevec_out: {
         Args: { "": unknown }
         Returns: unknown

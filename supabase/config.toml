@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.semantic-search]
 verify_jwt = false
+
+[functions.clinical-assistant]
+verify_jwt = false
+
+[functions.analyze-patterns]
+verify_jwt = false

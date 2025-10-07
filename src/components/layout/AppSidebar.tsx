@@ -1,4 +1,4 @@
-import { Home, Users, FileText, BookOpen, BarChart3, Settings, Upload } from "lucide-react";
+import { Home, Users, FileText, BookOpen, BarChart3, Settings, Upload, Search, Bot } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -19,6 +19,8 @@ const mainItems = [
   { title: "Pacientes", url: "/patient/new", icon: Users },
   { title: "Nuevo Ingreso", url: "/admission/new", icon: FileText },
   { title: "Carga Documentos", url: "/documents/upload", icon: Upload },
+  { title: "Búsqueda IA", url: "/search", icon: Search },
+  { title: "Asistente IA", url: "/assistant", icon: Bot },
   { title: "Protocolos", url: "/protocols", icon: BookOpen },
   { title: "Estadísticas", url: "/stats", icon: BarChart3 },
 ];

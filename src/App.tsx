@@ -19,6 +19,8 @@ import NotFound from "./pages/NotFound";
 const ClinicalProtocols = lazy(() => import("./pages/ClinicalProtocols"));
 const Statistics = lazy(() => import("./pages/Statistics"));
 const DocumentUpload = lazy(() => import("./pages/DocumentUpload"));
+const SemanticSearch = lazy(() => import("./pages/SemanticSearch"));
+const ClinicalAssistant = lazy(() => import("./pages/ClinicalAssistant"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +78,26 @@ const App = () => (
               <AppLayout>
                 <Suspense fallback={<LoadingFallback />}>
                   <DocumentUpload />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/search"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <SemanticSearch />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/assistant"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <ClinicalAssistant />
                 </Suspense>
               </AppLayout>
             }
