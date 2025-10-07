@@ -16,6 +16,8 @@ export default function NewAdmission() {
   const [isLoading, setIsLoading] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isExtractingLab, setIsExtractingLab] = useState(false);
+  const [selectedLabFile, setSelectedLabFile] = useState<File | null>(null);
   
   const [formData, setFormData] = useState({
     patientId: "",
@@ -140,6 +142,83 @@ export default function NewAdmission() {
       });
     } finally {
       setIsExtracting(false);
+    }
+  };
+
+  const handleLabFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || file.type !== 'application/pdf') {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona un archivo PDF",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedLabFile(file);
+    setIsExtractingLab(true);
+
+    try {
+      const { getDocument, GlobalWorkerOptions, version } = await import('pdfjs-dist');
+      GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await getDocument({ data: arrayBuffer }).promise;
+      
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 2.0 });
+      
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('No se pudo crear el canvas');
+      
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      // @ts-ignore - pdfjs types issue
+      await page.render({
+        canvasContext: context,
+        viewport: viewport
+      }).promise;
+      
+      const imageBase64 = canvas.toDataURL('image/png').split(',')[1];
+
+      const { data: extractedData, error: extractError } = await supabase.functions.invoke(
+        'extract-lab-results',
+        { body: { imageBase64, fileName: file.name } }
+      );
+
+      if (extractError) throw extractError;
+
+      if (extractedData?.success && extractedData?.data) {
+        const data = extractedData.data;
+        
+        // Format lab results with date and source
+        const formattedResults = `- ${data.fechaToma} ${data.procedencia}: ${data.resultados}`;
+        
+        // Append to existing lab results or replace
+        setFormData(prev => ({
+          ...prev,
+          labResults: prev.labResults 
+            ? `${prev.labResults}\n${formattedResults}`
+            : formattedResults
+        }));
+
+        toast({
+          title: "Exámenes extraídos",
+          description: "Los resultados de laboratorio se han agregado automáticamente",
+        });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo procesar el archivo de laboratorio",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExtractingLab(false);
     }
   };
 
@@ -420,11 +499,41 @@ export default function NewAdmission() {
             <CardContent className="space-y-4">
               <div>
                 <Label>Exámenes de Laboratorio</Label>
+                <div className="border-2 border-dashed border-primary/20 rounded-lg p-4 mb-3 hover:border-primary/40 transition-colors">
+                  <Input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handleLabFileUpload}
+                    className="hidden"
+                    id="lab-upload"
+                    disabled={isExtractingLab}
+                  />
+                  <Label htmlFor="lab-upload" className="cursor-pointer">
+                    {isExtractingLab ? (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                        <span className="text-muted-foreground">Extrayendo resultados...</span>
+                      </div>
+                    ) : selectedLabFile ? (
+                      <div className="flex items-center gap-2 text-sm">
+                        <FileText className="h-4 w-4 text-primary" />
+                        <span className="font-medium">{selectedLabFile.name}</span>
+                        <span className="text-muted-foreground">- Click para agregar más</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Upload className="h-4 w-4 text-primary" />
+                        <span className="font-medium">Subir PDF de Laboratorio</span>
+                        <span className="text-muted-foreground">(Resultados se agregarán automáticamente)</span>
+                      </div>
+                    )}
+                  </Label>
+                </div>
                 <Textarea
                   value={formData.labResults}
                   onChange={(e) => setFormData({ ...formData, labResults: e.target.value })}
-                  rows={3}
-                  placeholder="Hemograma, PCR, etc..."
+                  rows={6}
+                  placeholder="- 06/10/25 SU HRR: Glucosa 111 LDH 383// CK total 31 CK-MB 14 // Crea 0.35 BUN 9.6..."
                 />
               </div>
 

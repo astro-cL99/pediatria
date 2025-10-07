@@ -2,3 +2,6 @@ project_id = "fmooavbdxqprpxcxyzrd"
 
 [functions.extract-dau-data]
 verify_jwt = false
+
+[functions.extract-lab-results]
+verify_jwt = false
