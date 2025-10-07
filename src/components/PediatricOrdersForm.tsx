@@ -100,14 +100,21 @@ export function PediatricOrdersForm({ value, onChange, patientWeight, patientHei
     const med = commonMedications.find(m => m.name === selectedMedication);
     if (!med) return;
 
-    const dosage = medicationDetails.dosage || 
-      (med.dosageCalc && patientWeight ? `${med.dosageCalc(patientWeight)} mg` : med.dosage?.[0] || "");
+    let dosage = medicationDetails.dosage;
+    if (!dosage && med.dosageCalc && patientWeight) {
+      const result = med.dosageCalc(patientWeight);
+      dosage = typeof result === 'number' ? `${result} mg` : result.dose;
+    }
+    if (!dosage && med.dosage?.[0]) {
+      dosage = med.dosage[0];
+    }
+    dosage = dosage || "";
 
     const newMed = {
       name: med.name,
       dosage,
       route: medicationDetails.route || med.routes[0],
-      frequency: medicationDetails.frequency || med.frequency[0],
+      frequency: medicationDetails.frequency || med.frequency?.[0] || "",
       indication: medicationDetails.indication || med.indication || "",
     };
 
@@ -445,19 +452,36 @@ export function PediatricOrdersForm({ value, onChange, patientWeight, patientHei
 
             {selectedMedInfo && (
               <>
-                {selectedMedInfo.dosageCalc && patientWeight && (
-                  <div className="p-2 bg-primary/5 rounded text-xs">
-                    <strong>Dosis calculada:</strong> {selectedMedInfo.dosageCalc(patientWeight)} mg
-                    ({(selectedMedInfo.dosageCalc(patientWeight) / patientWeight).toFixed(1)} mg/kg)
-                  </div>
-                )}
+                {selectedMedInfo.dosageCalc && patientWeight && (() => {
+                  const result = selectedMedInfo.dosageCalc(patientWeight);
+                  if (typeof result === 'number') {
+                    return (
+                      <div className="p-2 bg-primary/5 rounded text-xs">
+                        <strong>Dosis calculada:</strong> {result} mg ({(result / patientWeight).toFixed(1)} mg/kg)
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="p-2 bg-primary/5 rounded text-xs space-y-1">
+                      <p><strong>Dosis:</strong> {result.dose}</p>
+                      <p><strong>Frecuencia:</strong> {result.frequency}</p>
+                      <p><strong>Dosis máxima:</strong> {result.maxDose}</p>
+                      {result.dilution && <p><strong>Dilución:</strong> {result.dilution}</p>}
+                      {result.infusionRate && <p><strong>Velocidad:</strong> {result.infusionRate}</p>}
+                      {result.notes && <p className="text-amber-600"><strong>Nota:</strong> {result.notes}</p>}
+                    </div>
+                  );
+                })()}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label className="text-xs">Dosis</Label>
                     <Input
-                      placeholder={
-                        selectedMedInfo.dosageCalc && patientWeight
-                          ? `${selectedMedInfo.dosageCalc(patientWeight)} mg`
+                      placeholder={(() => {
+                        if (selectedMedInfo.dosageCalc && patientWeight) {
+                          const result = selectedMedInfo.dosageCalc(patientWeight);
+                          return typeof result === 'number' ? `${result} mg` : result.dose;
+                        }
+                        return selectedMedInfo.dosage?.[0] || "Ej: 500 mg";
                           : selectedMedInfo.dosage?.[0] || "Dosis"
                       }
                       value={medicationDetails.dosage}
