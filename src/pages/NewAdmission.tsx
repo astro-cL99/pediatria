@@ -11,6 +11,7 @@ import { Upload, FileText, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PediatricOrdersForm } from "@/components/PediatricOrdersForm";
 import { PhysicalExamForm } from "@/components/PhysicalExamForm";
+import { MedicalAdmissionPreview } from "@/components/MedicalAdmissionPreview";
 
 export default function NewAdmission() {
   const navigate = useNavigate();
@@ -588,6 +589,8 @@ export default function NewAdmission() {
               />
             </CardContent>
           </Card>
+
+          <MedicalAdmissionPreview formData={formData} />
 
           <div className="flex gap-4">
             <Button type="button" variant="outline" onClick={() => navigate("/dashboard")} className="flex-1">
