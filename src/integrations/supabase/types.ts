@@ -488,6 +488,99 @@ export type Database = {
           },
         ]
       }
+      epicrisis: {
+        Row: {
+          admission_date: string
+          admission_diagnosis: string
+          admission_id: string | null
+          admission_weight: number | null
+          age_at_discharge: string | null
+          attending_physician: string
+          created_at: string | null
+          created_by: string | null
+          date_of_birth: string
+          discharge_date: string
+          discharge_diagnosis: string
+          discharge_instructions: string | null
+          discharge_weight: number | null
+          evolution_and_treatment: string
+          id: string
+          imaging_exams: string | null
+          laboratory_exams: string | null
+          patient_id: string | null
+          patient_name: string
+          patient_rut: string
+          pdf_file_path: string | null
+          physician_signature: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admission_date: string
+          admission_diagnosis: string
+          admission_id?: string | null
+          admission_weight?: number | null
+          age_at_discharge?: string | null
+          attending_physician: string
+          created_at?: string | null
+          created_by?: string | null
+          date_of_birth: string
+          discharge_date: string
+          discharge_diagnosis: string
+          discharge_instructions?: string | null
+          discharge_weight?: number | null
+          evolution_and_treatment: string
+          id?: string
+          imaging_exams?: string | null
+          laboratory_exams?: string | null
+          patient_id?: string | null
+          patient_name: string
+          patient_rut: string
+          pdf_file_path?: string | null
+          physician_signature?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admission_date?: string
+          admission_diagnosis?: string
+          admission_id?: string | null
+          admission_weight?: number | null
+          age_at_discharge?: string | null
+          attending_physician?: string
+          created_at?: string | null
+          created_by?: string | null
+          date_of_birth?: string
+          discharge_date?: string
+          discharge_diagnosis?: string
+          discharge_instructions?: string | null
+          discharge_weight?: number | null
+          evolution_and_treatment?: string
+          id?: string
+          imaging_exams?: string | null
+          laboratory_exams?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          patient_rut?: string
+          pdf_file_path?: string | null
+          physician_signature?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epicrisis_admission_id_fkey"
+            columns: ["admission_id"]
+            isOneToOne: false
+            referencedRelation: "admissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epicrisis_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       growth_measurements: {
         Row: {
           bmi: number | null

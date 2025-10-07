@@ -21,6 +21,8 @@ const Statistics = lazy(() => import("./pages/Statistics"));
 const DocumentUpload = lazy(() => import("./pages/DocumentUpload"));
 const SemanticSearch = lazy(() => import("./pages/SemanticSearch"));
 const ClinicalAssistant = lazy(() => import("./pages/ClinicalAssistant"));
+const Epicrisis = lazy(() => import("./pages/Epicrisis"));
+const NewEpicrisis = lazy(() => import("./pages/NewEpicrisis"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -98,6 +100,26 @@ const App = () => (
               <AppLayout>
                 <Suspense fallback={<LoadingFallback />}>
                   <ClinicalAssistant />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/epicrisis"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Epicrisis />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/epicrisis/new"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <NewEpicrisis />
                 </Suspense>
               </AppLayout>
             }
