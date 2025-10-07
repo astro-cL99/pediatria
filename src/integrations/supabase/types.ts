@@ -207,6 +207,96 @@ export type Database = {
         }
         Relationships: []
       }
+      clinical_documents: {
+        Row: {
+          admission_id: string | null
+          confidence_score: number | null
+          created_at: string | null
+          document_type: string
+          embeddings: string | null
+          extracted_data: Json | null
+          file_name: string
+          file_path: string
+          id: string
+          notes: string | null
+          patient_id: string | null
+          processed: boolean | null
+          updated_at: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          admission_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          document_type: string
+          embeddings?: string | null
+          extracted_data?: Json | null
+          file_name: string
+          file_path: string
+          id?: string
+          notes?: string | null
+          patient_id?: string | null
+          processed?: boolean | null
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          admission_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          document_type?: string
+          embeddings?: string | null
+          extracted_data?: Json | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string | null
+          processed?: boolean | null
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_documents_admission_id_fkey"
+            columns: ["admission_id"]
+            isOneToOne: false
+            referencedRelation: "admissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_documents_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinical_insights: {
+        Row: {
+          data: Json
+          generated_at: string | null
+          id: string
+          insight_type: string
+        }
+        Insert: {
+          data: Json
+          generated_at?: string | null
+          id?: string
+          insight_type: string
+        }
+        Update: {
+          data?: Json
+          generated_at?: string | null
+          id?: string
+          insight_type?: string
+        }
+        Relationships: []
+      }
       clinical_protocols: {
         Row: {
           category: string
@@ -258,6 +348,36 @@ export type Database = {
           protocol_name?: string
           source?: string
           version?: string | null
+        }
+        Relationships: []
+      }
+      clinical_queries: {
+        Row: {
+          created_at: string | null
+          helpful: boolean | null
+          id: string
+          query: string
+          response: string | null
+          sources: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          helpful?: boolean | null
+          id?: string
+          query: string
+          response?: string | null
+          sources?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          helpful?: boolean | null
+          id?: string
+          query?: string
+          response?: string | null
+          sources?: Json | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -593,6 +713,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      binary_quantize: {
+        Args: { "": string } | { "": unknown }
+        Returns: unknown
+      }
+      halfvec_avg: {
+        Args: { "": number[] }
+        Returns: unknown
+      }
+      halfvec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      halfvec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      halfvec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -600,9 +740,81 @@ export type Database = {
         }
         Returns: boolean
       }
+      hnsw_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_sparsevec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnswhandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
       is_admin: {
         Args: { _user_id: string }
         Returns: boolean
+      }
+      ivfflat_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflathandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      l2_norm: {
+        Args: { "": unknown } | { "": unknown }
+        Returns: number
+      }
+      l2_normalize: {
+        Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: string
+      }
+      sparsevec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      sparsevec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      sparsevec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
+      vector_avg: {
+        Args: { "": number[] }
+        Returns: string
+      }
+      vector_dims: {
+        Args: { "": string } | { "": unknown }
+        Returns: number
+      }
+      vector_norm: {
+        Args: { "": string }
+        Returns: number
+      }
+      vector_out: {
+        Args: { "": string }
+        Returns: unknown
+      }
+      vector_send: {
+        Args: { "": string }
+        Returns: string
+      }
+      vector_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
       }
     }
     Enums: {

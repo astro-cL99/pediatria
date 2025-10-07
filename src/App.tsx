@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 // Lazy load heavy components
 const ClinicalProtocols = lazy(() => import("./pages/ClinicalProtocols"));
 const Statistics = lazy(() => import("./pages/Statistics"));
+const DocumentUpload = lazy(() => import("./pages/DocumentUpload"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,6 +66,16 @@ const App = () => (
               <AppLayout>
                 <Suspense fallback={<LoadingFallback />}>
                   <Statistics />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/documents/upload"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <DocumentUpload />
                 </Suspense>
               </AppLayout>
             }

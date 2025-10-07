@@ -1,4 +1,4 @@
-import { Home, Users, FileText, BookOpen, BarChart3, Settings } from "lucide-react";
+import { Home, Users, FileText, BookOpen, BarChart3, Settings, Upload } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -18,6 +18,7 @@ const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Pacientes", url: "/patient/new", icon: Users },
   { title: "Nuevo Ingreso", url: "/admission/new", icon: FileText },
+  { title: "Carga Documentos", url: "/documents/upload", icon: Upload },
   { title: "Protocolos", url: "/protocols", icon: BookOpen },
   { title: "Estadísticas", url: "/stats", icon: BarChart3 },
 ];
