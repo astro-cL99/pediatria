@@ -5,12 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Upload, FileText, Activity, TrendingUp } from "lucide-react";
+import { ArrowLeft, Upload, FileText, Activity, TrendingUp, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { DailyEvolutionForm } from "@/components/DailyEvolutionForm";
 import { EvolutionsList } from "@/components/EvolutionsList";
 import { GrowthChart } from "@/components/GrowthChart";
 import { AllergyAlert } from "@/components/AllergyAlert";
+
+interface Admission {
+  id: string;
+  patient_id: string;
+  admission_date: string;
+  status: string;
+}
 
 interface Patient {
   id: string;
@@ -38,6 +45,7 @@ const PatientDetail = () => {
   const navigate = useNavigate();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [anthroData, setAnthroData] = useState<AnthroData[]>([]);
+  const [activeAdmission, setActiveAdmission] = useState<Admission | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,6 +71,20 @@ const PatientDetail = () => {
 
       if (anthroError) throw anthroError;
       setAnthroData(anthroData || []);
+
+      // Fetch active admission
+      const { data: admission } = await supabase
+        .from("admissions")
+        .select("*")
+        .eq("patient_id", id)
+        .eq("status", "active")
+        .order("admission_date", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (admission) {
+        setActiveAdmission(admission);
+      }
     } catch (error: any) {
       toast.error("Error al cargar datos del paciente");
       console.error(error);
@@ -111,11 +133,22 @@ const PatientDetail = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-background">
       <header className="border-b bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Volver al Dashboard
           </Button>
+          
+          {activeAdmission && (
+            <Button
+              variant="outline"
+              onClick={() => window.open(`/admission/${activeAdmission.id}/print`, '_blank')}
+              className="gap-2"
+            >
+              <Printer className="w-4 h-4" />
+              Imprimir Ingreso
+            </Button>
+          )}
         </div>
       </header>
 

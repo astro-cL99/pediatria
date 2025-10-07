@@ -5,8 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { LogOut, Plus, Activity, Users, FileText, TrendingUp, BookOpen, Search } from "lucide-react";
+import { LogOut, Plus, Activity, Users, FileText, TrendingUp, BookOpen, Search, Download, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { DashboardStats } from "@/components/DashboardStats";
+import { RoleManagement } from "@/components/RoleManagement";
+import { calculateDaysHospitalized, formatDaysHospitalized } from "@/utils/calculateDaysHospitalized";
+import { exportPatientDataToCSV } from "@/utils/exportToPDF";
 
 interface Patient {
   id: string;
@@ -15,6 +19,7 @@ interface Patient {
   date_of_birth: string;
   status: string;
   admission_date: string;
+  allergies?: string | null;
 }
 
 const Dashboard = () => {
@@ -24,6 +29,10 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showRoles, setShowRoles] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const patientsPerPage = 10;
 
   useEffect(() => {
     checkUser();
@@ -67,6 +76,10 @@ const Dashboard = () => {
     if (profile) {
       setUserName(profile.full_name);
     }
+
+    // Check if admin
+    const { data: isAdminData } = await supabase.rpc('is_admin', { _user_id: user.id });
+    setIsAdmin(isAdminData || false);
   };
 
   const fetchPatients = async () => {
@@ -99,7 +112,14 @@ const Dashboard = () => {
       patient.rut.includes(value)
     );
     setFilteredPatients(filtered);
+    setCurrentPage(1); // Reset to first page when searching
   };
+
+  // Pagination
+  const indexOfLastPatient = currentPage * patientsPerPage;
+  const indexOfFirstPatient = indexOfLastPatient - patientsPerPage;
+  const currentPatients = filteredPatients.slice(indexOfFirstPatient, indexOfLastPatient);
+  const totalPages = Math.ceil(filteredPatients.length / patientsPerPage);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -149,6 +169,16 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {isAdmin && (
+              <Button 
+                variant={showRoles ? "default" : "outline"} 
+                onClick={() => setShowRoles(!showRoles)} 
+                className="gap-2"
+              >
+                <Users className="w-4 h-4" />
+                {showRoles ? "Ver Pacientes" : "Gestión de Roles"}
+              </Button>
+            )}
             <Button variant="outline" onClick={() => navigate("/protocols")} className="gap-2">
               <BookOpen className="w-4 h-4" />
               <span className="hidden sm:inline">Protocolos</span>
@@ -166,70 +196,27 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Pacientes Activos
-                </CardTitle>
-                <Users className="w-4 h-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{patients.length}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Ingresos Hoy
-                </CardTitle>
-                <TrendingUp className="w-4 h-4 text-secondary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">0</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Altas Programadas
-                </CardTitle>
-                <Activity className="w-4 h-4 text-accent" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">0</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Pendientes
-                </CardTitle>
-                <FileText className="w-4 h-4 text-destructive" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">0</div>
-            </CardContent>
-          </Card>
-        </div>
+        {showRoles ? (
+          <RoleManagement />
+        ) : (
+          <>
+            {/* Stats Dashboard */}
+            <DashboardStats patientsCount={patients.length} />
 
         {/* Patients Section */}
-        <div className="space-y-4 mb-6">
+        <div className="space-y-4 mb-6 mt-8">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">Pacientes Hospitalizados</h2>
             <div className="flex gap-2">
+              <Button 
+                onClick={() => exportPatientDataToCSV(patients)} 
+                variant="outline" 
+                className="gap-2"
+                disabled={patients.length === 0}
+              >
+                <Download className="w-4 h-4" />
+                Exportar CSV
+              </Button>
               <Button onClick={() => navigate("/patient/new")} variant="outline" className="gap-2">
                 <Plus className="w-4 h-4" />
                 Nuevo Paciente
@@ -278,8 +265,9 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4">
-            {filteredPatients.map((patient) => (
+          <>
+            <div className="grid gap-4">
+              {currentPatients.map((patient) => (
               <Card
                 key={patient.id}
                 className="hover:shadow-lg transition-all cursor-pointer"
@@ -288,10 +276,19 @@ const Dashboard = () => {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <CardTitle className="text-xl mb-1">{patient.name}</CardTitle>
+                      <div className="flex items-center gap-3 mb-1">
+                        <CardTitle className="text-xl">{patient.name}</CardTitle>
+                        {patient.allergies && (
+                          <Badge variant="destructive" className="text-xs">⚠️ Alergia</Badge>
+                        )}
+                      </div>
                       <CardDescription className="flex gap-4 text-sm">
                         <span>RUT: {patient.rut}</span>
                         <span>Edad: {calculateAge(patient.date_of_birth)}</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDaysHospitalized(calculateDaysHospitalized(patient.admission_date))}
+                        </span>
                       </CardDescription>
                     </div>
                     <Badge className={getStatusColor(patient.status)}>
@@ -307,7 +304,33 @@ const Dashboard = () => {
               </Card>
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Siguiente
+              </Button>
+            </div>
+          )}
+          </>
         )}
+        </>
+      )}
       </main>
     </div>
   );

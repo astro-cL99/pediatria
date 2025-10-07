@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { MedicalAdmissionPreview } from "@/components/MedicalAdmissionPreview";
 import { CIE10Search } from "@/components/CIE10Search";
 import { ProtocolTemplateSelector } from "@/components/ProtocolTemplateSelector";
 import { AllergyAlert } from "@/components/AllergyAlert";
+import { useAutoSave } from "@/hooks/useAutoSave";
 
 export default function NewAdmission() {
   const navigate = useNavigate();
@@ -52,6 +53,32 @@ export default function NewAdmission() {
     treatmentPlan: "",
     nursingOrders: "",
   });
+
+  // Auto-save functionality
+  const { loadDraft, clearDraft } = useAutoSave({
+    key: 'admission-draft',
+    data: formData,
+    delay: 3000, // Save after 3 seconds of no changes
+  });
+
+  // Load draft on mount
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft) {
+      const shouldLoad = window.confirm(
+        "Se encontró un borrador guardado. ¿Deseas continuar con el borrador?"
+      );
+      if (shouldLoad) {
+        setFormData(draft);
+        toast({
+          title: "Borrador cargado",
+          description: "Se ha restaurado tu trabajo anterior",
+        });
+      } else {
+        clearDraft();
+      }
+    }
+  }, []);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -309,6 +336,9 @@ export default function NewAdmission() {
       });
 
       if (error) throw error;
+
+      // Clear draft on successful submission
+      clearDraft();
 
       toast({
         title: "Ingreso creado",
