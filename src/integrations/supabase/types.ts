@@ -150,6 +150,30 @@ export type Database = {
           },
         ]
       }
+      cie10_codes: {
+        Row: {
+          category: string | null
+          code: string
+          created_at: string | null
+          description: string
+          id: string
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          created_at?: string | null
+          description: string
+          id?: string
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+        }
+        Relationships: []
+      }
       clinical_protocols: {
         Row: {
           category: string

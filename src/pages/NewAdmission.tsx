@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PediatricOrdersForm } from "@/components/PediatricOrdersForm";
 import { PhysicalExamForm } from "@/components/PhysicalExamForm";
 import { MedicalAdmissionPreview } from "@/components/MedicalAdmissionPreview";
+import { CIE10Search } from "@/components/CIE10Search";
 
 export default function NewAdmission() {
   const navigate = useNavigate();
@@ -631,6 +632,11 @@ export default function NewAdmission() {
                   placeholder="Rx tórax, ECO, etc..."
                 />
               </div>
+
+              <CIE10Search
+                selectedDiagnoses={formData.admissionDiagnoses}
+                onDiagnosesChange={(diagnoses) => setFormData({ ...formData, admissionDiagnoses: diagnoses })}
+              />
             </CardContent>
           </Card>
 
