@@ -257,7 +257,7 @@ export default function NewAdmission() {
         allergies: formData.allergies,
         current_medications: formData.currentMedications,
         physical_exam: formData.physicalExam,
-        lab_results: formData.labResults ? JSON.parse(formData.labResults) : null,
+        lab_results: formData.labResults || null,
         imaging_results: formData.imagingResults,
         admission_diagnoses: formData.admissionDiagnoses,
         treatment_plan: formData.treatmentPlan,
