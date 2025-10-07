@@ -10,31 +10,48 @@ import { Plus, Trash2 } from "lucide-react";
 import {
   positionOptions,
   regimenOptions,
-  nursingCareOptions,
+  nursingCareItems,
+  frequencyOptions,
+  vigilarOptions,
   commonMedications,
   kineOptions,
   generateOrdersText,
+  calculateHollidayFluid,
+  calculateBSA,
+  calculateFluidByBSA,
+  calculateIVFluidComposition,
   type MedicalOrder,
+  type NursingCareItem,
+  type IVFluidTherapy,
 } from "@/utils/pediatricOrders";
 
 interface PediatricOrdersFormProps {
   value: string;
   onChange: (value: string) => void;
   patientWeight?: number;
+  patientHeight?: number;
 }
 
-export function PediatricOrdersForm({ value, onChange, patientWeight }: PediatricOrdersFormProps) {
+export function PediatricOrdersForm({ value, onChange, patientWeight, patientHeight }: PediatricOrdersFormProps) {
   const [orders, setOrders] = useState<MedicalOrder>({
     position: "",
     regimen: "",
     customRegimen: "",
-    nursingCare: ["csv-6", "vvp", "curva-febril"],
+    nursingCare: [
+      { item: "csv", frequency: "6h" },
+      { item: "vvp" },
+      { item: "curva-febril" },
+    ],
     medications: [],
     exams: "",
     interconsults: "",
     kine: "",
     observations: "Avisar eventualidad al residente",
   });
+
+  const [selectedNursingItem, setSelectedNursingItem] = useState("");
+  const [nursingFrequency, setNursingFrequency] = useState("");
+  const [nursingDetails, setNursingDetails] = useState("");
 
   const [selectedMedication, setSelectedMedication] = useState("");
   const [medicationDetails, setMedicationDetails] = useState({
@@ -50,12 +67,32 @@ export function PediatricOrdersForm({ value, onChange, patientWeight }: Pediatri
     onChange(generateOrdersText(updated, patientWeight));
   };
 
-  const handleNursingCareToggle = (careValue: string) => {
-    const newCare = orders.nursingCare.includes(careValue)
-      ? orders.nursingCare.filter(c => c !== careValue)
-      : [...orders.nursingCare, careValue];
+  const handleAddNursingCare = () => {
+    if (!selectedNursingItem) return;
+    
+    const newCare: NursingCareItem = {
+      item: selectedNursingItem,
+      frequency: nursingFrequency || undefined,
+      details: nursingDetails || undefined,
+    };
+    
+    updateOrders({ nursingCare: [...orders.nursingCare, newCare] });
+    setSelectedNursingItem("");
+    setNursingFrequency("");
+    setNursingDetails("");
+  };
+
+  const handleRemoveNursingCare = (index: number) => {
+    const newCare = orders.nursingCare.filter((_, i) => i !== index);
     updateOrders({ nursingCare: newCare });
   };
+
+  // Hydration calculations
+  const hollidayFluid = patientWeight ? calculateHollidayFluid(patientWeight) : null;
+  const bsa = patientWeight && patientHeight ? calculateBSA(patientHeight, patientWeight) : null;
+  const fluidByBSA = bsa ? calculateFluidByBSA(bsa) : null;
+
+  const ivComposition = orders.ivFluidTherapy ? calculateIVFluidComposition(orders.ivFluidTherapy) : null;
 
   const handleAddMedication = () => {
     if (!selectedMedication) return;
@@ -141,31 +178,233 @@ export function PediatricOrdersForm({ value, onChange, patientWeight }: Pediatri
           )}
         </div>
 
+        {/* Hydration Requirements */}
+        {(hollidayFluid || fluidByBSA) && (
+          <div className="p-3 bg-primary/5 rounded-lg space-y-1">
+            <Label className="text-xs font-semibold">Requerimientos Hídricos</Label>
+            {hollidayFluid && (
+              <p className="text-sm">Fórmula Holliday: <span className="font-semibold">{hollidayFluid} ml/día</span> ({Math.round(hollidayFluid / 24)} ml/h)</p>
+            )}
+            {fluidByBSA && bsa && (
+              <p className="text-sm">Superficie Corporal (BSA {bsa.toFixed(2)} m²): <span className="font-semibold">{fluidByBSA.min}-{fluidByBSA.max} ml/día</span></p>
+            )}
+          </div>
+        )}
+
+        {/* IV Fluid Therapy */}
+        <div>
+          <Label>3. Fleboclisis / Sueroterapia</Label>
+          <div className="space-y-3 mt-2 p-3 border border-primary/20 rounded-lg">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Suero Glucosado</Label>
+                <Select
+                  value={orders.ivFluidTherapy?.glucoseConcentration || "5"}
+                  onValueChange={(value: "2.5" | "5") => 
+                    updateOrders({ 
+                      ivFluidTherapy: { 
+                        ...orders.ivFluidTherapy, 
+                        glucoseConcentration: value,
+                        baseVolume: orders.ivFluidTherapy?.baseVolume || 500,
+                        naClVolume: orders.ivFluidTherapy?.naClVolume || 20,
+                        kClVolume: orders.ivFluidTherapy?.kClVolume || 10,
+                        rate: orders.ivFluidTherapy?.rate || 43,
+                      } as IVFluidTherapy
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card z-50">
+                    <SelectItem value="2.5">2.5%</SelectItem>
+                    <SelectItem value="5">5%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Volumen (ml)</Label>
+                <Input
+                  type="number"
+                  value={orders.ivFluidTherapy?.baseVolume || 500}
+                  onChange={(e) => 
+                    updateOrders({ 
+                      ivFluidTherapy: { 
+                        ...orders.ivFluidTherapy,
+                        baseVolume: parseInt(e.target.value) || 500,
+                        glucoseConcentration: orders.ivFluidTherapy?.glucoseConcentration || "5",
+                        naClVolume: orders.ivFluidTherapy?.naClVolume || 20,
+                        kClVolume: orders.ivFluidTherapy?.kClVolume || 10,
+                        rate: orders.ivFluidTherapy?.rate || 43,
+                      } as IVFluidTherapy
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <Label className="text-xs">NaCl 10% (ml)</Label>
+                <Input
+                  type="number"
+                  value={orders.ivFluidTherapy?.naClVolume || 20}
+                  onChange={(e) => 
+                    updateOrders({ 
+                      ivFluidTherapy: { 
+                        ...orders.ivFluidTherapy,
+                        naClVolume: parseInt(e.target.value) || 20,
+                        glucoseConcentration: orders.ivFluidTherapy?.glucoseConcentration || "5",
+                        baseVolume: orders.ivFluidTherapy?.baseVolume || 500,
+                        kClVolume: orders.ivFluidTherapy?.kClVolume || 10,
+                        rate: orders.ivFluidTherapy?.rate || 43,
+                      } as IVFluidTherapy
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <Label className="text-xs">KCl 10% (ml)</Label>
+                <Input
+                  type="number"
+                  value={orders.ivFluidTherapy?.kClVolume || 10}
+                  onChange={(e) => 
+                    updateOrders({ 
+                      ivFluidTherapy: { 
+                        ...orders.ivFluidTherapy,
+                        kClVolume: parseInt(e.target.value) || 10,
+                        glucoseConcentration: orders.ivFluidTherapy?.glucoseConcentration || "5",
+                        baseVolume: orders.ivFluidTherapy?.baseVolume || 500,
+                        naClVolume: orders.ivFluidTherapy?.naClVolume || 20,
+                        rate: orders.ivFluidTherapy?.rate || 43,
+                      } as IVFluidTherapy
+                    })
+                  }
+                />
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs">Velocidad de infusión (ml/h)</Label>
+                <Input
+                  type="number"
+                  value={orders.ivFluidTherapy?.rate || 43}
+                  onChange={(e) => 
+                    updateOrders({ 
+                      ivFluidTherapy: { 
+                        ...orders.ivFluidTherapy,
+                        rate: parseInt(e.target.value) || 43,
+                        glucoseConcentration: orders.ivFluidTherapy?.glucoseConcentration || "5",
+                        baseVolume: orders.ivFluidTherapy?.baseVolume || 500,
+                        naClVolume: orders.ivFluidTherapy?.naClVolume || 20,
+                        kClVolume: orders.ivFluidTherapy?.kClVolume || 10,
+                      } as IVFluidTherapy
+                    })
+                  }
+                />
+              </div>
+            </div>
+            
+            {ivComposition && (
+              <div className="p-2 bg-muted/30 rounded text-xs space-y-1">
+                <p><strong>Composición total:</strong></p>
+                <p>• Volumen: {ivComposition.totalVolume} ml ({ivComposition.volumePerDay} ml/día)</p>
+                <p>• Glucosa: {ivComposition.glucoseGrams} g ({ivComposition.calories} kcal)</p>
+                <p>• Sodio: {ivComposition.sodiumMEq} mEq</p>
+                <p>• Potasio: {ivComposition.potassiumMEq} mEq</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Nursing Care */}
         <div>
-          <Label>3. Cuidados de Enfermería</Label>
-          <div className="space-y-2 mt-2">
-            {nursingCareOptions.map(option => (
-              <div key={option.value} className="flex items-center space-x-2">
-                <Checkbox
-                  id={option.value}
-                  checked={orders.nursingCare.includes(option.value)}
-                  onCheckedChange={() => handleNursingCareToggle(option.value)}
-                />
-                <label
-                  htmlFor={option.value}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {option.label}
-                </label>
+          <Label>4. Cuidados de Enfermería</Label>
+          
+          {/* Nursing care list */}
+          {orders.nursingCare.length > 0 && (
+            <div className="space-y-2 mb-3 p-3 bg-muted/30 rounded-lg">
+              {orders.nursingCare.map((care, index) => {
+                const item = nursingCareItems.find(n => n.value === care.item);
+                const freq = care.frequency ? frequencyOptions.find(f => f.value === care.frequency) : null;
+                return (
+                  <div key={index} className="flex items-start justify-between text-sm">
+                    <span>
+                      {item?.label}
+                      {freq && ` ${freq.label}`}
+                      {care.details && ` (${care.details})`}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveNursingCare(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Add nursing care */}
+          <div className="space-y-2 p-3 border border-primary/20 rounded-lg">
+            <Select value={selectedNursingItem} onValueChange={setSelectedNursingItem}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar cuidado..." />
+              </SelectTrigger>
+              <SelectContent className="bg-card z-50">
+                {nursingCareItems.map(item => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {selectedNursingItem && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Frecuencia (opcional)</Label>
+                  <Select value={nursingFrequency} onValueChange={setNursingFrequency}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card z-50">
+                      {frequencyOptions.map(freq => (
+                        <SelectItem key={freq.value} value={freq.value}>
+                          {freq.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {selectedNursingItem === "vigilar" && (
+                  <div>
+                    <Label className="text-xs">Detalles</Label>
+                    <Input
+                      placeholder="Ej: satO2, fiebre..."
+                      value={nursingDetails}
+                      onChange={(e) => setNursingDetails(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
-            ))}
+            )}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddNursingCare}
+              disabled={!selectedNursingItem}
+              className="w-full"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar Cuidado
+            </Button>
           </div>
         </div>
 
         {/* Medications */}
         <div>
-          <Label>4. Medicamentos</Label>
+          <Label>5. Medicamentos</Label>
           
           {/* Medication list */}
           {orders.medications.length > 0 && (
@@ -205,19 +444,26 @@ export function PediatricOrdersForm({ value, onChange, patientWeight }: Pediatri
             </Select>
 
             {selectedMedInfo && (
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs">Dosis</Label>
-                  <Input
-                    placeholder={
-                      selectedMedInfo.dosageCalc && patientWeight
-                        ? `${selectedMedInfo.dosageCalc(patientWeight)} mg`
-                        : selectedMedInfo.dosage?.[0] || "Dosis"
-                    }
-                    value={medicationDetails.dosage}
-                    onChange={(e) => setMedicationDetails({ ...medicationDetails, dosage: e.target.value })}
-                  />
-                </div>
+              <>
+                {selectedMedInfo.dosageCalc && patientWeight && (
+                  <div className="p-2 bg-primary/5 rounded text-xs">
+                    <strong>Dosis calculada:</strong> {selectedMedInfo.dosageCalc(patientWeight)} mg
+                    ({(selectedMedInfo.dosageCalc(patientWeight) / patientWeight).toFixed(1)} mg/kg)
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Dosis</Label>
+                    <Input
+                      placeholder={
+                        selectedMedInfo.dosageCalc && patientWeight
+                          ? `${selectedMedInfo.dosageCalc(patientWeight)} mg`
+                          : selectedMedInfo.dosage?.[0] || "Dosis"
+                      }
+                      value={medicationDetails.dosage}
+                      onChange={(e) => setMedicationDetails({ ...medicationDetails, dosage: e.target.value })}
+                    />
+                  </div>
                 <div>
                   <Label className="text-xs">Vía</Label>
                   <Select
@@ -262,7 +508,8 @@ export function PediatricOrdersForm({ value, onChange, patientWeight }: Pediatri
                     onChange={(e) => setMedicationDetails({ ...medicationDetails, indication: e.target.value })}
                   />
                 </div>
-              </div>
+                </div>
+              </>
             )}
 
             <Button
@@ -281,7 +528,7 @@ export function PediatricOrdersForm({ value, onChange, patientWeight }: Pediatri
 
         {/* Exams */}
         <div>
-          <Label>5. Exámenes</Label>
+          <Label>6. Exámenes</Label>
           <Input
             placeholder="Ej: Pendiente panel viral, GSV + ELP..."
             value={orders.exams}
@@ -291,7 +538,7 @@ export function PediatricOrdersForm({ value, onChange, patientWeight }: Pediatri
 
         {/* Interconsults */}
         <div>
-          <Label>6. Interconsultas</Label>
+          <Label>7. Interconsultas</Label>
           <Input
             placeholder="Ej: Cardiología, Neurología... o (-) si no aplica"
             value={orders.interconsults}
@@ -301,7 +548,7 @@ export function PediatricOrdersForm({ value, onChange, patientWeight }: Pediatri
 
         {/* Kine */}
         <div>
-          <Label>7. Kinesiología</Label>
+          <Label>8. Kinesiología</Label>
           <Select value={orders.kine} onValueChange={(value) => updateOrders({ kine: value })}>
             <SelectTrigger>
               <SelectValue placeholder="Seleccionar..." />
@@ -319,7 +566,7 @@ export function PediatricOrdersForm({ value, onChange, patientWeight }: Pediatri
 
         {/* Observations */}
         <div>
-          <Label>8. Observaciones</Label>
+          <Label>9. Observaciones</Label>
           <Textarea
             rows={2}
             value={orders.observations}

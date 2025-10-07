@@ -16,16 +16,32 @@ export const regimenOptions = [
   { value: "custom", label: "Personalizado..." },
 ];
 
-export const nursingCareOptions = [
-  { value: "csv-4", label: "CSV cada 4 horas", checked: false },
-  { value: "csv-6", label: "CSV cada 6 horas", checked: true },
-  { value: "csv-8", label: "CSV cada 8 horas", checked: false },
-  { value: "vvp", label: "Cuidados de VVP", checked: true },
-  { value: "curva-febril", label: "Curva febril", checked: true },
-  { value: "hgt-sos", label: "HGT SOS", checked: false },
-  { value: "o2", label: "O2 necesario para saturar ≥ 93%", checked: false },
-  { value: "balance-hidrico", label: "Balance hídrico", checked: false },
-  { value: "diuresis", label: "Medición de diuresis cada 12 horas", checked: false },
+export const nursingCareItems = [
+  { value: "csv", label: "Control de signos vitales" },
+  { value: "vvp", label: "Cuidados de VVP" },
+  { value: "curva-febril", label: "Curva febril" },
+  { value: "hgt", label: "HGT" },
+  { value: "o2", label: "O2 necesario para saturar ≥ 93%" },
+  { value: "balance-hidrico", label: "Balance hídrico" },
+  { value: "diuresis", label: "Medición de diuresis" },
+  { value: "vigilar", label: "Vigilar" },
+];
+
+export const frequencyOptions = [
+  { value: "4h", label: "cada 4 horas" },
+  { value: "6h", label: "cada 6 horas" },
+  { value: "8h", label: "cada 8 horas" },
+  { value: "12h", label: "cada 12 horas" },
+  { value: "24h", label: "cada 24 horas" },
+  { value: "sos", label: "SOS" },
+];
+
+export const vigilarOptions = [
+  "satO2",
+  "mecánica ventilatoria",
+  "cianosis",
+  "fiebre",
+  "tolerancia enteral",
 ];
 
 export const commonMedications = [
@@ -101,11 +117,26 @@ export const kineOptions = [
   { value: "x3-sos", label: "KTR x 3 + SOS" },
 ];
 
+export interface NursingCareItem {
+  item: string;
+  frequency?: string;
+  details?: string;
+}
+
+export interface IVFluidTherapy {
+  baseVolume: number;
+  glucoseConcentration: "2.5" | "5";
+  naClVolume: number;
+  kClVolume: number;
+  rate: number;
+}
+
 export interface MedicalOrder {
   position: string;
   regimen: string;
   customRegimen?: string;
-  nursingCare: string[];
+  nursingCare: NursingCareItem[];
+  ivFluidTherapy?: IVFluidTherapy;
   medications: Array<{
     name: string;
     dosage: string;
@@ -118,6 +149,58 @@ export interface MedicalOrder {
   kine: string;
   observations: string;
 }
+
+// Holliday formula for fluid requirements
+export const calculateHollidayFluid = (weightKg: number): number => {
+  let fluid = 0;
+  if (weightKg <= 10) {
+    fluid = weightKg * 100;
+  } else if (weightKg <= 20) {
+    fluid = 1000 + (weightKg - 10) * 50;
+  } else {
+    fluid = 1500 + (weightKg - 20) * 20;
+  }
+  return Math.round(fluid);
+};
+
+// Body Surface Area formula (Mosteller)
+export const calculateBSA = (heightCm: number, weightKg: number): number => {
+  return Math.sqrt((heightCm * weightKg) / 3600);
+};
+
+// Fluid requirement by BSA (1500-1800 ml/m²/day)
+export const calculateFluidByBSA = (bsa: number): { min: number; max: number } => {
+  return {
+    min: Math.round(bsa * 1500),
+    max: Math.round(bsa * 1800),
+  };
+};
+
+// Calculate IV fluid therapy composition
+export const calculateIVFluidComposition = (therapy: IVFluidTherapy) => {
+  const totalVolume = therapy.baseVolume + therapy.naClVolume + therapy.kClVolume;
+  
+  // Glucose content
+  const glucosePercent = parseFloat(therapy.glucoseConcentration);
+  const glucoseGrams = (therapy.baseVolume * glucosePercent) / 100;
+  const glucoseCalories = glucoseGrams * 4; // 4 kcal/g
+  
+  // Sodium content (NaCl 10% = 1.7 mEq Na/ml)
+  const sodiumMEq = therapy.naClVolume * 1.7;
+  
+  // Potassium content (KCl 10% = 1.3 mEq K/ml)
+  const potassiumMEq = therapy.kClVolume * 1.3;
+  
+  return {
+    totalVolume,
+    glucoseGrams: Math.round(glucoseGrams * 10) / 10,
+    calories: Math.round(glucoseCalories),
+    sodiumMEq: Math.round(sodiumMEq * 10) / 10,
+    potassiumMEq: Math.round(potassiumMEq * 10) / 10,
+    ratePerHour: therapy.rate,
+    volumePerDay: therapy.rate * 24,
+  };
+};
 
 export const generateOrdersText = (orders: MedicalOrder, patientWeight?: number): string => {
   let text = "";
@@ -140,13 +223,23 @@ export const generateOrdersText = (orders: MedicalOrder, patientWeight?: number)
     counter++;
   }
 
+  // IV Fluid Therapy
+  if (orders.ivFluidTherapy) {
+    const composition = calculateIVFluidComposition(orders.ivFluidTherapy);
+    text += `${counter}. Fleboclisis: Suero glucosado al ${orders.ivFluidTherapy.glucoseConcentration}% ${orders.ivFluidTherapy.baseVolume} ml + NaCl 10% ${orders.ivFluidTherapy.naClVolume} ml + KCl 10% ${orders.ivFluidTherapy.kClVolume} ml a ${orders.ivFluidTherapy.rate} ml/hora\n`;
+    text += `   (${composition.totalVolume} ml/día, ${composition.calories} kcal, Na+ ${composition.sodiumMEq} mEq, K+ ${composition.potassiumMEq} mEq)\n\n`;
+    counter++;
+  }
+
   // Nursing care
   if (orders.nursingCare.length > 0) {
     text += `${counter}. Cuidados enfermería\n`;
     orders.nursingCare.forEach(care => {
-      const careOption = nursingCareOptions.find(n => n.value === care);
-      if (careOption) {
-        text += `- ${careOption.label}\n`;
+      const careItem = nursingCareItems.find(n => n.value === care.item);
+      if (careItem) {
+        const freqText = care.frequency ? ` ${frequencyOptions.find(f => f.value === care.frequency)?.label || care.frequency}` : "";
+        const details = care.details ? ` (${care.details})` : "";
+        text += `- ${careItem.label}${freqText}${details}\n`;
       }
     });
     text += "\n";

@@ -32,6 +32,7 @@ export default function NewAdmission() {
     caregiver: "",
     caregiverRut: "",
     patientWeight: undefined as number | undefined,
+    patientHeight: undefined as number | undefined,
     admissionSource: "emergency",
     chiefComplaint: "",
     presentIllness: "",
@@ -395,7 +396,7 @@ export default function NewAdmission() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Persona a Cargo</Label>
                   <Input
@@ -412,6 +413,9 @@ export default function NewAdmission() {
                     placeholder="12345678-9"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Peso del Paciente (kg)</Label>
                   <Input
@@ -420,6 +424,16 @@ export default function NewAdmission() {
                     value={formData.patientWeight || ""}
                     onChange={(e) => setFormData({ ...formData, patientWeight: e.target.value ? parseFloat(e.target.value) : undefined })}
                     placeholder="Peso en kg"
+                  />
+                </div>
+                <div>
+                  <Label>Talla del Paciente (cm)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={formData.patientHeight || ""}
+                    onChange={(e) => setFormData({ ...formData, patientHeight: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    placeholder="Talla en cm"
                   />
                 </div>
               </div>
@@ -565,6 +579,7 @@ export default function NewAdmission() {
             value={formData.nursingOrders}
             onChange={(value) => setFormData({ ...formData, nursingOrders: value })}
             patientWeight={formData.patientWeight}
+            patientHeight={formData.patientHeight}
           />
 
           <Card>
