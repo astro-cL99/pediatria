@@ -23,6 +23,7 @@ const SemanticSearch = lazy(() => import("./pages/SemanticSearch"));
 const ClinicalAssistant = lazy(() => import("./pages/ClinicalAssistant"));
 const Epicrisis = lazy(() => import("./pages/Epicrisis"));
 const NewEpicrisis = lazy(() => import("./pages/NewEpicrisis"));
+const EpicrisisView = lazy(() => import("./pages/EpicrisisView"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -120,6 +121,16 @@ const App = () => (
               <AppLayout>
                 <Suspense fallback={<LoadingFallback />}>
                   <NewEpicrisis />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/epicrisis/:id"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <EpicrisisView />
                 </Suspense>
               </AppLayout>
             }
