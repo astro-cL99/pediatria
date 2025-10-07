@@ -197,10 +197,22 @@ export default function NewAdmission() {
       if (extractedData?.success && extractedData?.data) {
         const data = extractedData.data;
         
-        // Formatear resultados por secciones
-        const sections = (data.resultados || '').split('//').map((s: string) => s.trim()).filter(Boolean);
-        const formattedSections = sections.map((s: string) => `  - ${s}`).join('\n');
-        const formattedResults = `- ${data.fechaToma} ${data.procedencia}:\n${formattedSections}`;
+        // Formatear resultados por categorías con formato limpio
+        let formattedResults = `- ${data.fechaToma} ${data.procedencia}:\n`;
+        
+        if (Array.isArray(data.resultados)) {
+          data.resultados.forEach((categoria: any) => {
+            formattedResults += `\n${categoria.categoria}:\n`;
+            
+            if (Array.isArray(categoria.examenes)) {
+              categoria.examenes.forEach((examen: any) => {
+                const alteradoMark = examen.alterado ? ' ⚠️' : '';
+                const referencia = examen.referencia ? ` (VR: ${examen.referencia})` : '';
+                formattedResults += `  ${examen.nombre}: ${examen.valor}${referencia}${alteradoMark}\n`;
+              });
+            }
+          });
+        }
         
         // Append to existing lab results or replace
         setFormData(prev => ({
