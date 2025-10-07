@@ -9,6 +9,9 @@ import { Progress } from "@/components/ui/progress";
 import { FileText, Search, Download, Eye, Calendar, User } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { DocumentDetailDialog } from "./DocumentDetailDialog";
 import type { ClinicalDocument } from "@/hooks/useClinicalDocuments";
 
 interface ProcessedDocumentsTableProps {
@@ -28,6 +31,9 @@ const documentTypeColors: Record<string, string> = {
 export const ProcessedDocumentsTable = ({ documents, isLoading }: ProcessedDocumentsTableProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [selectedDocument, setSelectedDocument] = useState<ClinicalDocument | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const filteredDocuments = documents.filter((doc) => {
     const matchesSearch = doc.file_name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -36,6 +42,42 @@ export const ProcessedDocumentsTable = ({ documents, isLoading }: ProcessedDocum
   });
 
   const uniqueTypes = Array.from(new Set(documents.map((d) => d.document_type)));
+
+  const handleViewDetails = (doc: ClinicalDocument) => {
+    setSelectedDocument(doc);
+    setDialogOpen(true);
+  };
+
+  const handleDownload = async (doc: ClinicalDocument) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("medical-documents")
+        .download(doc.file_path);
+
+      if (error) throw error;
+
+      // Crear un link de descarga
+      const url = window.URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = doc.file_name;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Descarga iniciada",
+        description: `Se está descargando ${doc.file_name}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error al descargar",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -160,10 +202,20 @@ export const ProcessedDocumentsTable = ({ documents, isLoading }: ProcessedDocum
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" title="Ver detalles">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          title="Ver detalles"
+                          onClick={() => handleViewDetails(doc)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" title="Descargar">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          title="Descargar"
+                          onClick={() => handleDownload(doc)}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                       </div>
@@ -175,6 +227,12 @@ export const ProcessedDocumentsTable = ({ documents, isLoading }: ProcessedDocum
           </div>
         )}
       </CardContent>
+
+      <DocumentDetailDialog
+        document={selectedDocument}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </Card>
   );
 };
