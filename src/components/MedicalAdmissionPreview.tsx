@@ -18,7 +18,6 @@ interface MedicalAdmissionPreviewProps {
     patientWeight?: number;
     patientHeight?: number;
     admissionSource: string;
-    chiefComplaint: string;
     presentIllness: string;
     personalHistory: string;
     familyHistory: string;
@@ -67,7 +66,7 @@ export function MedicalAdmissionPreview({ formData }: MedicalAdmissionPreviewPro
     // Anamnesis
     sections.push("ANAMNESIS PRÓXIMA:");
     sections.push(formData.presentIllness || "N/A");
-    sections.push(`\nMotivo de consulta: ${formData.chiefComplaint || "N/A"}\n`);
+    sections.push("");
 
     // Personal History
     if (formData.personalHistory || formData.allergies || formData.currentMedications) {

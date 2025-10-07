@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, Loader2 } from "lucide-react";
+import { Upload, FileText, Loader2, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PediatricOrdersForm } from "@/components/PediatricOrdersForm";
 import { PhysicalExamForm } from "@/components/PhysicalExamForm";
@@ -21,6 +21,7 @@ export default function NewAdmission() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isExtractingLab, setIsExtractingLab] = useState(false);
   const [selectedLabFile, setSelectedLabFile] = useState<File | null>(null);
+  const [isProcessingAnamnesis, setIsProcessingAnamnesis] = useState(false);
   
   const [formData, setFormData] = useState({
     patientId: "",
@@ -36,7 +37,6 @@ export default function NewAdmission() {
     patientWeight: undefined as number | undefined,
     patientHeight: undefined as number | undefined,
     admissionSource: "emergency",
-    chiefComplaint: "",
     presentIllness: "",
     personalHistory: "",
     familyHistory: "",
@@ -124,7 +124,6 @@ export default function NewAdmission() {
           contactNumbers: data.contactNumbers || prev.contactNumbers,
           caregiver: data.caregiver || prev.caregiver,
           caregiverRut: data.caregiverRut || prev.caregiverRut,
-          chiefComplaint: data.chiefComplaint || prev.chiefComplaint,
           presentIllness: data.presentIllness || prev.presentIllness,
           allergies: data.allergies || prev.allergies,
           personalHistory: data.personalHistory || prev.personalHistory,
@@ -239,6 +238,48 @@ export default function NewAdmission() {
     }
   };
 
+  const handleProcessAnamnesis = async () => {
+    if (!formData.presentIllness || formData.presentIllness.trim().length < 20) {
+      toast({
+        title: "Texto insuficiente",
+        description: "Escribe al menos 20 caracteres para procesar la anamnesis",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessingAnamnesis(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('process-anamnesis', {
+        body: { rawText: formData.presentIllness }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.improvedText) {
+        setFormData(prev => ({
+          ...prev,
+          presentIllness: data.improvedText
+        }));
+
+        toast({
+          title: "Anamnesis mejorada",
+          description: "El texto ha sido reorganizado cronológicamente y corregido",
+        });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo procesar la anamnesis",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingAnamnesis(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -250,7 +291,6 @@ export default function NewAdmission() {
       const { error } = await supabase.from("admissions").insert({
         patient_id: formData.patientId || null,
         admission_source: formData.admissionSource,
-        chief_complaint: formData.chiefComplaint,
         present_illness: formData.presentIllness,
         personal_history: formData.personalHistory,
         family_history: formData.familyHistory,
@@ -475,20 +515,33 @@ export default function NewAdmission() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Motivo de Consulta</Label>
-                <Textarea
-                  value={formData.chiefComplaint}
-                  onChange={(e) => setFormData({ ...formData, chiefComplaint: e.target.value })}
-                  rows={2}
-                />
-              </div>
-
-              <div>
-                <Label>Enfermedad Actual</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Anamnesis Próxima</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleProcessAnamnesis}
+                    disabled={isProcessingAnamnesis || !formData.presentIllness}
+                  >
+                    {isProcessingAnamnesis ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Procesando...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Mejorar con IA
+                      </>
+                    )}
+                  </Button>
+                </div>
                 <Textarea
                   value={formData.presentIllness}
                   onChange={(e) => setFormData({ ...formData, presentIllness: e.target.value })}
-                  rows={6}
+                  rows={8}
+                  placeholder="Describe la historia del cuadro actual. La IA reorganizará el texto de forma cronológica y corregirá errores."
                 />
               </div>
 
