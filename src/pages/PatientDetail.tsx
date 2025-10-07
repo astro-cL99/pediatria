@@ -5,8 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Upload, FileText, Activity } from "lucide-react";
+import { ArrowLeft, Upload, FileText, Activity, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { DailyEvolutionForm } from "@/components/DailyEvolutionForm";
+import { EvolutionsList } from "@/components/EvolutionsList";
+import { GrowthChart } from "@/components/GrowthChart";
+import { AllergyAlert } from "@/components/AllergyAlert";
 
 interface Patient {
   id: string;
@@ -116,6 +120,9 @@ const PatientDetail = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Allergy Alert */}
+        <AllergyAlert allergies={patient.allergies} />
+
         {/* Patient Header */}
         <Card className="mb-6">
           <CardHeader>
@@ -156,12 +163,35 @@ const PatientDetail = () => {
         </Card>
 
         {/* Tabs */}
-        <Tabs defaultValue="anthropometry" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="evolutions" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="evolutions">Evoluciones</TabsTrigger>
             <TabsTrigger value="anthropometry">Antropometría</TabsTrigger>
+            <TabsTrigger value="growth">Gráficas</TabsTrigger>
             <TabsTrigger value="diagnoses">Diagnósticos</TabsTrigger>
             <TabsTrigger value="documents">Documentos</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="evolutions">
+            <div className="grid lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Nueva Evolución</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DailyEvolutionForm patientId={id!} />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Historial de Evoluciones</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <EvolutionsList patientId={id!} />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           <TabsContent value="anthropometry">
             <Card>
@@ -249,6 +279,10 @@ const PatientDetail = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="growth">
+            <GrowthChart patientId={id!} />
           </TabsContent>
 
           <TabsContent value="diagnoses">

@@ -13,6 +13,8 @@ import { PediatricOrdersForm } from "@/components/PediatricOrdersForm";
 import { PhysicalExamForm } from "@/components/PhysicalExamForm";
 import { MedicalAdmissionPreview } from "@/components/MedicalAdmissionPreview";
 import { CIE10Search } from "@/components/CIE10Search";
+import { ProtocolTemplateSelector } from "@/components/ProtocolTemplateSelector";
+import { AllergyAlert } from "@/components/AllergyAlert";
 
 export default function NewAdmission() {
   const navigate = useNavigate();
@@ -376,6 +378,21 @@ export default function NewAdmission() {
             </div>
           </CardContent>
         </Card>
+
+        <ProtocolTemplateSelector 
+          onApplyTemplate={(templateData) => {
+            setFormData({
+              ...formData,
+              presentIllness: templateData.present_illness || formData.presentIllness,
+              physicalExam: templateData.physical_exam || formData.physicalExam,
+              labResults: templateData.lab_orders || formData.labResults,
+              currentMedications: templateData.medications || formData.currentMedications,
+              nursingOrders: templateData.nursing_orders || formData.nursingOrders,
+            });
+          }}
+        />
+
+        <AllergyAlert allergies={formData.allergies} />
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card>

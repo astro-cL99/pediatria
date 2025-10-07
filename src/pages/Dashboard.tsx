@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Plus, Activity, Users, FileText, TrendingUp, BookOpen } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { LogOut, Plus, Activity, Users, FileText, TrendingUp, BookOpen, Search } from "lucide-react";
 import { toast } from "sonner";
 
 interface Patient {
@@ -19,8 +20,10 @@ interface Patient {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     checkUser();
@@ -76,11 +79,26 @@ const Dashboard = () => {
 
       if (error) throw error;
       setPatients(data || []);
+      setFilteredPatients(data || []);
     } catch (error: any) {
       toast.error("Error al cargar pacientes");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    if (!value.trim()) {
+      setFilteredPatients(patients);
+      return;
+    }
+
+    const filtered = patients.filter(patient =>
+      patient.name.toLowerCase().includes(value.toLowerCase()) ||
+      patient.rut.includes(value)
+    );
+    setFilteredPatients(filtered);
   };
 
   const handleLogout = async () => {
@@ -208,17 +226,30 @@ const Dashboard = () => {
         </div>
 
         {/* Patients Section */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Pacientes Hospitalizados</h2>
-          <div className="flex gap-2">
-            <Button onClick={() => navigate("/patient/new")} variant="outline" className="gap-2">
-              <Plus className="w-4 h-4" />
-              Nuevo Paciente
-            </Button>
-            <Button onClick={() => navigate("/admission/new")} className="gap-2">
-              <Plus className="w-4 h-4" />
-              Nuevo Ingreso
-            </Button>
+        <div className="space-y-4 mb-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Pacientes Hospitalizados</h2>
+            <div className="flex gap-2">
+              <Button onClick={() => navigate("/patient/new")} variant="outline" className="gap-2">
+                <Plus className="w-4 h-4" />
+                Nuevo Paciente
+              </Button>
+              <Button onClick={() => navigate("/admission/new")} className="gap-2">
+                <Plus className="w-4 h-4" />
+                Nuevo Ingreso
+              </Button>
+            </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre o RUT..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="pl-10"
+            />
           </div>
         </div>
 
@@ -228,23 +259,27 @@ const Dashboard = () => {
               Cargando pacientes...
             </CardContent>
           </Card>
-        ) : patients.length === 0 ? (
+        ) : filteredPatients.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-lg font-medium mb-2">No hay pacientes activos</p>
-              <p className="text-muted-foreground mb-4">
-                Comienza agregando tu primer paciente
+              <p className="text-lg font-medium mb-2">
+                {searchTerm ? "No se encontraron pacientes" : "No hay pacientes activos"}
               </p>
-              <Button onClick={() => navigate("/patient/new")}>
-                <Plus className="w-4 h-4 mr-2" />
-                Agregar Paciente
-              </Button>
+              <p className="text-muted-foreground mb-4">
+                {searchTerm ? "Intenta con otro término de búsqueda" : "Comienza agregando tu primer paciente"}
+              </p>
+              {!searchTerm && (
+                <Button onClick={() => navigate("/patient/new")}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Agregar Paciente
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-4">
-            {patients.map((patient) => (
+            {filteredPatients.map((patient) => (
               <Card
                 key={patient.id}
                 className="hover:shadow-lg transition-all cursor-pointer"

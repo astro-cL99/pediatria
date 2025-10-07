@@ -150,6 +150,39 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string
+          table_name: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id: string
+          table_name: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string
+          table_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cie10_codes: {
         Row: {
           category: string | null
@@ -228,6 +261,69 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_evolutions: {
+        Row: {
+          admission_id: string
+          assessment: string | null
+          created_at: string | null
+          created_by: string
+          evolution_date: string
+          evolution_time: string
+          id: string
+          objective: string | null
+          patient_id: string
+          plan: string | null
+          subjective: string | null
+          updated_at: string | null
+          vital_signs: Json | null
+        }
+        Insert: {
+          admission_id: string
+          assessment?: string | null
+          created_at?: string | null
+          created_by: string
+          evolution_date?: string
+          evolution_time?: string
+          id?: string
+          objective?: string | null
+          patient_id: string
+          plan?: string | null
+          subjective?: string | null
+          updated_at?: string | null
+          vital_signs?: Json | null
+        }
+        Update: {
+          admission_id?: string
+          assessment?: string | null
+          created_at?: string | null
+          created_by?: string
+          evolution_date?: string
+          evolution_time?: string
+          id?: string
+          objective?: string | null
+          patient_id?: string
+          plan?: string | null
+          subjective?: string | null
+          updated_at?: string | null
+          vital_signs?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_evolutions_admission_id_fkey"
+            columns: ["admission_id"]
+            isOneToOne: false
+            referencedRelation: "admissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_evolutions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       diagnoses: {
         Row: {
           created_at: string | null
@@ -265,6 +361,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "diagnoses_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      growth_measurements: {
+        Row: {
+          bmi: number | null
+          created_at: string | null
+          head_circumference_cm: number | null
+          height_cm: number | null
+          id: string
+          measured_by: string
+          measurement_date: string | null
+          notes: string | null
+          patient_id: string
+          weight_kg: number | null
+        }
+        Insert: {
+          bmi?: number | null
+          created_at?: string | null
+          head_circumference_cm?: number | null
+          height_cm?: number | null
+          id?: string
+          measured_by: string
+          measurement_date?: string | null
+          notes?: string | null
+          patient_id: string
+          weight_kg?: number | null
+        }
+        Update: {
+          bmi?: number | null
+          created_at?: string | null
+          head_circumference_cm?: number | null
+          height_cm?: number | null
+          id?: string
+          measured_by?: string
+          measurement_date?: string | null
+          notes?: string | null
+          patient_id?: string
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "growth_measurements_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
@@ -381,6 +524,42 @@ export type Database = {
           id?: string
           role?: string
           specialty?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      protocol_templates: {
+        Row: {
+          category: string
+          created_at: string | null
+          created_by: string
+          diagnosis_code: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          template_data: Json
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          created_by: string
+          diagnosis_code?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          template_data: Json
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          created_by?: string
+          diagnosis_code?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          template_data?: Json
           updated_at?: string | null
         }
         Relationships: []
