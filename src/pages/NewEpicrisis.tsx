@@ -97,6 +97,19 @@ export default function NewEpicrisis() {
 
   const createEpicrisisMutation = useMutation({
     mutationFn: async (data: EpicrisisFormData) => {
+      // Validate required fields
+      if (!data.patient_id || !data.admission_id) {
+        throw new Error("Debe seleccionar un ingreso hospitalario");
+      }
+      
+      if (!data.patient_name || !data.patient_rut || !data.date_of_birth) {
+        throw new Error("Faltan datos del paciente");
+      }
+
+      if (!data.admission_date || !data.discharge_date) {
+        throw new Error("Faltan fechas de hospitalización");
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No authenticated user");
 
@@ -115,12 +128,12 @@ export default function NewEpicrisis() {
       const { data: epicrisisData, error: dbError } = await supabase
         .from("epicrisis")
         .insert({
-          patient_id: data.patient_id,
-          admission_id: data.admission_id,
+          patient_id: data.patient_id || null,
+          admission_id: data.admission_id || null,
           patient_name: data.patient_name,
           patient_rut: data.patient_rut,
           date_of_birth: data.date_of_birth,
-          age_at_discharge: data.age_at_discharge,
+          age_at_discharge: data.age_at_discharge || null,
           admission_date: data.admission_date,
           admission_weight: data.admission_weight ? parseFloat(data.admission_weight) : null,
           discharge_date: data.discharge_date,
@@ -128,8 +141,8 @@ export default function NewEpicrisis() {
           admission_diagnosis: data.admission_diagnosis,
           discharge_diagnosis: data.discharge_diagnosis,
           evolution_and_treatment: data.evolution_and_treatment,
-          laboratory_exams: data.laboratory_exams,
-          imaging_exams: data.imaging_exams,
+          laboratory_exams: data.laboratory_exams || null,
+          imaging_exams: data.imaging_exams || null,
           discharge_instructions: data.discharge_instructions,
           attending_physician: data.attending_physician,
           pdf_file_path: uploadData.path,
@@ -145,9 +158,10 @@ export default function NewEpicrisis() {
       toast.success("Epicrisis generada exitosamente");
       navigate("/epicrisis");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating epicrisis:", error);
-      toast.error("Error al generar epicrisis");
+      const message = error?.message || "Error al generar epicrisis";
+      toast.error(message);
     },
   });
 
