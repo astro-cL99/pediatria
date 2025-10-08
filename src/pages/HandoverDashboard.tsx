@@ -7,6 +7,7 @@ import { Search, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HandoverStats } from "@/components/HandoverStats";
 import { BedCard } from "@/components/BedCard";
+import { ImportHandoverButton } from "@/components/ImportHandoverButton";
 import { exportHandoverToExcel } from "@/utils/exportHandover";
 import { toast } from "sonner";
 
@@ -130,10 +131,13 @@ export default function HandoverDashboard() {
             Visualización de camas y pacientes hospitalizados
           </p>
         </div>
-        <Button onClick={handleExportHandover}>
-          <Download className="mr-2 h-4 w-4" />
-          Exportar Excel
-        </Button>
+        <div className="flex gap-2">
+          <ImportHandoverButton onImportComplete={fetchBedAssignments} />
+          <Button onClick={handleExportHandover}>
+            <Download className="mr-2 h-4 w-4" />
+            Exportar Excel
+          </Button>
+        </div>
       </div>
 
       <HandoverStats bedAssignments={bedAssignments} />
