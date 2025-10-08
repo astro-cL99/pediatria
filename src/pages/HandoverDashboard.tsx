@@ -3,11 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Download } from "lucide-react";
+import { Search, Download, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HandoverStats } from "@/components/HandoverStats";
 import { BedCard } from "@/components/BedCard";
 import { ImportHandoverButton } from "@/components/ImportHandoverButton";
+import { HandoverListView } from "@/components/HandoverListView";
 import { exportHandoverToExcel } from "@/utils/exportHandover";
 import { toast } from "sonner";
 
@@ -43,6 +44,7 @@ export default function HandoverDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeService, setActiveService] = useState<"pediatria" | "cirugia">("pediatria");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
     fetchBedAssignments();
@@ -153,6 +155,18 @@ export default function HandoverDashboard() {
               className="pl-10"
             />
           </div>
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "grid" | "list")}>
+            <TabsList>
+              <TabsTrigger value="grid">
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                Cuadrícula
+              </TabsTrigger>
+              <TabsTrigger value="list">
+                <List className="h-4 w-4 mr-2" />
+                Lista
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         <Tabs value={activeService} onValueChange={(v) => setActiveService(v as any)}>
@@ -164,6 +178,8 @@ export default function HandoverDashboard() {
           <TabsContent value={activeService} className="mt-6">
             {loading ? (
               <div className="text-center py-12">Cargando camas...</div>
+            ) : viewMode === "list" ? (
+              <HandoverListView beds={filteredBeds} onUpdate={fetchBedAssignments} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {rooms.map((roomNumber) => {
