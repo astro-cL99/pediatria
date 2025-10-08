@@ -24,6 +24,8 @@ const ClinicalAssistant = lazy(() => import("./pages/ClinicalAssistant"));
 const Epicrisis = lazy(() => import("./pages/Epicrisis"));
 const NewEpicrisis = lazy(() => import("./pages/NewEpicrisis"));
 const EpicrisisView = lazy(() => import("./pages/EpicrisisView"));
+const HandoverDashboard = lazy(() => import("./pages/HandoverDashboard"));
+const BedManagement = lazy(() => import("./pages/BedManagement"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -131,6 +133,26 @@ const App = () => (
               <AppLayout>
                 <Suspense fallback={<LoadingFallback />}>
                   <EpicrisisView />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/handover"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <HandoverDashboard />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/beds"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <BedManagement />
                 </Suspense>
               </AppLayout>
             }

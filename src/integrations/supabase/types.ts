@@ -21,6 +21,7 @@ export type Database = {
           admission_source: string
           admitted_by: string | null
           allergies: string | null
+          antibiotics: Json | null
           chief_complaint: string | null
           created_at: string | null
           current_medications: string | null
@@ -32,13 +33,17 @@ export type Database = {
           lab_results: Json | null
           medications: Json | null
           nursing_orders: string | null
+          oxygen_requirement: Json | null
           patient_id: string | null
+          pending_tasks: string | null
           personal_history: string | null
           physical_exam: string | null
           present_illness: string | null
+          respiratory_score: string | null
           status: string | null
           treatment_plan: string | null
           updated_at: string | null
+          viral_panel: string | null
         }
         Insert: {
           admission_date?: string | null
@@ -46,6 +51,7 @@ export type Database = {
           admission_source?: string
           admitted_by?: string | null
           allergies?: string | null
+          antibiotics?: Json | null
           chief_complaint?: string | null
           created_at?: string | null
           current_medications?: string | null
@@ -57,13 +63,17 @@ export type Database = {
           lab_results?: Json | null
           medications?: Json | null
           nursing_orders?: string | null
+          oxygen_requirement?: Json | null
           patient_id?: string | null
+          pending_tasks?: string | null
           personal_history?: string | null
           physical_exam?: string | null
           present_illness?: string | null
+          respiratory_score?: string | null
           status?: string | null
           treatment_plan?: string | null
           updated_at?: string | null
+          viral_panel?: string | null
         }
         Update: {
           admission_date?: string | null
@@ -71,6 +81,7 @@ export type Database = {
           admission_source?: string
           admitted_by?: string | null
           allergies?: string | null
+          antibiotics?: Json | null
           chief_complaint?: string | null
           created_at?: string | null
           current_medications?: string | null
@@ -82,13 +93,17 @@ export type Database = {
           lab_results?: Json | null
           medications?: Json | null
           nursing_orders?: string | null
+          oxygen_requirement?: Json | null
           patient_id?: string | null
+          pending_tasks?: string | null
           personal_history?: string | null
           physical_exam?: string | null
           present_illness?: string | null
+          respiratory_score?: string | null
           status?: string | null
           treatment_plan?: string | null
           updated_at?: string | null
+          viral_panel?: string | null
         }
         Relationships: [
           {
@@ -182,6 +197,63 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      bed_assignments: {
+        Row: {
+          admission_id: string | null
+          assigned_at: string | null
+          bed_number: number
+          created_at: string | null
+          discharged_at: string | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          patient_id: string | null
+          room_number: string
+          updated_at: string | null
+        }
+        Insert: {
+          admission_id?: string | null
+          assigned_at?: string | null
+          bed_number: number
+          created_at?: string | null
+          discharged_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          patient_id?: string | null
+          room_number: string
+          updated_at?: string | null
+        }
+        Update: {
+          admission_id?: string | null
+          assigned_at?: string | null
+          bed_number?: number
+          created_at?: string | null
+          discharged_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          patient_id?: string | null
+          room_number?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bed_assignments_admission_id_fkey"
+            columns: ["admission_id"]
+            isOneToOne: false
+            referencedRelation: "admissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bed_assignments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cie10_codes: {
         Row: {

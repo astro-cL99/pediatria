@@ -1,4 +1,4 @@
-import { Home, Users, FileText, BookOpen, BarChart3, Settings, Upload, Search, Bot, FileCheck } from "lucide-react";
+import { Home, Users, FileText, BookOpen, BarChart3, Settings, Upload, Search, Bot, FileCheck, ClipboardList, Bed } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
+  { title: "Entrega de Turno", url: "/handover", icon: ClipboardList },
   { title: "Pacientes", url: "/patient/new", icon: Users },
   { title: "Nuevo Ingreso", url: "/admission/new", icon: FileText },
   { title: "Epicrisis", url: "/epicrisis", icon: FileCheck },
@@ -69,14 +70,24 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
               {isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={location.pathname.includes("roles")}>
-                    <NavLink to="/dashboard?view=roles">
-                      <Settings />
-                      <span>Roles</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/beds")}>
+                      <NavLink to="/beds">
+                        <Bed />
+                        <span>Gestión Camas</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={location.pathname.includes("roles")}>
+                      <NavLink to="/dashboard?view=roles">
+                        <Settings />
+                        <span>Roles</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
               )}
             </SidebarMenu>
           </SidebarGroupContent>
