@@ -33,6 +33,17 @@ export async function generateEpicrisisPDF(data: EpicrisisData): Promise<Blob> {
   const contentWidth = pageWidth - (margin * 2);
   let yPosition = margin;
 
+  // Helper function to safely format dates
+  const formatDate = (dateStr: string, formatStr: string = "dd/MM/yyyy") => {
+    if (!dateStr) return 'N/A';
+    try {
+      return format(new Date(dateStr), formatStr, { locale: es });
+    } catch (error) {
+      console.error('Error formatting date:', dateStr, error);
+      return 'N/A';
+    }
+  };
+
   // Helper function to add text with wrapping
   const addText = (text: string, fontSize: number = 10, isBold: boolean = false, align: 'left' | 'center' | 'right' = 'left') => {
     pdf.setFontSize(fontSize);
@@ -40,12 +51,12 @@ export async function generateEpicrisisPDF(data: EpicrisisData): Promise<Blob> {
     
     if (align === 'center') {
       pdf.text(text, pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += fontSize * 0.35 + 3;
     } else {
       const lines = pdf.splitTextToSize(text, contentWidth);
       pdf.text(lines, margin, yPosition);
-      yPosition += lines.length * (fontSize * 0.35);
+      yPosition += lines.length * (fontSize * 0.35) + 3;
     }
-    yPosition += 3;
   };
 
   const addLine = () => {
@@ -80,10 +91,10 @@ export async function generateEpicrisisPDF(data: EpicrisisData): Promise<Blob> {
 
   // Patient Information Table
   const tableData = [
-    ['NOMBRE', data.patient_name, 'FECHA NAC.', format(new Date(data.date_of_birth), "dd/MM/yyyy", { locale: es })],
-    ['RUT', data.patient_rut, 'EDAD', data.age_at_discharge],
-    ['FECHA INGRESO', format(new Date(data.admission_date), "dd/MM/yyyy HH:mm", { locale: es }), 'PESO INGRESO', data.admission_weight ? `${data.admission_weight} kg` : 'N/A'],
-    ['FECHA EGRESO', format(new Date(data.discharge_date), "dd/MM/yyyy HH:mm", { locale: es }), 'PESO EGRESO', data.discharge_weight ? `${data.discharge_weight} kg` : 'N/A'],
+    ['NOMBRE', data.patient_name || '', 'FECHA NAC.', formatDate(data.date_of_birth)],
+    ['RUT', data.patient_rut || '', 'EDAD', data.age_at_discharge || 'N/A'],
+    ['FECHA INGRESO', formatDate(data.admission_date, "dd/MM/yyyy HH:mm"), 'PESO INGRESO', data.admission_weight ? `${data.admission_weight} kg` : 'N/A'],
+    ['FECHA EGRESO', formatDate(data.discharge_date, "dd/MM/yyyy HH:mm"), 'PESO EGRESO', data.discharge_weight ? `${data.discharge_weight} kg` : 'N/A'],
   ];
 
   tableData.forEach(row => {
