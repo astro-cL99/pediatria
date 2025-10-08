@@ -40,6 +40,12 @@ export function DailyEvolutionForm({ patientId, admissionId, onSuccess }: DailyE
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!admissionId) {
+      toast.error("No hay un ingreso activo para registrar la evolución");
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -48,7 +54,7 @@ export function DailyEvolutionForm({ patientId, admissionId, onSuccess }: DailyE
 
       const { error } = await supabase.from("daily_evolutions").insert([{
         patient_id: patientId,
-        admission_id: admissionId || null,
+        admission_id: admissionId,
         subjective: formData.subjective,
         objective: formData.objective,
         assessment: formData.assessment,

@@ -214,7 +214,11 @@ const PatientDetail = () => {
                   <CardTitle>Nueva Evolución</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <DailyEvolutionForm patientId={id!} />
+                  <DailyEvolutionForm 
+                    patientId={id!} 
+                    admissionId={activeAdmission?.id}
+                    onSuccess={() => {}}
+                  />
                 </CardContent>
               </Card>
               <Card>
