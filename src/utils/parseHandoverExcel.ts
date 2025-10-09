@@ -18,10 +18,17 @@ export interface ParsedPatient {
 function parseDate(dateStr: string): string | null {
   if (!dateStr) return null;
   
-  // Extract date from strings like "UCIN 14/04/2025 SALA 27/08/2025"
-  const dateMatch = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-  if (dateMatch) {
-    const [, day, month, year] = dateMatch;
+  // Handle DD-MM-YYYY format
+  const dashMatch = dateStr.match(/(\d{2})-(\d{2})-(\d{4})/);
+  if (dashMatch) {
+    const [, day, month, year] = dashMatch;
+    return `${year}-${month}-${day}`;
+  }
+  
+  // Handle DD/MM/YYYY format
+  const slashMatch = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (slashMatch) {
+    const [, day, month, year] = slashMatch;
     return `${year}-${month}-${day}`;
   }
   
@@ -55,7 +62,16 @@ function calculateDOBFromAge(age: { years?: number; months?: number; days?: numb
 }
 
 function parseOxygenRequirement(oxygenStr: string): any {
-  if (!oxygenStr || oxygenStr.trim() === '') return null;
+  if (!oxygenStr || oxygenStr.trim() === '' || oxygenStr.toLowerCase() === 'no') return null;
+  
+  // If it's already a JSON object string, try to parse it
+  if (oxygenStr.startsWith('{')) {
+    try {
+      return JSON.parse(oxygenStr);
+    } catch {
+      // Continue with text parsing
+    }
+  }
   
   const str = oxygenStr.toUpperCase();
   
@@ -63,10 +79,10 @@ function parseOxygenRequirement(oxygenStr: string): any {
   if (str.includes('CPAP')) {
     const result: any = { type: 'CPAP' };
     
-    const peepMatch = str.match(/PEEP\s*(\d+)/i) || str.match(/CPAP\s*(\d+)/);
+    const peepMatch = str.match(/PEEP[:\s]*(\d+)/i) || str.match(/CPAP\s*(\d+)/);
     if (peepMatch) result.peep = parseInt(peepMatch[1]);
     
-    const fio2Match = str.match(/FIO2\s*(\d+)/i) || str.match(/(\d+)%/);
+    const fio2Match = str.match(/FIO2[:\s]*(\d+)/i) || str.match(/(\d+)%/);
     if (fio2Match) result.fio2 = parseInt(fio2Match[1]);
     
     if (str.includes('NOCTURNO')) result.uso = 'Nocturno';
@@ -136,64 +152,103 @@ export async function parseHandoverExcel(file: File): Promise<ParsedPatient[]> {
         
         // Get first sheet
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
+        
+        // Convert to JSON with header row
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { 
+          header: 1,
+          defval: '',
+          blankrows: false
+        }) as any[][];
         
         const patients: ParsedPatient[] = [];
-        let currentRoom = '';
         
-        // Start from row 18 (index 17 contains headers, data starts at index 18)
-        for (let i = 18; i < jsonData.length; i++) {
+        // Find the header row (looking for "Cama" column)
+        let headerRowIndex = -1;
+        for (let i = 0; i < Math.min(20, jsonData.length); i++) {
+          const row = jsonData[i];
+          if (row && row.length > 0) {
+            const firstCell = row[0]?.toString().toLowerCase() || '';
+            if (firstCell.includes('cama')) {
+              headerRowIndex = i;
+              break;
+            }
+          }
+        }
+        
+        if (headerRowIndex === -1) {
+          throw new Error('No se encontró la fila de encabezados en el Excel');
+        }
+        
+        const headers = jsonData[headerRowIndex].map((h: any) => h?.toString().toLowerCase() || '');
+        
+        // Find column indices
+        const camaIdx = headers.findIndex((h: string) => h.includes('cama'));
+        const nombreIdx = headers.findIndex((h: string) => h.includes('nombre'));
+        const edadIdx = headers.findIndex((h: string) => h.includes('edad'));
+        const rutIdx = headers.findIndex((h: string) => h.includes('rut'));
+        const diagnosticoIdx = headers.findIndex((h: string) => h.includes('diagn'));
+        const fechaIngresoIdx = headers.findIndex((h: string) => h.includes('fecha') || h.includes('ingreso'));
+        const viralPanelIdx = headers.findIndex((h: string) => h.includes('viral') || h.includes('panel'));
+        const oxygenIdx = headers.findIndex((h: string) => h.includes('o2') || h.includes('oxigeno') || h.includes('requerimiento'));
+        const scoreIdx = headers.findIndex((h: string) => h.includes('score') || h.includes('respiratorio'));
+        const antibioticosIdx = headers.findIndex((h: string) => h.includes('antibi'));
+        const pendientesIdx = headers.findIndex((h: string) => h.includes('pendiente'));
+        
+        console.log('Column indices:', { camaIdx, nombreIdx, edadIdx, rutIdx, diagnosticoIdx });
+        
+        // Process data rows
+        for (let i = headerRowIndex + 1; i < jsonData.length; i++) {
           const row = jsonData[i];
           
-          // Column A (index 0): Room number
-          if (row[0]) {
-            currentRoom = row[0].toString().trim();
+          if (!row || row.length === 0) continue;
+          
+          // Parse bed assignment (format: "501-1" or "501" and separate bed number)
+          const camaStr = row[camaIdx]?.toString().trim() || '';
+          if (!camaStr) continue;
+          
+          let room = '';
+          let bed = 1;
+          
+          if (camaStr.includes('-')) {
+            const parts = camaStr.split('-');
+            room = parts[0].trim();
+            bed = parseInt(parts[1]) || 1;
+          } else {
+            room = camaStr;
           }
           
-          // Column B (index 1): Bed number
-          const bedNumber = row[1] ? parseInt(row[1].toString()) : null;
+          const name = row[nombreIdx]?.toString().trim() || '';
+          if (!name) continue;
           
-          // Column C (index 2): Patient name
-          const nameCell = row[2] ? row[2].toString().trim() : '';
+          const ageStr = row[edadIdx]?.toString().trim() || '';
+          const rut = row[rutIdx] ? cleanRUT(row[rutIdx].toString()) : '';
           
-          if (!nameCell || !bedNumber || !currentRoom) continue;
+          if (!rut) {
+            console.warn(`Skipping patient ${name}: no RUT found`);
+            continue;
+          }
           
-          // Extract name and potential DOB from name field
-          const { name, dob: dobFromName } = extractNameAndDOB(nameCell);
-          
-          // Column D (index 3): Age
-          const ageStr = row[3] ? row[3].toString().trim() : '';
-          
-          // Column E (index 4): RUT
-          const rut = row[4] ? cleanRUT(row[4].toString()) : '';
-          
-          // Column F (index 5): Diagnoses
-          const diagnosesStr = row[5] ? row[5].toString() : '';
+          const diagnosesStr = row[diagnosticoIdx]?.toString() || '';
           const diagnoses = parseDiagnoses(diagnosesStr);
           
-          // Column G (index 6): Admission date
-          const admissionDateStr = row[6] ? row[6].toString() : '';
+          const admissionDateStr = row[fechaIngresoIdx]?.toString() || '';
           const admissionDate = parseDate(admissionDateStr) || new Date().toISOString().split('T')[0];
           
-          // Column H (index 7): Viral panel
-          const viralPanel = row[7] ? row[7].toString().trim() : null;
+          const viralPanel = viralPanelIdx >= 0 && row[viralPanelIdx] ? row[viralPanelIdx].toString().trim() : null;
           
-          // Column I (index 8): Oxygen requirement
-          const oxygenStr = row[8] ? row[8].toString() : '';
+          const oxygenStr = oxygenIdx >= 0 && row[oxygenIdx] ? row[oxygenIdx].toString() : '';
           const oxygen = parseOxygenRequirement(oxygenStr);
           
-          // Column J (index 9): Respiratory score
-          const respiratoryScore = row[9] ? row[9].toString().trim() : null;
+          const respiratoryScore = scoreIdx >= 0 && row[scoreIdx] ? row[scoreIdx].toString().trim() : null;
           
-          // Column K (index 10): Pending
-          const pending = row[10] ? row[10].toString().trim() : null;
+          const pending = pendientesIdx >= 0 && row[pendientesIdx] ? row[pendientesIdx].toString().trim() : null;
           
-          // Column L (index 11): Plan
-          const plan = row[11] ? row[11].toString().trim() : null;
+          // Plan might be in antibiotics column or a separate column
+          const plan = antibioticosIdx >= 0 && row[antibioticosIdx] ? row[antibioticosIdx].toString().trim() : null;
           
-          // Calculate DOB
-          let dateOfBirth = dobFromName;
-          if (!dateOfBirth && ageStr) {
+          // Calculate DOB from age
+          let dateOfBirth = '';
+          if (ageStr) {
             const age = parseAge(ageStr);
             if (age) {
               dateOfBirth = calculateDOBFromAge(age);
@@ -205,8 +260,8 @@ export async function parseHandoverExcel(file: File): Promise<ParsedPatient[]> {
           }
           
           patients.push({
-            room: currentRoom,
-            bed: bedNumber,
+            room,
+            bed,
             name,
             dateOfBirth,
             rut,
@@ -220,8 +275,10 @@ export async function parseHandoverExcel(file: File): Promise<ParsedPatient[]> {
           });
         }
         
+        console.log(`Parsed ${patients.length} patients from Excel`);
         resolve(patients);
       } catch (error) {
+        console.error('Error parsing Excel:', error);
         reject(error);
       }
     };
