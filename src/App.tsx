@@ -26,6 +26,8 @@ const NewEpicrisis = lazy(() => import("./pages/NewEpicrisis"));
 const EpicrisisView = lazy(() => import("./pages/EpicrisisView"));
 const HandoverDashboard = lazy(() => import("./pages/HandoverDashboard"));
 const BedManagement = lazy(() => import("./pages/BedManagement"));
+const Patients = lazy(() => import("./pages/Patients"));
+const AddAnthropometry = lazy(() => import("./pages/AddAnthropometry"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,9 +53,29 @@ const App = () => (
           
           {/* Protected routes with AppLayout */}
           <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
+          <Route 
+            path="/patients" 
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Patients />
+                </Suspense>
+              </AppLayout>
+            } 
+          />
           <Route path="/patient/new" element={<AppLayout><NewPatient /></AppLayout>} />
           <Route path="/admission/new" element={<AppLayout><NewAdmission /></AppLayout>} />
           <Route path="/patient/:id" element={<AppLayout><PatientDetail /></AppLayout>} />
+          <Route 
+            path="/patient/:id/anthropometry" 
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <AddAnthropometry />
+                </Suspense>
+              </AppLayout>
+            } 
+          />
           <Route path="/admission/:id/print" element={<AdmissionPrint />} />
           
           {/* Lazy loaded routes */}
@@ -77,6 +99,7 @@ const App = () => (
               </AppLayout>
             }
           />
+          <Route path="/documents" element={<Navigate to="/documents/upload" replace />} />
           <Route
             path="/documents/upload"
             element={

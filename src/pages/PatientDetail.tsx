@@ -12,6 +12,7 @@ import { EvolutionsList } from "@/components/EvolutionsList";
 import { GrowthChart } from "@/components/GrowthChart";
 import { AllergyAlert } from "@/components/AllergyAlert";
 import { PatientTimeline } from "@/components/PatientTimeline";
+import { LaboratoryExamsManager } from "@/components/LaboratoryExamsManager";
 
 interface Admission {
   id: string;
@@ -198,9 +199,10 @@ const PatientDetail = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="evolutions" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="evolutions">Evoluciones</TabsTrigger>
             <TabsTrigger value="anthropometry">Antropometría</TabsTrigger>
+            <TabsTrigger value="exams">Exámenes</TabsTrigger>
             <TabsTrigger value="growth">Gráficas</TabsTrigger>
             <TabsTrigger value="timeline">Historial</TabsTrigger>
             <TabsTrigger value="diagnoses">Diagnósticos</TabsTrigger>
@@ -230,6 +232,10 @@ const PatientDetail = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="exams">
+            <LaboratoryExamsManager patientId={id!} admissionId={activeAdmission?.id} />
           </TabsContent>
 
           <TabsContent value="anthropometry">

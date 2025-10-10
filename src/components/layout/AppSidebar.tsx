@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Entrega de Turno", url: "/handover", icon: ClipboardList },
-  { title: "Pacientes", url: "/patient/new", icon: Users },
+  { title: "Pacientes", url: "/patients", icon: Users },
   { title: "Nuevo Ingreso", url: "/admission/new", icon: FileText },
   { title: "Epicrisis", url: "/epicrisis", icon: FileCheck },
   { title: "Carga Documentos", url: "/documents/upload", icon: Upload },

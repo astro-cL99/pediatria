@@ -31,10 +31,16 @@ export function ImportHandoverButton({ onImportComplete }: { onImportComplete: (
       try {
         const patients = await parseHandoverExcel(file);
         setPatientsCount(patients.length);
-        toast.success(`${patients.length} pacientes detectados en el archivo`);
+        
+        if (patients.length === 0) {
+          toast.warning("No se detectaron pacientes en el archivo. Verifica el formato.");
+        } else {
+          toast.success(`${patients.length} pacientes detectados en el archivo`);
+          console.log('Pacientes detectados:', patients.map(p => `${p.name} - Sala ${p.room}`));
+        }
       } catch (error: any) {
         console.error("Error parsing Excel:", error);
-        toast.error("Error al leer el archivo Excel");
+        toast.error(`Error al leer el archivo Excel: ${error.message || 'Formato inválido'}`);
         setSelectedFile(null);
         setPatientsCount(0);
       }
@@ -60,26 +66,41 @@ export function ImportHandoverButton({ onImportComplete }: { onImportComplete: (
     setResults(null);
 
     try {
+      console.log('Iniciando importación del archivo:', selectedFile.name);
       const patientsData = await parseHandoverExcel(selectedFile);
+      
+      if (patientsData.length === 0) {
+        toast.error("No se encontraron pacientes para importar");
+        setLoading(false);
+        return;
+      }
+      
+      console.log(`Importando ${patientsData.length} pacientes...`);
       const importResults = await importHandoverData(patientsData);
       setResults(importResults);
 
       if (importResults.errors.length === 0) {
-        toast.success(`${importResults.success} pacientes importados exitosamente`);
+        toast.success(`✓ ${importResults.success} pacientes importados exitosamente`);
         onImportComplete();
         setTimeout(() => {
           setDialogOpen(false);
           setSelectedFile(null);
           setPatientsCount(0);
+          setResults(null);
         }, 2000);
       } else {
         toast.warning(
           `${importResults.success} pacientes importados, ${importResults.errors.length} con errores`
         );
+        console.warn('Errores de importación:', importResults.errors);
       }
     } catch (error: any) {
       console.error("Error importing handover data:", error);
-      toast.error("Error al importar datos de entrega de turno");
+      toast.error(`Error al importar: ${error.message || 'Error desconocido'}`);
+      setResults({
+        success: 0,
+        errors: [error.message || 'Error desconocido al importar datos']
+      });
     } finally {
       setLoading(false);
     }

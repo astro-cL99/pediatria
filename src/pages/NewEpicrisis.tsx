@@ -35,7 +35,11 @@ interface EpicrisisFormData {
 
 export default function NewEpicrisis() {
   const navigate = useNavigate();
-  const { register, handleSubmit, setValue, watch } = useForm<EpicrisisFormData>();
+  const { register, handleSubmit, setValue, watch } = useForm<EpicrisisFormData>({
+    defaultValues: {
+      discharge_date: new Date().toISOString().slice(0, 16), // Fecha actual en formato datetime-local
+    }
+  });
   const [selectedAdmission, setSelectedAdmission] = useState<string>("");
 
   // Fetch active admissions
@@ -79,15 +83,16 @@ export default function NewEpicrisis() {
         setValue("patient_rut", patient.rut);
         setValue("date_of_birth", patient.date_of_birth);
         setValue("admission_date", admission.admission_date);
-        setValue("discharge_date", admission.discharge_date || new Date().toISOString());
+        // Siempre usar la fecha actual para fecha de egreso
+        setValue("discharge_date", new Date().toISOString().slice(0, 16));
         
         if (admission.admission_diagnoses && admission.admission_diagnoses.length > 0) {
           setValue("admission_diagnosis", admission.admission_diagnoses.join(", "));
         }
 
-        // Calculate age at discharge
+        // Calculate age at discharge (usando fecha actual)
         const birthDate = new Date(patient.date_of_birth);
-        const dischargeDate = new Date(admission.discharge_date || new Date());
+        const dischargeDate = new Date(); // Siempre usar fecha actual
         const ageYears = dischargeDate.getFullYear() - birthDate.getFullYear();
         const ageMonths = dischargeDate.getMonth() - birthDate.getMonth();
         setValue("age_at_discharge", `${ageYears} años ${ageMonths} meses`);

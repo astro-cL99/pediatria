@@ -28,6 +28,8 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
     diagnoses: currentData.admission_diagnoses?.join(", ") || "",
     oxygenType: currentData.oxygen_requirement?.type || "",
     oxygenFlow: currentData.oxygen_requirement?.flow || "",
+    oxygenPeep: currentData.oxygen_requirement?.peep || "",
+    oxygenFio2: currentData.oxygen_requirement?.fio2 || "",
     respiratoryScore: currentData.respiratory_score || "",
     viralPanel: currentData.viral_panel || "",
     pendingTasks: currentData.pending_tasks || "",
@@ -59,6 +61,8 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
         ? {
             type: formData.oxygenType,
             flow: formData.oxygenFlow,
+            peep: formData.oxygenPeep || null,
+            fio2: formData.oxygenFio2 || null,
           }
         : null;
 
@@ -100,25 +104,57 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="oxygenType">Tipo de Oxígeno</Label>
-          <Input
-            id="oxygenType"
-            value={formData.oxygenType}
-            onChange={(e) => setFormData({ ...formData, oxygenType: e.target.value })}
-            placeholder="Ej: Naricera, CNAF"
-          />
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="oxygenType">Tipo de Oxígeno</Label>
+            <Input
+              id="oxygenType"
+              value={formData.oxygenType}
+              onChange={(e) => setFormData({ ...formData, oxygenType: e.target.value })}
+              placeholder="Ej: Naricera, CNAF, CPAP"
+            />
+          </div>
+          <div>
+            <Label htmlFor="oxygenFlow">Flujo (L/min)</Label>
+            <Input
+              id="oxygenFlow"
+              value={formData.oxygenFlow}
+              onChange={(e) => setFormData({ ...formData, oxygenFlow: e.target.value })}
+              placeholder="Ej: 2"
+            />
+          </div>
         </div>
-        <div>
-          <Label htmlFor="oxygenFlow">Flujo (L/min)</Label>
-          <Input
-            id="oxygenFlow"
-            value={formData.oxygenFlow}
-            onChange={(e) => setFormData({ ...formData, oxygenFlow: e.target.value })}
-            placeholder="Ej: 2"
-          />
-        </div>
+
+        {/* Campos adicionales para CPAP */}
+        {formData.oxygenType?.toLowerCase().includes('cpap') && (
+          <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div>
+              <Label htmlFor="oxygenPeep" className="text-blue-900 dark:text-blue-100">
+                PEEP (cmH₂O)
+              </Label>
+              <Input
+                id="oxygenPeep"
+                value={formData.oxygenPeep}
+                onChange={(e) => setFormData({ ...formData, oxygenPeep: e.target.value })}
+                placeholder="Ej: 5"
+                className="bg-white dark:bg-gray-800"
+              />
+            </div>
+            <div>
+              <Label htmlFor="oxygenFio2" className="text-blue-900 dark:text-blue-100">
+                FiO₂ (%)
+              </Label>
+              <Input
+                id="oxygenFio2"
+                value={formData.oxygenFio2}
+                onChange={(e) => setFormData({ ...formData, oxygenFio2: e.target.value })}
+                placeholder="Ej: 40"
+                className="bg-white dark:bg-gray-800"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div>

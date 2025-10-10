@@ -150,25 +150,49 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
 
             {/* Clinical Status */}
             <div className="grid md:grid-cols-2 gap-4">
-              {/* Oxygen Support */}
               {bed.admission.oxygen_requirement && Object.keys(bed.admission.oxygen_requirement).length > 0 && (
                 <Card className="border-red-200 dark:border-red-900">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center text-red-700 dark:text-red-400">
                       <Wind className="h-5 w-5 mr-2" />
-                      Soporte Oxígeno
+                      Requerimiento O₂
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <pre className="text-sm whitespace-pre-wrap">
-                      {JSON.stringify(bed.admission.oxygen_requirement, null, 2)}
-                    </pre>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-base font-semibold">
+                        {bed.admission.oxygen_requirement.type}
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      {bed.admission.oxygen_requirement.flow && (
+                        <div>
+                          <p className="text-muted-foreground">Flujo</p>
+                          <p className="font-semibold text-lg">{bed.admission.oxygen_requirement.flow} L/min</p>
+                        </div>
+                      )}
+                      
+                      {bed.admission.oxygen_requirement.peep && (
+                        <div>
+                          <p className="text-muted-foreground">PEEP</p>
+                          <p className="font-semibold text-lg">{bed.admission.oxygen_requirement.peep} cmH₂O</p>
+                        </div>
+                      )}
+                      
+                      {bed.admission.oxygen_requirement.fio2 && (
+                        <div>
+                          <p className="text-muted-foreground">FiO₂</p>
+                          <p className="font-semibold text-lg">{bed.admission.oxygen_requirement.fio2}%</p>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               )}
 
               {/* Antibiotics */}
-              {bed.admission.antibiotics && Object.keys(bed.admission.antibiotics).length > 0 && (
+              {bed.admission.antibiotics && (
                 <Card className="border-yellow-200 dark:border-yellow-900">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center text-yellow-700 dark:text-yellow-400">

@@ -1,4 +1,4 @@
-project_id = "fmooavbdxqprpxcxyzrd"
+project_id = "ohuyedvawwocflnybrkl"
 
 [functions.extract-dau-data]
 verify_jwt = false

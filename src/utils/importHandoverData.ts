@@ -7,7 +7,13 @@ export async function importHandoverData(patientsData: ParsedPatient[]) {
     errors: [] as string[],
   };
 
-  for (const patientData of patientsData) {
+  console.log(`Starting import of ${patientsData.length} patients`);
+  console.log('Rooms to import:', [...new Set(patientsData.map(p => p.room))].sort());
+
+  for (let idx = 0; idx < patientsData.length; idx++) {
+    const patientData = patientsData[idx];
+    console.log(`[${idx + 1}/${patientsData.length}] Importing ${patientData.name} (${patientData.rut}) in room ${patientData.room}`);
+    
     try {
       // 1. Create or find patient
       const { data: existingPatient } = await supabase
@@ -105,11 +111,14 @@ export async function importHandoverData(patientsData: ParsedPatient[]) {
       if (bedError) throw bedError;
 
       results.success++;
+      console.log(`[${idx + 1}/${patientsData.length}] ✓ Successfully imported ${patientData.name} in room ${patientData.room}`);
     } catch (error: any) {
-      results.errors.push(`${patientData.name}: ${error.message}`);
-      console.error(`Error processing ${patientData.name}:`, error);
+      const errorMsg = `Sala ${patientData.room} - ${patientData.name}: ${error.message}`;
+      results.errors.push(errorMsg);
+      console.error(`[${idx + 1}/${patientsData.length}] ✗ Error processing ${patientData.name}:`, error);
     }
   }
 
+  console.log(`Import complete: ${results.success} successful, ${results.errors.length} errors`);
   return results;
 }

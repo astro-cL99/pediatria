@@ -204,7 +204,10 @@ export async function parseHandoverExcel(file: File): Promise<ParsedPatient[]> {
           
           // Parse bed assignment (format: "501-1" or "501" and separate bed number)
           const camaStr = row[camaIdx]?.toString().trim() || '';
-          if (!camaStr) continue;
+          if (!camaStr) {
+            console.log(`Row ${i}: Skipping - no bed number`);
+            continue;
+          }
           
           let room = '';
           let bed = 1;
@@ -217,16 +220,24 @@ export async function parseHandoverExcel(file: File): Promise<ParsedPatient[]> {
             room = camaStr;
           }
           
+          // Log room being processed
+          console.log(`Row ${i}: Processing room ${room}, bed ${bed}`);
+          
           const name = row[nombreIdx]?.toString().trim() || '';
-          if (!name) continue;
+          if (!name) {
+            console.log(`Row ${i}: Skipping room ${room} - no patient name`);
+            continue;
+          }
           
           const ageStr = row[edadIdx]?.toString().trim() || '';
           const rut = row[rutIdx] ? cleanRUT(row[rutIdx].toString()) : '';
           
           if (!rut) {
-            console.warn(`Skipping patient ${name}: no RUT found`);
+            console.warn(`Row ${i}: Skipping patient ${name} in room ${room} - no RUT found`);
             continue;
           }
+          
+          console.log(`Row ${i}: Processing patient ${name} (RUT: ${rut}) in room ${room}`);
           
           const diagnosesStr = row[diagnosticoIdx]?.toString() || '';
           const diagnoses = parseDiagnoses(diagnosesStr);
@@ -259,7 +270,7 @@ export async function parseHandoverExcel(file: File): Promise<ParsedPatient[]> {
             dateOfBirth = '2000-01-01'; // Fallback
           }
           
-          patients.push({
+          const patient = {
             room,
             bed,
             name,
@@ -272,10 +283,14 @@ export async function parseHandoverExcel(file: File): Promise<ParsedPatient[]> {
             respiratoryScore,
             pending,
             plan,
-          });
+          };
+          
+          patients.push(patient);
+          console.log(`Row ${i}: Successfully parsed patient in room ${room}`);
         }
         
         console.log(`Parsed ${patients.length} patients from Excel`);
+        console.log('Rooms found:', [...new Set(patients.map(p => p.room))].sort());
         resolve(patients);
       } catch (error) {
         console.error('Error parsing Excel:', error);
