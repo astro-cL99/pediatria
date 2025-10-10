@@ -1,48 +1,260 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import React from "react";
+import { BedAssignment } from "@/types/bed-assignment";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, UserPlus, Clock, AlertCircle, Wind, Pill, Activity, Droplet, Bed, Users, TrendingUp } from "lucide-react";
+import { RoomGroup } from "@/components/RoomGroup";
+import { 
+  Search, 
+  Plus, 
+  UserPlus, 
+  Clock, 
+  AlertCircle, 
+  Wind, 
+  Pill, 
+  Activity, 
+  Droplet, 
+  Bed, 
+  Users, 
+  TrendingUp,
+  Stethoscope,
+  Filter,
+  UserCheck,
+  UserX,
+  CalendarDays,
+  Gauge,
+  Thermometer,
+  HeartPulse,
+  Droplets,
+  Syringe,
+  Pill as PillIcon,
+  Baby,
+  ChevronRight
+} from "lucide-react";
 import { toast } from "sonner";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format } from "date-fns";
+import { es } from "date-fns/locale";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
-interface BedAssignment {
-  id: string;
-  room_number: string;
-  bed_number: number;
+// Using BedAssignment type from @/types/bed-assignment
   patient_id: string;
   admission_id: string;
   assigned_at: string;
+  service: 'pediatria' | 'cirugia' | 'ucip';
   patient: {
     id: string;
     name: string;
     rut: string;
     date_of_birth: string;
+    gender?: string;
     allergies: string | null;
   };
   admission: {
     id: string;
     admission_date: string;
     admission_diagnoses: string[];
-    oxygen_requirement: any;
+    oxygen_requirement: {
+      type?: string;
+      flow?: string | number;
+      peep?: string | number;
+      fio2?: string | number;
+    } | null;
     respiratory_score: string | null;
     viral_panel: string | null;
     pending_tasks: string | null;
-    antibiotics: any;
-    medications: any;
+    antibiotics: Array<{ name: string; dose: string }>;
+    medications: string | null;
   };
 }
+
+const getServiceColor = (service: string) => {
+  switch (service) {
+    case 'pediatria':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+    case 'cirugia':
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+    case 'ucip':
+      return 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300';
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+  }
+};
+
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case 'crítico':
+      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+    case 'estable':
+      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+    case 'en observación':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+  }
+};
+
+const PatientCardSkeleton = () => (
+  <div className="border rounded-lg overflow-hidden bg-card">
+    <div className="p-4 space-y-3">
+      <div className="flex items-center space-x-3">
+        <Skeleton className="h-10 w-10 rounded-full" />
+        <div className="space-y-1.5">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-24" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-full" />
+      </div>
+      <Skeleton className="h-8 w-full mt-2" />
+    </div>
+  </div>
+);
+
+const PatientCard = React.memo(({ 
+  bedAssignment,
+  onClick 
+}: { 
+  bedAssignment: BedAssignment;
+  onClick?: () => void;
+}) => {
+  const daysInHospital = differenceInDays(new Date(), new Date(bedAssignment.admission.admission_date));
+  const hasOxygen = bedAssignment.admission.oxygen_requirement?.type;
+  const hasAntibiotics = bedAssignment.admission.antibiotics?.length > 0;
+  const age = bedAssignment.patient.date_of_birth 
+    ? Math.floor(differenceInDays(new Date(), new Date(bedAssignment.patient.date_of_birth)) / 365) 
+    : null;
+
+  return (
+    <Card className="overflow-hidden hover:shadow-md transition-shadow duration-200">
+      <div className="flex">
+        <div className="w-2 bg-blue-500"></div>
+        <div className="flex-1">
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center space-x-3">
+                <Avatar className="h-10 w-10 border">
+                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(bedAssignment.patient.name)}`} />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {bedAssignment.patient.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <CardTitle className="text-lg font-semibold">
+                    {bedAssignment.patient.name}
+                  </CardTitle>
+                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                    <span>{bedAssignment.patient.rut}</span>
+                    {age !== null && <span>• {age} años</span>}
+                  </div>
+                </div>
+              </div>
+              <Badge variant="outline" className={getServiceColor(bedAssignment.service)}>
+                {bedAssignment.service.charAt(0).toUpperCase() + bedAssignment.service.slice(1)}
+              </Badge>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="pb-4">
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="space-y-1">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Bed className="h-4 w-4 mr-2" />
+                  <span>Habitación {bedAssignment.room_number} - Cama {bedAssignment.bed_number}</span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span>{format(new Date(bedAssignment.admission.admission_date), 'PPP', { locale: es })}</span>
+                </div>
+              </div>
+              
+              <div className="space-y-1">
+                <div className="flex items-center">
+                  <Badge variant="outline" className={cn("text-xs")}>
+                    <Clock className="h-3 w-3 mr-1" />
+                    {daysInHospital} {daysInHospital === 1 ? 'día' : 'días'}
+                  </Badge>
+                </div>
+                <div className="flex items-center">
+                  <Badge variant="outline" className={cn("text-xs", getStatusBadge('estable'))}>
+                    <UserCheck className="h-3 w-3 mr-1" />
+                    Estable
+                  </Badge>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Diagnósticos</h4>
+              <div className="flex flex-wrap gap-1">
+                {bedAssignment.admission.admission_diagnoses?.map((dx, i) => (
+                  <Badge key={i} variant="secondary" className="text-xs font-normal">
+                    {dx}
+                  </Badge>
+                )) || <span className="text-sm text-muted-foreground">Sin diagnósticos registrados</span>}
+              </div>
+            </div>
+            
+            {(hasOxygen || hasAntibiotics) && (
+              <div className="mt-3 pt-3 border-t">
+                <div className="flex items-center space-x-4">
+                  {hasOxygen && (
+                    <div className="flex items-center text-amber-600 dark:text-amber-400">
+                      <Wind className="h-4 w-4 mr-1" />
+                      <span className="text-sm">O₂</span>
+                    </div>
+                  )}
+                  {hasAntibiotics && (
+                    <div className="flex items-center text-rose-600 dark:text-rose-400">
+                      <Syringe className="h-4 w-4 mr-1" />
+                      <span className="text-sm">Antibióticos</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+          
+          <div className="px-6 pb-4">
+            <Button 
+              variant="outline" 
+              className="w-full flex justify-between items-center"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onClick) {
+                  onClick();
+                } else {
+                  navigate(`/patients/${bedAssignment.patient_id}`);
+                }
+              }}
+            >
+              <span>Ver detalles</span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+};
 
 export default function Patients() {
   const navigate = useNavigate();
   const [bedAssignments, setBedAssignments] = useState<BedAssignment[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [filterService, setFilterService] = useState<"all" | "pediatria" | "cirugia">("all");
+  const [filterService, setFilterService] = useState<"all" | "pediatria" | "cirugia" | "ucip">("all");
 
   useEffect(() => {
     fetchBedAssignments();
@@ -100,30 +312,71 @@ export default function Patients() {
     return differenceInDays(new Date(), new Date(admissionDate));
   };
 
-  const filteredPatients = bedAssignments.filter((bed) => {
-    const matchesSearch = 
-      bed.patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bed.patient.rut.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bed.room_number.includes(searchTerm);
+  const filteredPatients = useMemo(() => {
+    return bedAssignments.filter((bed) => {
+      const matchesSearch = 
+        bed.patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        bed.patient.rut.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        bed.room_number.includes(searchTerm);
 
-    const matchesService = 
-      filterService === "all" ||
-      (filterService === "pediatria" && bed.room_number.startsWith("50")) ||
-      (filterService === "cirugia" && bed.room_number.startsWith("60"));
+      const matchesService = 
+        filterService === "all" ||
+        (filterService === "pediatria" && bed.room_number.startsWith("50")) ||
+        (filterService === "cirugia" && bed.room_number.startsWith("60")) ||
+        (filterService === "ucip" && bed.room_number.startsWith("70"));
 
-    return matchesSearch && matchesService;
-  });
+      return matchesSearch && matchesService;
+    });
+  }, [bedAssignments, searchTerm, filterService]);
+
+  // Group patients by room and service
+  const roomGroups = useMemo(() => {
+    const groups: {[key: string]: any} = {};
+    
+    filteredPatients.forEach(patient => {
+      const service = 
+        patient.room_number.startsWith("50") ? "pediatria" :
+        patient.room_number.startsWith("60") ? "cirugia" : "ucip";
+      
+      const roomKey = `${service}-${patient.room_number}`;
+      
+      if (!groups[roomKey]) {
+        groups[roomKey] = {
+          roomNumber: patient.room_number,
+          service,
+          patients: []
+        };
+      }
+      
+      groups[roomKey].patients.push(patient);
+    });
+    
+    // Sort rooms by service and room number
+    return Object.values(groups).sort((a, b) => {
+      if (a.service !== b.service) {
+        return a.service.localeCompare(b.service);
+      }
+      return a.roomNumber.localeCompare(b.roomNumber, undefined, {numeric: true});
+    });
+  }, [filteredPatients]);
 
   // Calcular estadísticas
-  const stats = {
-    total: filteredPatients.length,
-    withO2: filteredPatients.filter(b => b.admission.oxygen_requirement && Object.keys(b.admission.oxygen_requirement).length > 0).length,
-    withATB: filteredPatients.filter(b => b.admission.antibiotics && Object.keys(b.admission.antibiotics).length > 0).length,
-    withPending: filteredPatients.filter(b => b.admission.pending_tasks && b.admission.pending_tasks.trim().length > 0).length,
-    avgDays: filteredPatients.length > 0 
-      ? Math.round(filteredPatients.reduce((sum, b) => sum + getDaysHospitalized(b.admission.admission_date), 0) / filteredPatients.length)
-      : 0,
-  };
+  const stats = useMemo(() => {
+    return {
+      total: filteredPatients.length,
+      withO2: filteredPatients.filter(b => b.admission.oxygen_requirement && Object.keys(b.admission.oxygen_requirement).length > 0).length,
+      withATB: filteredPatients.filter(b => b.admission.antibiotics && b.admission.antibiotics.length > 0).length,
+      withPending: filteredPatients.filter(b => b.admission.pending_tasks && b.admission.pending_tasks.trim().length > 0).length,
+      avgDays: filteredPatients.length > 0 
+        ? Math.round(filteredPatients.reduce((sum, b) => sum + getDaysHospitalized(b.admission.admission_date), 0) / filteredPatients.length)
+        : 0,
+      byService: {
+        pediatria: filteredPatients.filter(p => p.room_number.startsWith("50")).length,
+        cirugia: filteredPatients.filter(p => p.room_number.startsWith("60")).length,
+        ucip: filteredPatients.filter(p => p.room_number.startsWith("70")).length,
+      }
+    };
+  }, [filteredPatients]);
 
   const getStatusBadge = (bed: BedAssignment) => {
     const { oxygen_requirement, antibiotics, viral_panel } = bed.admission;
@@ -279,7 +532,7 @@ export default function Patients() {
             </div>
           </Card>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredPatients.map((bed) => {
               const days = getDaysHospitalized(bed.admission.admission_date);
               const hasO2 = bed.admission.oxygen_requirement && Object.keys(bed.admission.oxygen_requirement).length > 0;
@@ -289,9 +542,13 @@ export default function Patients() {
               return (
                 <Card
                   key={bed.id}
-                  className="hover:shadow-xl transition-all duration-300 cursor-pointer border-l-4 hover:scale-[1.01]"
+                  className="h-full flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer border-l-4 hover:scale-[1.01]"
                   style={{
-                    borderLeftColor: hasO2 ? '#ef4444' : hasATB ? '#eab308' : hasViralPanel ? '#3b82f6' : '#10b981'
+                    borderLeftColor: hasO2 ? '#ef4444' : hasATB ? '#eab308' : hasViralPanel ? '#3b82f6' : '#10b981',
+                    minHeight: '200px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between'
                   }}
                   onClick={() => navigate(`/patient/${bed.patient_id}`)}
                 >

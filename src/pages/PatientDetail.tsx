@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { FileText, Stethoscope, ClipboardList, Activity, FileSearch, Droplets } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Upload, FileText, Activity, TrendingUp, Printer } from "lucide-react";
 import { toast } from "sonner";
+import { CompleteEvolutionForm } from "@/components/CompleteEvolutionForm";
 import { DailyEvolutionForm } from "@/components/DailyEvolutionForm";
 import { EvolutionsList } from "@/components/EvolutionsList";
 import { GrowthChart } from "@/components/GrowthChart";
@@ -199,10 +199,23 @@ const PatientDetail = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="evolutions" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="evolutions">Evoluciones</TabsTrigger>
-            <TabsTrigger value="anthropometry">Antropometría</TabsTrigger>
-            <TabsTrigger value="exams">Exámenes</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-8 gap-1">
+            <TabsTrigger value="evolutions" className="flex items-center gap-1">
+              <FileText className="h-4 w-4" />
+              <span>Evoluciones</span>
+            </TabsTrigger>
+            <TabsTrigger value="complete-evolution" className="flex items-center gap-1">
+              <ClipboardList className="h-4 w-4" />
+              <span>Evolución</span>
+            </TabsTrigger>
+            <TabsTrigger value="anthropometry" className="flex items-center gap-1">
+              <Activity className="h-4 w-4" />
+              <span>Antropometría</span>
+            </TabsTrigger>
+            <TabsTrigger value="exams" className="flex items-center gap-1">
+              <FileSearch className="h-4 w-4" />
+              <span>Exámenes</span>
+            </TabsTrigger>
             <TabsTrigger value="growth">Gráficas</TabsTrigger>
             <TabsTrigger value="timeline">Historial</TabsTrigger>
             <TabsTrigger value="diagnoses">Diagnósticos</TabsTrigger>
@@ -236,6 +249,35 @@ const PatientDetail = () => {
 
           <TabsContent value="exams">
             <LaboratoryExamsManager patientId={id!} admissionId={activeAdmission?.id} />
+          </TabsContent>
+
+          <TabsContent value="complete-evolution">
+            <Card>
+              <CardHeader>
+                <CardTitle>Evolución Completa</CardTitle>
+                <CardDescription>
+                  Registre una evolución médica detallada del paciente.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CompleteEvolutionForm 
+                  patientId={id!}
+                  admissionId={activeAdmission?.id}
+                  defaultDiagnoses={[]}
+                  defaultVitalSigns={{
+                    temperature: "36.8",
+                    heartRate: "120",
+                    respiratoryRate: "24",
+                    bloodPressure: "90/60",
+                    oxygenSaturation: "98"
+                  }}
+                  onSuccess={() => {
+                    // Refresh evolutions list or show success message
+                    toast.success("Evolución registrada exitosamente");
+                  }}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="anthropometry">
