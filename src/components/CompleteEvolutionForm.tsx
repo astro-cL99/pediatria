@@ -104,20 +104,25 @@ export function CompleteEvolutionForm({
     setLoading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("Debes iniciar sesión para guardar la evolución");
+        return;
+      }
+
       const { data, error } = await supabase
-        .from("evolutions")
+        .from("daily_evolutions")
         .insert([
           {
             patient_id: patientId,
-            admission_id: admissionId,
-            diagnoses: diagnoses.filter(d => d.trim() !== ""),
-            current_status: currentStatus,
+            admission_id: admissionId!,
+            created_by: user.id,
+            subjective: currentStatus,
+            objective: JSON.stringify(physicalExam),
+            assessment: diagnoses.filter(d => d.trim() !== "").join(", "),
+            plan: plans.filter(p => p.trim() !== "").join(", "),
             vital_signs: vitalSigns,
-            physical_exam: physicalExam,
-            lab_results: labResults,
-            imaging_results: imagingResults,
-            plans: plans.filter(p => p.trim() !== ""),
-            indications: indications,
           },
         ])
         .select();

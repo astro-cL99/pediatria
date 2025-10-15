@@ -52,8 +52,8 @@ interface BedAssignment {
   admission_id: string;
   assigned_at: string;
   service: 'pediatria' | 'cirugia' | 'ucip';
-  room_number?: string;
-  bed_number?: string;
+  room_number: string;
+  bed_number: number;
   patient: {
     id: string;
     name: string;
@@ -132,6 +132,7 @@ const PatientCard = React.memo(({
   bedAssignment: BedAssignment;
   onClick?: () => void;
 }) => {
+  const navigate = useNavigate();
   const daysInHospital = differenceInDays(new Date(), new Date(bedAssignment.admission.admission_date));
   const hasOxygen = bedAssignment.admission.oxygen_requirement?.type;
   const hasAntibiotics = bedAssignment.admission.antibiotics?.length > 0;
@@ -159,7 +160,7 @@ const PatientCard = React.memo(({
                   </CardTitle>
                   <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                     <span>{bedAssignment.patient.rut}</span>
-                    {age !== null && <span>â€¢ {age} aÃ±os</span>}
+                    {age !== null && <span>• {age} años</span>}
                   </div>
                 </div>
               </div>
@@ -174,7 +175,7 @@ const PatientCard = React.memo(({
               <div className="space-y-1">
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Bed className="h-4 w-4 mr-2" />
-                  <span>HabitaciÃ³n {bedAssignment.room_number} - Cama {bedAssignment.bed_number}</span>
+                  <span>Habitación {bedAssignment.room_number} - Cama {bedAssignment.bed_number}</span>
                 </div>
                 <div className="flex items-center text-sm">
                   <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -186,7 +187,7 @@ const PatientCard = React.memo(({
                 <div className="flex items-center">
                   <Badge variant="outline" className={cn("text-xs")}>
                     <Clock className="h-3 w-3 mr-1" />
-                    {daysInHospital} {daysInHospital === 1 ? 'dÃ­a' : 'dÃ­as'}
+                    {daysInHospital} {daysInHospital === 1 ? 'día' : 'días'}
                   </Badge>
                 </div>
                 <div className="flex items-center">
@@ -199,13 +200,13 @@ const PatientCard = React.memo(({
             </div>
             
             <div className="space-y-2">
-              <h4 className="text-sm font-medium">DiagnÃ³sticos</h4>
+              <h4 className="text-sm font-medium">Diagnósticos</h4>
               <div className="flex flex-wrap gap-1">
                 {bedAssignment.admission.admission_diagnoses?.map((dx, i) => (
                   <Badge key={i} variant="secondary" className="text-xs font-normal">
                     {dx}
                   </Badge>
-                )) || <span className="text-sm text-muted-foreground">Sin diagnÃ³sticos registrados</span>}
+                )) || <span className="text-sm text-muted-foreground">Sin diagnósticos registrados</span>}
               </div>
             </div>
             
@@ -215,13 +216,13 @@ const PatientCard = React.memo(({
                   {hasOxygen && (
                     <div className="flex items-center text-amber-600 dark:text-amber-400">
                       <Wind className="h-4 w-4 mr-1" />
-                      <span className="text-sm">Oâ‚‚</span>
+                      <span className="text-sm">O₂</span>
                     </div>
                   )}
                   {hasAntibiotics && (
                     <div className="flex items-center text-rose-600 dark:text-rose-400">
                       <Syringe className="h-4 w-4 mr-1" />
-                      <span className="text-sm">AntibiÃ³ticos</span>
+                      <span className="text-sm">Antibióticos</span>
                     </div>
                   )}
                 </div>
@@ -249,8 +250,8 @@ const PatientCard = React.memo(({
         </div>
       </div>
     </Card>
-  )
-}
+  );
+});
 
 export default function Patients() {
   const navigate = useNavigate();
@@ -276,6 +277,14 @@ export default function Patients() {
     };
   }, []);
 
+  const getServiceFromRoom = (roomNumber: string): 'pediatria' | 'cirugia' | 'ucip' => {
+    const room = parseInt(roomNumber);
+    if (room >= 500 && room <= 515) return 'pediatria';
+    if (room >= 516 && room <= 535) return 'cirugia';
+    if (room >= 536) return 'ucip';
+    return 'pediatria';
+  };
+
   const fetchBedAssignments = async () => {
     try {
       const { data, error } = await supabase
@@ -290,7 +299,19 @@ export default function Patients() {
         .order("bed_number");
 
       if (error) throw error;
-      setBedAssignments(data || []);
+      
+      // Map the data to include the service field and correct types
+      const mappedData = (data || []).map(item => ({
+        ...item,
+        service: getServiceFromRoom(item.room_number),
+        admission: {
+          ...item.admission,
+          oxygen_requirement: item.admission?.oxygen_requirement as any || null,
+          antibiotics: item.admission?.antibiotics as any || []
+        }
+      })) as BedAssignment[];
+      
+      setBedAssignments(mappedData);
     } catch (error) {
       console.error("Error fetching bed assignments:", error);
       toast.error("Error al cargar pacientes hospitalizados");

@@ -102,6 +102,7 @@ export function RoomGroup({
                     </p>
                   </div>
                 )}
+              </div>
             ))}
           </div>
         </div>

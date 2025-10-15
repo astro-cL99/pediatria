@@ -156,7 +156,6 @@ export const medications: Medication[] = [
     minDoseMgKg: 1,
     maxDoseMgKg: 2,
     maxDoseMg: 60,
-    commonDosis: '5mg tableta',
     route: 'Oral',
     frequency: '1 vez al día en la mañana',
     interactions: [
