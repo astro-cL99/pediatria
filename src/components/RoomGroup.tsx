@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Bed, Users, Wind, Syringe } from "lucide-react";
+import { ChevronDown, ChevronRight, Bed, Users, Wind, Syringe, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,12 @@ interface RoomGroupProps {
   onPatientClick: (patientId: string) => void;
   defaultExpanded?: boolean;
 }
+
+// Generate all possible beds (1-3 for rooms 501-512, and 1 for room 7)
+const generateAllBeds = (roomNumber: string) => {
+  const bedCount = roomNumber === '7' ? 1 : 3;
+  return Array.from({ length: bedCount }, (_, i) => (i + 1).toString());
+};
 
 export function RoomGroup({ 
   roomNumber, 
@@ -28,7 +34,9 @@ export function RoomGroup({
     ucip: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300 border-rose-200 dark:border-rose-800',
   };
 
-  if (patients.length === 0) return null;
+  const allBeds = generateAllBeds(roomNumber);
+  const occupiedBeds = patients.map(p => p.bed_number.toString());
+  const availableBeds = allBeds.filter(bed => !occupiedBeds.includes(bed));
 
   return (
     <div className="border rounded-lg overflow-hidden mb-4">
@@ -54,7 +62,7 @@ export function RoomGroup({
             <span className="capitalize">{service}</span>
           </div>
           <Badge variant="secondary" className="ml-2">
-            {patients.length} {patients.length === 1 ? 'paciente' : 'pacientes'}
+            {patients.length} de {allBeds.length} camas ocupadas
           </Badge>
         </div>
         <div className="flex items-center space-x-2">
@@ -67,46 +75,81 @@ export function RoomGroup({
       
       {isExpanded && (
         <div className="bg-background">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
-            {patients.map((bedAssignment) => (
-              <div 
-                key={bedAssignment.id}
-                className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => onPatientClick(bedAssignment.patient_id)}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium">{bedAssignment.patient.name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Cama {bedAssignment.bed_number} • {bedAssignment.patient.rut}
-                    </p>
-                  </div>
-                  <div className="flex space-x-1">
-                    {bedAssignment.admission.oxygen_requirement?.type && (
-                      <span className="text-amber-600">
-                        <Wind className="h-4 w-4" />
-                      </span>
-                    )}
-                    {bedAssignment.admission.antibiotics?.length > 0 && (
-                      <span className="text-rose-600">
-                        <Syringe className="h-4 w-4" />
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {bedAssignment.admission.admission_diagnoses?.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-xs text-muted-foreground">
-                      {bedAssignment.admission.admission_diagnoses[0]}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 p-3">
+            {/* Show occupied beds first */}
+            {patients.map((bedAssignment) => {
+              const bedNumber = bedAssignment.bed_number.toString();
+              return (
+                <div 
+                  key={`occupied-${bedNumber}`}
+                  className="border rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer bg-white"
+                  onClick={() => onPatientClick(bedAssignment.patient_id)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium flex items-center">
+                          <User className="h-4 w-4 mr-2 text-primary" />
+                          {bedAssignment.patient.name}
+                        </h4>
+                        <div className="flex space-x-1">
+                          {bedAssignment.admission.oxygen_requirement?.type && (
+                            <span className="text-amber-600" title="Requiere oxígeno">
+                              <Wind className="h-4 w-4" />
+                            </span>
+                          )}
+                          {bedAssignment.admission.antibiotics?.length > 0 && (
+                            <span className="text-rose-600" title="En tratamiento antibiótico">
+                              <Syringe className="h-4 w-4" />
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        <span className="font-medium">Cama {bedNumber}</span> • {bedAssignment.patient.rut}
+                      {bedAssignment.admission.admission_diagnoses?.length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                          {bedAssignment.admission.admission_diagnoses[0]}
                       {bedAssignment.admission.admission_diagnoses.length > 1 ? '...' : ''}
                     </p>
+                    </div>
                   </div>
-                )}
+                </div>
+              );
+            })}
+            
+            {/* Show available beds */}
+            {availableBeds.map(bedNumber => (
+              <div 
+                key={`available-${bedNumber}`}
+                className="border-2 border-dashed rounded-lg p-3 bg-muted/10 hover:bg-muted/20 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-muted-foreground">Cama {bedNumber}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Disponible</p>
+                  </div>
+                  <Bed className="h-5 w-5 text-muted-foreground" />
+                </div>
               </div>
             ))}
+          </div>
+          
+          {/* Room occupancy stats */}
+          <div className="px-3 pb-3">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Ocupación: {Math.round((patients.length / allBeds.length) * 100)}%</span>
+              <span>{patients.length} de {allBeds.length} camas ocupadas</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2 mt-1">
+              <div 
+                className="bg-primary h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(patients.length / allBeds.length) * 100}%` }}
+              />
+            </div>
           </div>
         </div>
       )}
     </div>
   );
-}
+

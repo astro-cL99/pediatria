@@ -4,16 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Plus, Activity, Search, Download, Clock, Users, BookOpen, LogOut } from "lucide-react";
+import { Activity, Clock, Calendar, Stethoscope, FileText, Bell, User } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardStats } from "@/components/DashboardStats";
-import { RoleManagement } from "@/components/RoleManagement";
-import { calculateDaysHospitalized, formatDaysHospitalized } from "@/utils/calculateDaysHospitalized";
-import { exportPatientDataToCSV } from "@/utils/exportToPDF";
-import { exportPatientsToExcel, exportDailyCensusToExcel } from "@/utils/exportToExcel";
-import { usePatients } from "@/hooks/usePatients";
-import { SkeletonCard, SkeletonTable } from "@/components/ui/skeleton-card";
+import { calculateDaysHospitalized } from "@/utils/calculateDaysHospitalized";
+import { SkeletonCard } from "@/components/ui/skeleton-card";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface Patient {
   id: string;
@@ -23,44 +20,58 @@ interface Patient {
   status: string;
   admission_date: string;
   allergies?: string | null;
+  room_number?: string;
+  bed_number?: number;
+  doctor_id?: string;
+  doctor_name?: string;
+  last_evolution?: string;
+  next_control?: string;
 }
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showRoles, setShowRoles] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const patientsPerPage = 10;
+  const [userRole, setUserRole] = useState("");
+  const [userSpecialty, setUserSpecialty] = useState("");
+  const [assignedPatients, setAssignedPatients] = useState<Patient[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [upcomingControls, setUpcomingControls] = useState<any[]>([]);
 
   useEffect(() => {
-    checkUser();
-    fetchPatients();
-    
-    // Set up realtime subscription
-    const channel = supabase
-      .channel('patients-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'patients'
-        },
-        (payload) => {
-          console.log('Cambio en pacientes:', payload);
-          fetchPatients(); // Refresh patient list on any change
-        }
-      )
-      .subscribe();
+    const initializeDashboard = async () => {
+      await checkUser();
+      await fetchUserPatients();
+      await fetchRecentActivity();
+      await fetchUpcomingControls();
+      
+      // Set up realtime subscriptions
+      const patientsChannel = supabase
+        .channel('user-patients-changes')
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'patients' },
+          () => fetchUserPatients()
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
+      const activityChannel = supabase
+        .channel('user-activity-changes')
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'patient_activities' },
+          () => {
+            fetchRecentActivity();
+            fetchUpcomingControls();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(patientsChannel);
+        supabase.removeChannel(activityChannel);
+      };
     };
+
+    initializeDashboard();
   }, []);
 
   const checkUser = async () => {
@@ -72,43 +83,99 @@ const Dashboard = () => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, role, specialty")
       .eq("id", user.id)
       .single();
 
     if (profile) {
       setUserName(profile.full_name);
+      setUserRole(profile.role || 'Médico');
+      setUserSpecialty(profile.specialty || '');
     }
-
-    // Check if admin
-    const { data: isAdminData } = await supabase.rpc('is_admin', { _user_id: user.id });
-    setIsAdmin(isAdminData || false);
   };
 
-  const fetchPatients = async () => {
+  const fetchUserPatients = async () => {
     try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
       const { data, error } = await supabase
-        .from("patients")
-        .select("*")
-        .eq("status", "active")
+        .rpc('get_doctor_patients', { doctor_id: userData.user.id })
         .order("admission_date", { ascending: false });
 
       if (error) throw error;
-      setPatients(data || []);
-      setFilteredPatients(data || []);
-    } catch (error: any) {
-      toast.error("Error al cargar pacientes");
+      setAssignedPatients(data || []);
+    } catch (error) {
+      console.error("Error al cargar pacientes asignados:", error);
+      toast.error("Error al cargar pacientes asignados");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    if (!value.trim()) {
-      setFilteredPatients(patients);
-      return;
+  const fetchRecentActivity = async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const { data, error } = await supabase
+        .from('patient_activities')
+        .select(`
+          id,
+          patient:patient_id (id, name, room_number, bed_number),
+          type,
+          description,
+          created_at
+        `)
+        .eq('created_by', userData.user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+      setRecentActivity(data || []);
+    } catch (error) {
+      console.error("Error al cargar actividad reciente:", error);
     }
+  };
+
+  const fetchUpcomingControls = async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const nextWeek = new Date(today);
+      nextWeek.setDate(today.getDate() + 7);
+
+      const { data, error } = await supabase
+        .from('patient_controls')
+        .select(`
+          id,
+          patient:patient_id (id, name, room_number, bed_number),
+          control_date,
+          control_type,
+          notes
+        `)
+        .eq('doctor_id', userData.user.id)
+        .gte('control_date', today.toISOString())
+        .lte('control_date', nextWeek.toISOString())
+        .order('control_date', { ascending: true });
+
+      if (error) throw error;
+      setUpcomingControls(data || []);
+    } catch (error) {
+      console.error("Error al cargar controles programados:", error);
+    }
+  };
+
+  const formatActivityDate = (dateString: string) => {
+    return format(new Date(dateString), "PPp", { locale: es });
+  };
+
+  const formatControlDate = (dateString: string) => {
+    return format(new Date(dateString), "EEEE d 'de' MMMM, HH:mm", { locale: es });
+  };
 
     const filtered = patients.filter(patient =>
       patient.name.toLowerCase().includes(value.toLowerCase()) ||
