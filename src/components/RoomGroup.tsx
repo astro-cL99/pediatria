@@ -165,8 +165,6 @@ export function RoomGroup({
               )}
             </div>
           </div>
-        </div>
-      );
     }
 
     // Available bed
@@ -174,24 +172,26 @@ export function RoomGroup({
       <div
         key={`available-${roomNumber}-${bedNumber}`}
         className={cn(
-          "border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center",
-          "hover:border-primary/30 transition-colors min-h-[120px]",
+          "border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center",
+          "hover:border-primary/30 transition-colors min-h-[180px] w-full h-full",
           config.border.replace('border-', 'border-')
         )}
       >
-        <Bed className="w-5 h-5 mb-2 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground mb-3">Cama {bedNumber}</span>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="text-xs h-7"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAssignBed(roomNumber, bedNumber);
-          }}
-        >
-          Asignar Paciente
-        </Button>
+        <div className="flex flex-col items-center justify-center h-full w-full gap-3">
+          <Bed className="w-8 h-8 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Cama {bedNumber}</span>
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="mt-2 w-full max-w-[160px]"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAssignBed(roomNumber, bedNumber);
+            }}
+          >
+            Asignar Paciente
+          </Button>
+        </div>
       </div>
     );
   };
