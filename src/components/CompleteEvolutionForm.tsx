@@ -6,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Save, Plus, Trash2, FileText, Stethoscope, Activity, Droplets, FileSearch, ClipboardList } from "lucide-react";
+import { Save, Plus, Trash2, FileText, Stethoscope, Activity, Droplets, FileSearch, ClipboardList, Sparkles } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AITextFormatter } from "./AITextFormatter";
 
 interface CompleteEvolutionFormProps {
   patientId: string;
@@ -218,12 +219,20 @@ export function CompleteEvolutionForm({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Evolución actual</Label>
+                <div className="flex justify-between items-center">
+                  <Label>Evolución actual</Label>
+                  <AITextFormatter 
+                    onFormat={(formattedText) => setCurrentStatus(formattedText)}
+                    placeholder="Describa el estado actual del paciente..."
+                    buttonText="Formatear con IA"
+                  />
+                </div>
                 <Textarea
                   value={currentStatus}
                   onChange={(e) => setCurrentStatus(e.target.value)}
                   placeholder="Describa el estado actual del paciente..."
-                  rows={4}
+                  rows={8}
+                  className="min-h-[200px]"
                 />
               </div>
               

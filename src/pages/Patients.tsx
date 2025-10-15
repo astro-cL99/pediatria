@@ -1,6 +1,5 @@
-﻿import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import React from "react";
-import { BedAssignment } from "@/types/bed-assignment";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -46,17 +45,21 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-// Using BedAssignment type from @/types/bed-assignment
+// Extend the BedAssignment interface from @/types/bed-assignment
+interface BedAssignment {
+  id: string;
   patient_id: string;
   admission_id: string;
   assigned_at: string;
   service: 'pediatria' | 'cirugia' | 'ucip';
+  room_number?: string;
+  bed_number?: string;
   patient: {
     id: string;
     name: string;
     rut: string;
     date_of_birth: string;
-    gender? string;
+    gender?: string;
     allergies: string | null;
   };
   admission: {
@@ -246,8 +249,8 @@ const PatientCard = React.memo(({
         </div>
       </div>
     </Card>
-  );
-};
+  )
+}
 
 export default function Patients() {
   const navigate = useNavigate();
