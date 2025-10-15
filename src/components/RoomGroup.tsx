@@ -98,6 +98,13 @@ export function RoomGroup({
   const occupiedBeds = patients.map(p => p.bed_number?.toString() || '');
   const occupancyPercentage = Math.round((occupiedBeds.filter(Boolean).length / allBeds.length) * 100);
   
+  // Calculate status counts for the room summary
+  const statusCounts = patients.reduce((acc, curr) => {
+    const status = curr.patient.status || 'sin_estado';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   // Get patient by bed number
   const getPatientInBed = (bedNumber: string): ExtendedBedAssignment | undefined => {
     return patients.find(p => p.bed_number?.toString() === bedNumber);
@@ -165,6 +172,8 @@ export function RoomGroup({
               )}
             </div>
           </div>
+        </div>
+      );
     }
 
     // Available bed
@@ -196,15 +205,96 @@ export function RoomGroup({
     );
   };
 
+  return (
+    <div className={cn("border rounded-lg overflow-hidden mb-4 transition-all shadow-sm w-full", config.border)}>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={cn(
+          "w-full px-4 py-3 text-left flex items-center justify-between",
+          "hover:bg-muted/20 transition-colors",
+          config.bg,
+          config.text,
+          isExpanded ? 'border-b' : ''
+        )}
+      >
+        <div className="flex items-center">
+          <div className="flex items-center">
+            {config.icon}
+            <h3 className="font-semibold ml-2">Sala {roomNumber}</h3>
+          </div>
+          <div className="ml-4 flex items-center">
+            <div className="w-24 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mr-2">
+              <div 
+                className={cn("h-2.5 rounded-full", {
+                  'bg-green-500': occupancyPercentage < 60,
+                  'bg-yellow-500': occupancyPercentage >= 60 && occupancyPercentage < 90,
+                  'bg-red-500': occupancyPercentage >= 90
+                })}
+                style={{ width: `${Math.max(5, occupancyPercentage)}%` }}
+              />
+            </div>
+            <Badge variant="outline" className="text-xs">
+              {patients.length}/{allBeds.length} camas
+            </Badge>
+          </div>
+        </div>
+        
+        <div className="flex items-center">
+          <span className="text-sm font-medium mr-3">
+            {config.name}
+          </span>
+          {isExpanded ? (
+            <ChevronDown className="w-5 h-5" />
+          ) : (
+            <ChevronRight className="w-5 h-5" />
+          )}
+        </div>
+      </button>
+      
+      {isExpanded && (
+        <div className="bg-background w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 w-full">
+            {allBeds.map(bedNumber => (
+              <div key={bedNumber} className="w-full">
+                {renderBedCard(bedNumber)}
+              </div>
+            ))}
+          </div>
+          
+          {/* Room Summary */}
+          <div className={cn("px-4 py-2 text-xs flex flex-wrap justify-between items-center border-t gap-2", config.border)}>
+            <div className="flex items-center">
+              <span className="text-muted-foreground mr-1">Ocupación:</span>
+              <span className="font-medium">{occupancyPercentage}%</span>
+            </div>
+            
+            <div className="flex items-center space-x-3">
               {patients.some(p => p.patient.allergies) && (
                 <div className="flex items-center">
                   <div className="w-2 h-2 rounded-full mr-1 bg-red-500" />
-                  </div>
-                ))}
-              </div>
+                  <span className="text-muted-foreground text-xs">
+                    {patients.filter(p => p.patient.allergies).length} con alergias
+                  </span>
+                </div>
+              )}
+              
+              {Object.entries(statusCounts).map(([status, count]) => (
+                <div key={status} className="flex items-center">
+                  <div className={cn("w-2 h-2 rounded-full mr-1", {
+                    'bg-green-500': status === 'estable',
+                    'bg-yellow-500': status === 'inestable',
+                    'bg-red-500': status === 'crítico',
+                    'bg-gray-400': !status || status === 'sin_estado'
+                  })} />
+                  <span className="text-muted-foreground text-xs">
+                    {count} {status === 'sin_estado' ? 'sin estado' : status}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )}
     </div>
   );
+}

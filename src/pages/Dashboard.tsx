@@ -333,10 +333,6 @@ const Dashboard = () => {
                   <Download className="w-4 h-4" />
                   Exportar CSV
                 </Button>
-                <Button onClick={() => navigate("/patient/new")} variant="outline" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Nuevo Paciente
-                </Button>
               </div>
             </div>
 
@@ -448,10 +444,6 @@ const Dashboard = () => {
           )}
           </>
         )}
-          </>
-        )}
     </div>
   );
 };
-
-export default Dashboard;
