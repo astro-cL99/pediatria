@@ -22,6 +22,7 @@ export type Database = {
           admitted_by: string | null
           allergies: string | null
           antibiotics: Json | null
+          antibiotics_tracking: Json | null
           chief_complaint: string | null
           created_at: string | null
           current_medications: string | null
@@ -52,6 +53,7 @@ export type Database = {
           admitted_by?: string | null
           allergies?: string | null
           antibiotics?: Json | null
+          antibiotics_tracking?: Json | null
           chief_complaint?: string | null
           created_at?: string | null
           current_medications?: string | null
@@ -82,6 +84,7 @@ export type Database = {
           admitted_by?: string | null
           allergies?: string | null
           antibiotics?: Json | null
+          antibiotics_tracking?: Json | null
           chief_complaint?: string | null
           created_at?: string | null
           current_medications?: string | null
@@ -461,10 +464,12 @@ export type Database = {
           created_by: string
           evolution_date: string
           evolution_time: string
+          fluid_calculations: Json | null
           id: string
           objective: string | null
           patient_id: string
           plan: string | null
+          respiratory_scores: Json | null
           subjective: string | null
           updated_at: string | null
           vital_signs: Json | null
@@ -476,10 +481,12 @@ export type Database = {
           created_by: string
           evolution_date?: string
           evolution_time?: string
+          fluid_calculations?: Json | null
           id?: string
           objective?: string | null
           patient_id: string
           plan?: string | null
+          respiratory_scores?: Json | null
           subjective?: string | null
           updated_at?: string | null
           vital_signs?: Json | null
@@ -491,10 +498,12 @@ export type Database = {
           created_by?: string
           evolution_date?: string
           evolution_time?: string
+          fluid_calculations?: Json | null
           id?: string
           objective?: string | null
           patient_id?: string
           plan?: string | null
+          respiratory_scores?: Json | null
           subjective?: string | null
           updated_at?: string | null
           vital_signs?: Json | null
@@ -943,7 +952,7 @@ export type Database = {
       }
       l2_normalize: {
         Args: { "": string } | { "": unknown } | { "": unknown }
-        Returns: string
+        Returns: unknown
       }
       search_clinical_documents: {
         Args: {

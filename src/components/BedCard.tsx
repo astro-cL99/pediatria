@@ -1,9 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Wind, Pill, Activity, Clock } from "lucide-react";
+import { AlertCircle, Wind, Pill, Activity, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { BedPatientDetail } from "./BedPatientDetail";
+import { PatientExpandedView } from "./PatientExpandedView";
+import { AntibioticTracker } from "./AntibioticTracker";
 import { useState } from "react";
 import { differenceInDays } from "date-fns";
+import { calculateDaysHospitalized, getHospitalizationColor } from "@/utils/automaticTracking";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface BedData {
   id: string;

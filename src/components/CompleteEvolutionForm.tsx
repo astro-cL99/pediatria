@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { Save, Plus, Trash2, FileText, Stethoscope, Activity, Droplets, FileSearch, ClipboardList, Sparkles } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AITextFormatter } from "./AITextFormatter";
+import { FluidTherapyCalculator } from "./FluidTherapyCalculator";
+import type { FluidTherapyCalculation } from "@/utils/fluidTherapy";
 
 interface CompleteEvolutionFormProps {
   patientId: string;
@@ -66,6 +68,38 @@ export function CompleteEvolutionForm({
     pending: "",
   });
 
+  // MEJORA 2: Scores respiratorios
+  const [respiratoryScores, setRespiratoryScores] = useState({
+    pulmonary_at_admission: "",
+    pulmonary_current: "",
+    tal_at_admission: "",
+    tal_current: "",
+  });
+
+  // MEJORA 4: Fluidoterapia
+  const [fluidCalculation, setFluidCalculation] = useState<FluidTherapyCalculation | null>(null);
+  const [patientWeight, setPatientWeight] = useState<number>(0);
+  const [patientHeight, setPatientHeight] = useState<number>(0);
+
+  // Cargar peso y talla del paciente
+  useEffect(() => {
+    const loadPatientData = async () => {
+      const { data } = await supabase
+        .from("anthropometric_data")
+        .select("weight_kg, height_cm")
+        .eq("patient_id", patientId)
+        .order("measured_at", { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (data) {
+        setPatientWeight(Number(data.weight_kg) || 0);
+        setPatientHeight(Number(data.height_cm) || 0);
+      }
+    };
+    loadPatientData();
+  }, [patientId]);
+
   const addDiagnosis = () => {
     if (newDiagnosis.trim() && !diagnoses.includes(newDiagnosis)) {
       setDiagnoses([...diagnoses, newDiagnosis]);
@@ -111,6 +145,28 @@ export function CompleteEvolutionForm({
         return;
       }
 
+      // Preparar scores respiratorios
+      const scoresData = {
+        ...(respiratoryScores.pulmonary_at_admission && respiratoryScores.pulmonary_current
+          ? {
+              pulmonary_score: {
+                at_admission: Number(respiratoryScores.pulmonary_at_admission),
+                current: Number(respiratoryScores.pulmonary_current),
+                date_measured: new Date().toISOString(),
+              },
+            }
+          : {}),
+        ...(respiratoryScores.tal_at_admission && respiratoryScores.tal_current
+          ? {
+              tal_score: {
+                at_admission: Number(respiratoryScores.tal_at_admission),
+                current: Number(respiratoryScores.tal_current),
+                date_measured: new Date().toISOString(),
+              },
+            }
+          : {}),
+      };
+
       const { data, error } = await supabase
         .from("daily_evolutions")
         .insert([
@@ -123,6 +179,8 @@ export function CompleteEvolutionForm({
             assessment: diagnoses.filter(d => d.trim() !== "").join(", "),
             plan: plans.filter(p => p.trim() !== "").join(", "),
             vital_signs: vitalSigns,
+            respiratory_scores: Object.keys(scoresData).length > 0 ? scoresData : null,
+            fluid_calculations: fluidCalculation ? JSON.parse(JSON.stringify(fluidCalculation)) : null,
           },
         ])
         .select();
@@ -142,7 +200,7 @@ export function CompleteEvolutionForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="diagnosticos">
             <FileText className="w-4 h-4 mr-2" />
             Diagnósticos
@@ -155,9 +213,17 @@ export function CompleteEvolutionForm({
             <Stethoscope className="w-4 h-4 mr-2" />
             Examen Físico
           </TabsTrigger>
+          <TabsTrigger value="scores">
+            <Activity className="w-4 h-4 mr-2" />
+            Scores
+          </TabsTrigger>
           <TabsTrigger value="estudios">
             <FileSearch className="w-4 h-4 mr-2" />
             Estudios
+          </TabsTrigger>
+          <TabsTrigger value="fluidos">
+            <Droplets className="w-4 h-4 mr-2" />
+            Fluidoterapia
           </TabsTrigger>
           <TabsTrigger value="plan">
             <ClipboardList className="w-4 h-4 mr-2" />
@@ -368,6 +434,92 @@ export function CompleteEvolutionForm({
           </Card>
         </TabsContent>
 
+        {/* MEJORA 2: Scores Respiratorios */}
+        <TabsContent value="scores" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>📊 Scores Respiratorios Evolutivos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h4 className="font-semibold">Pulmonary Score</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Score al Ingreso</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="12"
+                      value={respiratoryScores.pulmonary_at_admission}
+                      onChange={(e) =>
+                        setRespiratoryScores({
+                          ...respiratoryScores,
+                          pulmonary_at_admission: e.target.value,
+                        })
+                      }
+                      placeholder="0-12"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Score Actual</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="12"
+                      value={respiratoryScores.pulmonary_current}
+                      onChange={(e) =>
+                        setRespiratoryScores({
+                          ...respiratoryScores,
+                          pulmonary_current: e.target.value,
+                        })
+                      }
+                      placeholder="0-12"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-semibold">Score de Tal Modificado</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Score al Ingreso</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="12"
+                      value={respiratoryScores.tal_at_admission}
+                      onChange={(e) =>
+                        setRespiratoryScores({
+                          ...respiratoryScores,
+                          tal_at_admission: e.target.value,
+                        })
+                      }
+                      placeholder="0-12"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Score Actual</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="12"
+                      value={respiratoryScores.tal_current}
+                      onChange={(e) =>
+                        setRespiratoryScores({
+                          ...respiratoryScores,
+                          tal_current: e.target.value,
+                        })
+                      }
+                      placeholder="0-12"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Estudios */}
         <TabsContent value="estudios" className="space-y-4">
           <Card>
@@ -396,6 +548,15 @@ export function CompleteEvolutionForm({
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* MEJORA 4: Fluidoterapia */}
+        <TabsContent value="fluidos">
+          <FluidTherapyCalculator
+            initialWeight={patientWeight}
+            initialHeight={patientHeight}
+            onCalculationComplete={setFluidCalculation}
+          />
         </TabsContent>
 
         {/* Plan e Indicaciones */}
