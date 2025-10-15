@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Clock, Calendar, Stethoscope, FileText, Bell, User } from "lucide-react";
+import { Activity, Clock, Calendar, Stethoscope, FileText, Bell, User, Search, Download, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardStats } from "@/components/DashboardStats";
 import { calculateDaysHospitalized } from "@/utils/calculateDaysHospitalized";
@@ -31,6 +31,10 @@ interface Patient {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [showRoles, setShowRoles] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const patientsPerPage = 10;
   const [userName, setUserName] = useState("");
   const [userRole, setUserRole] = useState("");
   const [userSpecialty, setUserSpecialty] = useState("");
@@ -148,22 +152,32 @@ const Dashboard = () => {
       const nextWeek = new Date(today);
       nextWeek.setDate(today.getDate() + 7);
 
+      // Using the admissions table as a fallback for controls
       const { data, error } = await supabase
-        .from('patient_controls')
+        .from('admissions')
         .select(`
           id,
           patient:patient_id (id, name, room_number, bed_number),
-          control_date,
-          control_type,
-          notes
+          admission_date,
+          admission_diagnoses,
+          discharge_date
         `)
-        .eq('doctor_id', userData.user.id)
-        .gte('control_date', today.toISOString())
-        .lte('control_date', nextWeek.toISOString())
-        .order('control_date', { ascending: true });
+        .eq('admitted_by', userData.user.id)
+        .is('discharge_date', null) // Only active admissions
+        .order('admission_date', { ascending: true });
 
       if (error) throw error;
-      setUpcomingControls(data || []);
+      
+      // Map admissions to controls format
+      const controls = (data || []).map(admission => ({
+        id: admission.id,
+        patient: admission.patient,
+        control_date: admission.admission_date,
+        control_type: 'Control de ingreso',
+        notes: admission.admission_diagnoses?.[0] || 'Sin diagnóstico especificado'
+      }));
+      
+      setUpcomingControls(controls);
     } catch (error) {
       console.error("Error al cargar controles programados:", error);
     }
@@ -177,13 +191,17 @@ const Dashboard = () => {
     return format(new Date(dateString), "EEEE d 'de' MMMM, HH:mm", { locale: es });
   };
 
-    const filtered = patients.filter(patient =>
-      patient.name.toLowerCase().includes(value.toLowerCase()) ||
-      patient.rut.includes(value)
-    );
-    setFilteredPatients(filtered);
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
     setCurrentPage(1); // Reset to first page when searching
   };
+  };
+
+  // Filter patients based on search term
+  const filteredPatients = assignedPatients.filter(patient =>
+    patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.rut?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Pagination
   const indexOfLastPatient = currentPage * patientsPerPage;
@@ -195,6 +213,24 @@ const Dashboard = () => {
     await supabase.auth.signOut();
     navigate("/login");
   };
+
+  // Add missing Input component
+  const Input = ({ placeholder, value, onChange, className, ...props }: {
+    placeholder: string;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    className?: string;
+    [key: string]: any;
+  }) => (
+    <input
+      type="text"
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      {...props}
+    />
+  );
 
   const calculateAge = (dateOfBirth: string) => {
     const today = new Date();
@@ -224,115 +260,168 @@ const Dashboard = () => {
     }
   };
 
+  const formatDaysHospitalized = (days: number) => {
+    if (days === 0) return "Hoy";
+    if (days === 1) return "1 día";
+    return `${days} días`;
+  };
+
   return (
     <div className="p-6 space-y-6 animate-fade-in">
-        {showRoles ? (
-          <RoleManagement />
-        ) : (
-          <>
-            {/* Stats Dashboard */}
-            <DashboardStats patientsCount={patients.length} />
-
-        {/* Patients Section */}
-        <div className="space-y-4 mb-6 mt-8">
+      {showRoles ? (
+        <div>Role Management Component</div>
+      ) : (
+        <>
+          {/* Welcome Header */}
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Pacientes Hospitalizados</h2>
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => exportPatientDataToCSV(patients)} 
-                variant="outline" 
-                className="gap-2"
-                disabled={patients.length === 0}
-              >
-                <Download className="w-4 h-4" />
-                Exportar CSV
-              </Button>
-              <Button onClick={() => navigate("/patient/new")} variant="outline" className="gap-2">
-                <Plus className="w-4 h-4" />
-                Nuevo Paciente
-              </Button>
-              <Button onClick={() => navigate("/admission/new")} className="gap-2">
-                <Plus className="w-4 h-4" />
-                Nuevo Ingreso
-              </Button>
+            <div>
+              <h1 className="text-3xl font-bold">Hola, {userName || 'Médico'}</h1>
+              <p className="text-muted-foreground">
+                {userSpecialty || 'Médico'} • {new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => navigate("/admission/new")}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nuevo Ingreso
+            </Button>
+          </div>
+
+          {/* Stats Dashboard */}
+          <DashboardStats patientsCount={assignedPatients.length} />
+
+          {/* Recent Activity */}
+          {recentActivity.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Actividad Reciente</h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {recentActivity.map((activity) => (
+                  <Card key={activity.id}>
+                    <CardHeader className="pb-2">
+                      <CardDescription className="flex items-center gap-2">
+                        <Activity className="w-4 h-4" />
+                        {formatActivityDate(activity.created_at)}
+                      </CardDescription>
+                      <CardTitle className="text-lg">
+                        {activity.patient?.name || 'Paciente'}
+                      </CardTitle>
+                      {activity.patient?.room_number && (
+                        <p className="text-sm text-muted-foreground">
+                          Hab. {activity.patient.room_number} • Cama {activity.patient.bed_number}
+                        </p>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm">{activity.description}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Patients Section */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Mis Pacientes</h2>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {}} 
+                  variant="outline" 
+                  className="gap-2"
+                  disabled={assignedPatients.length === 0}
+                >
+                  <Download className="w-4 h-4" />
+                  Exportar CSV
+                </Button>
+                <Button onClick={() => navigate("/patient/new")} variant="outline" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Nuevo Paciente
+                </Button>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nombre o RUT..."
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-10"
+              />
             </div>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nombre o RUT..."
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-
         {loading ? (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              Cargando pacientes...
-            </CardContent>
-          </Card>
-        ) : filteredPatients.length === 0 ? (
+          <div className="grid gap-4">
+            {[...Array(3)].map((_, i) => (
+              <SkeletonCard key={i} className="h-24" />
+            ))}
+          </div>
+        ) : assignedPatients.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-lg font-medium mb-2">
-                {searchTerm ? "No se encontraron pacientes" : "No hay pacientes activos"}
+                No tienes pacientes asignados
               </p>
               <p className="text-muted-foreground mb-4">
-                {searchTerm ? "Intenta con otro término de búsqueda" : "Comienza agregando tu primer paciente"}
+                Comienza agregando un nuevo paciente o espera a que te asignen pacientes
               </p>
-              {!searchTerm && (
-                <Button onClick={() => navigate("/patient/new")}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Agregar Paciente
-                </Button>
-              )}
+              <Button onClick={() => navigate("/patient/new")}>
+                <Plus className="w-4 h-4 mr-2" />
+                Agregar Paciente
+              </Button>
             </CardContent>
           </Card>
         ) : (
           <>
             <div className="grid gap-4">
               {currentPatients.map((patient) => (
-              <Card
-                key={patient.id}
-                className="hover:shadow-lg transition-all cursor-pointer"
-                onClick={() => navigate(`/patient/${patient.id}`)}
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <CardTitle className="text-xl">{patient.name}</CardTitle>
-                        {patient.allergies && (
-                          <Badge variant="destructive" className="text-xs">⚠️ Alergia</Badge>
-                        )}
+                <Card
+                  key={patient.id}
+                  className="hover:shadow-lg transition-all cursor-pointer"
+                  onClick={() => navigate(`/patient/${patient.id}`)}
+                >
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <CardTitle className="text-xl">{patient.name || 'Paciente sin nombre'}</CardTitle>
+                          {patient.allergies && (
+                            <Badge variant="destructive" className="text-xs">⚠️ Alergia</Badge>
+                          )}
+                        </div>
+                        <CardDescription className="flex gap-4 text-sm">
+                          <span>RUT: {patient.rut || 'No especificado'}</span>
+                          {patient.date_of_birth && (
+                            <span>Edad: {calculateAge(patient.date_of_birth)}</span>
+                          )}
+                          {patient.admission_date && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {formatDaysHospitalized(calculateDaysHospitalized(patient.admission_date))}
+                            </span>
+                          )}
+                        </CardDescription>
                       </div>
-                      <CardDescription className="flex gap-4 text-sm">
-                        <span>RUT: {patient.rut}</span>
-                        <span>Edad: {calculateAge(patient.date_of_birth)}</span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatDaysHospitalized(calculateDaysHospitalized(patient.admission_date))}
-                        </span>
-                      </CardDescription>
+                      <Badge className={getStatusColor(patient.status || 'active')}>
+                        {patient.status === "active" ? "Activo" : (patient.status || 'Sin estado')}
+                      </Badge>
                     </div>
-                    <Badge className={getStatusColor(patient.status)}>
-                      {patient.status === "active" ? "Activo" : patient.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Ingreso: {new Date(patient.admission_date).toLocaleDateString("es-CL")}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {patient.room_number && patient.bed_number && (
+                        <span>Habitación {patient.room_number} - Cama {patient.bed_number}</span>
+                      )}
+                      {patient.admission_date && (
+                        <span>• Ingreso: {new Date(patient.admission_date).toLocaleDateString("es-CL")}</span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
           </div>
 
           {/* Pagination */}
