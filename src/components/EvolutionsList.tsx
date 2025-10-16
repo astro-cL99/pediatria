@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Activity } from "lucide-react";
+import { Calendar, Activity, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface Evolution {
   id: string;
@@ -15,6 +17,7 @@ interface Evolution {
   plan: string;
   vital_signs: any;
   created_at: string;
+  created_by: string;
 }
 
 interface EvolutionsListProps {
@@ -25,8 +28,10 @@ interface EvolutionsListProps {
 export function EvolutionsList({ patientId, admissionId }: EvolutionsListProps) {
   const [evolutions, setEvolutions] = useState<Evolution[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
+    getCurrentUser();
     fetchEvolutions();
 
     // Subscribe to changes
@@ -48,6 +53,29 @@ export function EvolutionsList({ patientId, admissionId }: EvolutionsListProps) 
       supabase.removeChannel(channel);
     };
   }, [patientId, admissionId]);
+
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id || null);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Está seguro de eliminar esta evolución?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("daily_evolutions")
+        .delete()
+        .eq("id", id)
+        .eq("created_by", currentUserId!);
+
+      if (error) throw error;
+      toast.success("Evolución eliminada");
+      fetchEvolutions();
+    } catch (error: any) {
+      toast.error("Error al eliminar: " + error.message);
+    }
+  };
 
   const fetchEvolutions = async () => {
     try {
@@ -103,7 +131,19 @@ export function EvolutionsList({ patientId, admissionId }: EvolutionsListProps) 
                     })}
                   </CardTitle>
                 </div>
-                <Badge variant="outline">{evolution.evolution_time}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{evolution.evolution_time}</Badge>
+                  {currentUserId === evolution.created_by && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(evolution.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">

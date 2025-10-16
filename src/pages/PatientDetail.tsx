@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { FileText, Stethoscope, ClipboardList, Activity, FileSearch, Droplets, ArrowLeft, Printer, Upload } from "lucide-react";
+import { FileText, Stethoscope, ClipboardList, Activity, FileSearch, Droplets, ArrowLeft, Printer, Upload, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -123,10 +123,18 @@ const PatientDetail = () => {
     );
   }
 
-  if (!patient) {
+  if (!patient && !loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Paciente no encontrado</p>
+      <div className="min-h-screen flex flex-col items-center justify-center p-6">
+        <XCircle className="w-16 h-16 text-destructive mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Paciente no encontrado</h2>
+        <p className="text-muted-foreground mb-4 text-center max-w-md">
+          El ID proporcionado no corresponde a ningún paciente registrado en el sistema
+        </p>
+        <Button onClick={() => navigate("/patients")}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Volver a Pacientes
+        </Button>
       </div>
     );
   }

@@ -26,6 +26,7 @@ interface EpicrisisFormData {
   discharge_weight: string;
   admission_diagnosis: string;
   discharge_diagnosis: string;
+  resumen_ingreso: string;
   evolution_and_treatment: string;
   laboratory_exams: string;
   imaging_exams: string;
@@ -145,6 +146,7 @@ export default function NewEpicrisis() {
           discharge_weight: data.discharge_weight ? parseFloat(data.discharge_weight) : null,
           admission_diagnosis: data.admission_diagnosis,
           discharge_diagnosis: data.discharge_diagnosis,
+          resumen_ingreso: data.resumen_ingreso || null,
           evolution_and_treatment: data.evolution_and_treatment,
           laboratory_exams: data.laboratory_exams || null,
           imaging_exams: data.imaging_exams || null,
@@ -286,6 +288,22 @@ export default function NewEpicrisis() {
                   <Label htmlFor="discharge_diagnosis">Diagnóstico de Egreso</Label>
                   <Textarea {...register("discharge_diagnosis")} rows={3} required />
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Resumen de Ingreso</CardTitle>
+                <CardDescription>
+                  Descripción breve del motivo y condiciones de ingreso
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Textarea 
+                  {...register("resumen_ingreso")} 
+                  rows={4}
+                  placeholder="Resuma brevemente el cuadro clínico y motivo de ingreso..."
+                />
               </CardContent>
             </Card>
 

@@ -14,6 +14,7 @@ import NewAdmission from "./pages/NewAdmission";
 import PatientDetail from "./pages/PatientDetail";
 import AdmissionPrint from "./pages/AdmissionPrint";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
 
 // Lazy load heavy components
 const ClinicalProtocols = lazy(() => import("./pages/ClinicalProtocols"));
@@ -66,6 +67,8 @@ const App = () => (
           <Route path="/patient/new" element={<AppLayout><NewPatient /></AppLayout>} />
           <Route path="/admission/new" element={<AppLayout><NewAdmission /></AppLayout>} />
           <Route path="/patient/:id" element={<AppLayout><PatientDetail /></AppLayout>} />
+          <Route path="/patients/:id" element={<Navigate to="/patient/:id" replace />} />
+          <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
           <Route 
             path="/patient/:id/anthropometry" 
             element={

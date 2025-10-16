@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Download, Eye, Search } from "lucide-react";
+import { Plus, Download, Eye, Search, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface EpicrisisRecord {
   id: string;
@@ -21,14 +32,27 @@ interface EpicrisisRecord {
   discharge_diagnosis: string;
   attending_physician: string;
   created_at: string;
+  created_by: string;
   pdf_file_path?: string;
 }
 
 export default function Epicrisis() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [epicrisisToDelete, setEpicrisisToDelete] = useState<string | null>(null);
 
-  const { data: epicrisisList, isLoading } = useQuery({
+  useEffect(() => {
+    getCurrentUser();
+  }, []);
+
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id || null);
+  };
+
+  const { data: epicrisisList, isLoading, refetch } = useQuery({
     queryKey: ["epicrisis"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -47,6 +71,38 @@ export default function Epicrisis() {
     epi.admission_diagnosis.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const canDelete = (epicrisis: EpicrisisRecord) => {
+    return currentUserId && epicrisis.created_by === currentUserId;
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setEpicrisisToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!epicrisisToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from("epicrisis")
+        .delete()
+        .eq("id", epicrisisToDelete)
+        .eq("created_by", currentUserId!);
+
+      if (error) throw error;
+
+      toast.success("Epicrisis eliminada exitosamente");
+      refetch();
+    } catch (error: any) {
+      console.error("Error deleting epicrisis:", error);
+      toast.error("Error al eliminar epicrisis: " + error.message);
+    } finally {
+      setDeleteDialogOpen(false);
+      setEpicrisisToDelete(null);
+    }
+  };
+
   const handleDownloadPDF = async (epicrisis: EpicrisisRecord) => {
     if (!epicrisis.pdf_file_path) return;
     
@@ -56,6 +112,7 @@ export default function Epicrisis() {
 
     if (error) {
       console.error("Error downloading PDF:", error);
+      toast.error("Error al descargar PDF");
       return;
     }
 
@@ -149,6 +206,16 @@ export default function Epicrisis() {
                           <Download className="h-4 w-4" />
                         </Button>
                       )}
+                      {canDelete(epi) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteClick(epi.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -161,6 +228,23 @@ export default function Epicrisis() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente la epicrisis seleccionada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

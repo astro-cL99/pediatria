@@ -1,4 +1,4 @@
-import { Home, Users, FileText, BookOpen, BarChart3, Settings, Upload, Search, Bot, FileCheck, ClipboardList, Bed } from "lucide-react";
+import { Home, Users, FileText, BookOpen, BarChart3, Settings, Upload, Search, Bot, FileCheck, ClipboardList, Bed, UserCircle } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -25,6 +25,7 @@ const mainItems = [
   { title: "Asistente IA", url: "/assistant", icon: Bot },
   { title: "Protocolos", url: "/protocols", icon: BookOpen },
   { title: "Estadísticas", url: "/stats", icon: BarChart3 },
+  { title: "Mi Perfil", url: "/profile", icon: UserCircle },
 ];
 
 export function AppSidebar() {

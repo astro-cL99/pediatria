@@ -25,6 +25,7 @@ export type Database = {
           antibiotics_tracking: Json | null
           chief_complaint: string | null
           created_at: string | null
+          current_diagnoses: string[] | null
           current_medications: string | null
           dau_file_path: string | null
           discharge_date: string | null
@@ -56,6 +57,7 @@ export type Database = {
           antibiotics_tracking?: Json | null
           chief_complaint?: string | null
           created_at?: string | null
+          current_diagnoses?: string[] | null
           current_medications?: string | null
           dau_file_path?: string | null
           discharge_date?: string | null
@@ -87,6 +89,7 @@ export type Database = {
           antibiotics_tracking?: Json | null
           chief_complaint?: string | null
           created_at?: string | null
+          current_diagnoses?: string[] | null
           current_medications?: string | null
           dau_file_path?: string | null
           discharge_date?: string | null
@@ -593,6 +596,7 @@ export type Database = {
           patient_rut: string
           pdf_file_path: string | null
           physician_signature: string | null
+          resumen_ingreso: string | null
           updated_at: string | null
         }
         Insert: {
@@ -618,6 +622,7 @@ export type Database = {
           patient_rut: string
           pdf_file_path?: string | null
           physician_signature?: string | null
+          resumen_ingreso?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -643,6 +648,7 @@ export type Database = {
           patient_rut?: string
           pdf_file_path?: string | null
           physician_signature?: string | null
+          resumen_ingreso?: string | null
           updated_at?: string | null
         }
         Relationships: [
