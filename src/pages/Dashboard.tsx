@@ -493,7 +493,7 @@ const Dashboard = () => {
                     <CardHeader className="pb-2">
                       <CardDescription className="flex items-center gap-2">
                         <Activity className="w-4 h-4" />
-                        {formatActivityDate(activity.created_at)}
+                        {format(new Date(activity.created_at), "PPp", { locale: es })}
                       </CardDescription>
                       <CardTitle className="text-lg">
                         {activity.patient?.name || 'Paciente'}
@@ -512,95 +512,8 @@ const Dashboard = () => {
               </div>
             </div>
           )}
-
-          {/* Patients Section */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Mis Pacientes</h2>
-              <div className="flex gap-2">
-                <Button 
-                  onClick={() => {}} 
-                  variant="outline" 
-                  className="gap-2"
-                  disabled={assignedPatients.length === 0}
-                >
-                  <Download className="w-4 h-4" />
-                  Exportar CSV
-                </Button>
-              </div>
-            </div>
-
-            {/* Search Bar */}
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nombre o RUT..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
         </div>
       )}
-
-            {loading ? (
-              <div className="grid gap-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-24">
-                    <SkeletonCard />
-                  </div>
-                ))}
-              </div>
-            ) : filteredPatients.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium">No hay pacientes asignados</h3>
-                  <p className="text-muted-foreground mt-2">
-                    Comienza agregando un nuevo paciente
-                  </p>
-                  <Button className="mt-4" onClick={() => navigate('/admission/new')}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nuevo Ingreso
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {filteredPatients
-                  .slice((currentPage - 1) * patientsPerPage, currentPage * patientsPerPage)
-                  .map((patient) => (
-                    <Card key={patient.id}>
-                      <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-medium">{patient.name}</h3>
-                        <Badge variant="outline">{patient.rut}</Badge>
-                        <Badge className={getStatusColor(patient.status)}>
-                          {patient.status === 'active' ? 'Activo' : 
-                           patient.status === 'discharged' ? 'Alta' :
-                           patient.status === 'pending' ? 'Pendiente' : 'Transferido'}
-                        </Badge>
-                      </div>
-                      <div className="mt-2 text-sm text-muted-foreground">
-                        {patient.room_number && (
-                          <span>Habitación {patient.room_number} • </span>
-                        )}
-                        {patient.bed_number && (
-                          <span>Cama {patient.bed_number} • </span>
-                        )}
-                        <span>Edad: {calculateAge(patient.date_of_birth)}</span>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/patient/${patient.id}`)}
-                    >
-                      Ver Detalles
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
