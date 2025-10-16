@@ -1,8 +1,9 @@
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DocumentUpload {
   file: File;
   patient_id: string;
+  admission_id?: string;
   document_type: string;
   metadata?: Record<string, any>;
 }
@@ -10,6 +11,7 @@ interface DocumentUpload {
 export const uploadClinicalDocument = async ({
   file,
   patient_id,
+  admission_id,
   document_type,
   metadata = {},
 }: DocumentUpload) => {
@@ -20,18 +22,13 @@ export const uploadClinicalDocument = async ({
     // Upload file to storage
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-    const filePath = `clinical-documents/${fileName}`;
+    const filePath = `medical-documents/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('clinical-documents')
+      .from('medical-documents')
       .upload(filePath, file);
 
     if (uploadError) throw uploadError;
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('clinical-documents')
-      .getPublicUrl(filePath);
 
     // Create document record
     const { data: document, error: insertError } = await supabase
@@ -39,12 +36,11 @@ export const uploadClinicalDocument = async ({
       .insert([
         {
           patient_id,
+          admission_id,
           document_type,
-          file_url: publicUrl,
+          file_path: filePath,
           file_name: file.name,
-          file_type: file.type,
-          file_size: file.size,
-          metadata,
+          extracted_data: metadata,
           uploaded_by: user.id,
         },
       ])
@@ -81,7 +77,7 @@ export const deleteClinicalDocument = async (documentId: string) => {
     // First get the document to check ownership
     const { data: document, error: fetchError } = await supabase
       .from('clinical_documents')
-      .select('file_url, uploaded_by')
+      .select('file_path, uploaded_by')
       .eq('id', documentId)
       .single();
 
@@ -91,19 +87,16 @@ export const deleteClinicalDocument = async (documentId: string) => {
     if (!user) throw new Error('User not authenticated');
 
     // Only allow deletion if user is the owner or admin
-    const { data: isAdmin } = await supabase.rpc('is_admin', { user_id: user.id });
+    const { data: isAdmin } = await supabase.rpc('is_admin', { _user_id: user.id });
     
     if (document.uploaded_by !== user.id && !isAdmin) {
       throw new Error('Unauthorized: You can only delete your own documents');
     }
-
-    // Extract file path from URL
-    const filePath = document.file_url.split('/').pop();
     
     // Delete from storage
     const { error: deleteStorageError } = await supabase.storage
-      .from('clinical-documents')
-      .remove([filePath]);
+      .from('medical-documents')
+      .remove([document.file_path]);
 
     if (deleteStorageError) throw deleteStorageError;
 

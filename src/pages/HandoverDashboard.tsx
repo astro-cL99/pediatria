@@ -128,9 +128,10 @@ export default function HandoverDashboard() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Entrega de Turno</h1>
+          <h1 className="text-3xl font-bold">🏥 ENTREGA DE TURNO - VISUALIZACIÓN</h1>
           <p className="text-muted-foreground">
-            Visualización de camas y pacientes hospitalizados
+            Vista proyectable para discusión matutina. Énfasis en nuevos ingresos y tareas pendientes.
+            Para ser presentada en TV durante la reunión del equipo médico.
           </p>
         </div>
         <div className="flex gap-2">

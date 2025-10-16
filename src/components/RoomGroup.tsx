@@ -6,12 +6,32 @@ import { cn } from "@/lib/utils";
 import { BedAssignment } from "@/types/bed-assignment";
 
 // Extend the BedAssignment type to include additional properties
-interface ExtendedBedAssignment extends Omit<BedAssignment, 'patient' | 'admission'> {
-  patient: BedAssignment['patient'] & {
-    status?: 'estable' | 'inestable' | 'crítico';
+interface ExtendedBedAssignment {
+  id: string;
+  patient_id: string;
+  admission_id: string;
+  assigned_at: string;
+  room_number: string;
+  bed_number: number | string;
+  service?: 'pediatria' | 'ucip' | 'cirugia';
+  patient: {
+    id: string;
+    name: string;
+    rut: string;
+    date_of_birth: string;
+    allergies?: string | null;
+    status?: 'estable' | 'inestable' | 'crítico' | 'active' | 'deceased' | 'discharged' | 'transferred';
   };
-  admission?: BedAssignment['admission'] & {
+  admission?: {
+    id: string;
     admission_date: string;
+    admission_diagnoses?: string[];
+    oxygen_requirement?: any;
+    respiratory_score?: string | null;
+    viral_panel?: string | null;
+    pending_tasks?: string | null;
+    antibiotics?: any;
+    medications?: string;
   };
 }
 

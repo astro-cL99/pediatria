@@ -362,8 +362,11 @@ export default function NewAdmission() {
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background p-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">Nuevo Ingreso Hospitalario</h1>
-          <p className="text-muted-foreground">Complete los datos del paciente a ingresar</p>
+          <h1 className="text-4xl font-bold text-primary mb-2">📥 INGRESO HOSPITALARIO</h1>
+          <p className="text-muted-foreground">
+            Registro inicial del paciente: DAU, exámenes de laboratorio, indicaciones médicas y asignación de cama.
+            Este proceso inicia el conteo de días de hospitalización y tratamiento antibiótico.
+          </p>
         </div>
 
         <Card className="mb-6">

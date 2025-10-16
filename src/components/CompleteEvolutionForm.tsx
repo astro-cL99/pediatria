@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Save, Plus, Trash2, FileText, Stethoscope, Activity, Droplets, FileSearch, ClipboardList, Sparkles } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AITextFormatter } from "./AITextFormatter";
 import { FluidTherapyCalculator } from "./FluidTherapyCalculator";
+import { CIE10Search } from "./CIE10Search";
 import type { FluidTherapyCalculation } from "@/utils/fluidTherapy";
 
 interface CompleteEvolutionFormProps {
@@ -34,7 +35,7 @@ export function CompleteEvolutionForm({
   defaultVitalSigns = {}
 }: CompleteEvolutionFormProps) {
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("diagnosticos");
+  const [activeTab, setActiveTab] = useState("evaluacion");
   
   // Form states
   const [diagnoses, setDiagnoses] = useState<string[]>(defaultDiagnoses);
@@ -200,26 +201,18 @@ export function CompleteEvolutionForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="diagnosticos">
-            <FileText className="w-4 h-4 mr-2" />
-            Diagnósticos
-          </TabsTrigger>
-          <TabsTrigger value="actual">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="evaluacion">
             <Activity className="w-4 h-4 mr-2" />
-            Estado Actual
+            Evaluación
           </TabsTrigger>
           <TabsTrigger value="examen">
             <Stethoscope className="w-4 h-4 mr-2" />
             Examen Físico
           </TabsTrigger>
           <TabsTrigger value="scores">
-            <Activity className="w-4 h-4 mr-2" />
-            Scores
-          </TabsTrigger>
-          <TabsTrigger value="estudios">
             <FileSearch className="w-4 h-4 mr-2" />
-            Estudios
+            Scores & Labs
           </TabsTrigger>
           <TabsTrigger value="fluidos">
             <Droplets className="w-4 h-4 mr-2" />
@@ -227,55 +220,94 @@ export function CompleteEvolutionForm({
           </TabsTrigger>
           <TabsTrigger value="plan">
             <ClipboardList className="w-4 h-4 mr-2" />
-            Plan e Indicaciones
+            Plan
           </TabsTrigger>
         </TabsList>
 
-        {/* Diagnósticos */}
-        <TabsContent value="diagnosticos" className="space-y-4">
+        {/* Tab 1: Evaluación (combina Diagnósticos + Estado Actual + Signos) */}
+        <TabsContent value="evaluacion" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Diagnósticos</CardTitle>
+              <CardTitle>📋 EVOLUCIÓN DIARIA</CardTitle>
+              <CardDescription>Actualización: peso del día, fiebre, cambios ATB, exámenes, estado general</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              {/* Diagnósticos con CIE-10 */}
               <div className="space-y-2">
-                <Label>Agregar diagnóstico</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={newDiagnosis}
-                    onChange={(e) => setNewDiagnosis(e.target.value)}
-                    placeholder="Nuevo diagnóstico"
-                  />
-                  <Button type="button" onClick={addDiagnosis} variant="outline">
-                    <Plus className="w-4 h-4 mr-1" />
-                    Agregar
-                  </Button>
-                </div>
+                <Label className="text-base font-semibold">Diagnósticos</Label>
+                <CIE10Search
+                  selectedDiagnoses={diagnoses}
+                  onDiagnosesChange={setDiagnoses}
+                />
               </div>
-              
+
+              {/* Estado Actual */}
               <div className="space-y-2">
-                <Label>Lista de diagnósticos</Label>
-                <div className="border rounded-md p-4 space-y-2">
-                  {diagnoses.length > 0 ? (
-                    <ul className="space-y-2">
-                      {diagnoses.map((diagnosis, index) => (
-                        <li key={index} className="flex items-center justify-between p-2 bg-muted/20 rounded">
-                          <span>{diagnosis}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeDiagnosis(index)}
-                            className="h-6 w-6"
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-muted-foreground text-sm">No hay diagnósticos agregados</p>
-                  )}
+                <div className="flex justify-between items-center">
+                  <Label className="text-base font-semibold">Evolución Actual</Label>
+                  <AITextFormatter 
+                    onFormat={(formattedText) => setCurrentStatus(formattedText)}
+                    placeholder="Describa el estado actual del paciente..."
+                    buttonText="Formatear con IA"
+                  />
+                </div>
+                <Textarea
+                  value={currentStatus}
+                  onChange={(e) => setCurrentStatus(e.target.value)}
+                  placeholder="Describa el estado actual del paciente..."
+                  rows={6}
+                  className="min-h-[150px]"
+                />
+              </div>
+
+              {/* Signos Vitales */}
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">Signos Vitales</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="space-y-2">
+                    <Label>Temperatura (°C)</Label>
+                    <Input
+                      type="number"
+                      value={vitalSigns.temperature}
+                      onChange={(e) => setVitalSigns({...vitalSigns, temperature: e.target.value})}
+                      placeholder="36.5"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>FC (lpm)</Label>
+                    <Input
+                      type="number"
+                      value={vitalSigns.heartRate}
+                      onChange={(e) => setVitalSigns({...vitalSigns, heartRate: e.target.value})}
+                      placeholder="80"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>PA (mmHg)</Label>
+                    <Input
+                      value={vitalSigns.bloodPressure}
+                      onChange={(e) => setVitalSigns({...vitalSigns, bloodPressure: e.target.value})}
+                      placeholder="120/80"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>FR (rpm)</Label>
+                    <Input
+                      type="number"
+                      value={vitalSigns.respiratoryRate}
+                      onChange={(e) => setVitalSigns({...vitalSigns, respiratoryRate: e.target.value})}
+                      placeholder="16"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Sat O₂ (%)</Label>
+                    <Input
+                      type="number"
+                      value={vitalSigns.oxygenSaturation}
+                      onChange={(e) => setVitalSigns({...vitalSigns, oxygenSaturation: e.target.value})}
+                      placeholder="98"
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>

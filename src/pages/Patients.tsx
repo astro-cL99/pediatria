@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,251 +14,65 @@ import {
   Plus, 
   UserPlus, 
   Clock, 
-  AlertCircle, 
   Wind, 
-  Pill, 
-  Activity, 
-  Droplet, 
-  Bed, 
   Users, 
-  TrendingUp,
-  Stethoscope,
-  Filter,
-  UserCheck,
-  UserX,
-  CalendarDays,
-  Gauge,
-  Thermometer,
-  HeartPulse,
-  Droplets,
   Syringe,
-  Pill as PillIcon,
-  Baby,
-  ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
-import { differenceInDays, format } from "date-fns";
-import { es } from "date-fns/locale";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { differenceInDays } from "date-fns";
 
-// Extend the BedAssignment interface from @/types/bed-assignment
+// Definición completa de salas 501-512 (507 solo tiene 1 cama)
+const ALL_PEDIATRIA_ROOMS = [
+  { number: '501', beds: 3 },
+  { number: '502', beds: 3 },
+  { number: '503', beds: 3 },
+  { number: '504', beds: 3 },
+  { number: '505', beds: 3 },
+  { number: '506', beds: 3 },
+  { number: '507', beds: 1 }, // SALA 7 - SOLO 1 CAMA
+  { number: '508', beds: 3 },
+  { number: '509', beds: 3 },
+  { number: '510', beds: 3 },
+  { number: '511', beds: 3 },
+  { number: '512', beds: 3 },
+];
+
+const TOTAL_BEDS = ALL_PEDIATRIA_ROOMS.reduce((sum, room) => sum + room.beds, 0); // 34 camas
+
 interface BedAssignment {
   id: string;
   patient_id: string;
   admission_id: string;
   assigned_at: string;
-  service: 'pediatria' | 'cirugia' | 'ucip';
   room_number: string;
   bed_number: number;
+  service?: 'pediatria' | 'cirugia' | 'ucip';
   patient: {
     id: string;
     name: string;
     rut: string;
     date_of_birth: string;
-    gender?: string;
     allergies: string | null;
+    status?: 'estable' | 'inestable' | 'crítico' | 'active' | 'deceased' | 'discharged' | 'transferred';
   };
   admission: {
     id: string;
     admission_date: string;
     admission_diagnoses: string[];
-    oxygen_requirement: {
-      type?: string;
-      flow?: string | number;
-      peep?: string | number;
-      fio2?: string | number;
-    } | null;
+    oxygen_requirement: any;
     respiratory_score: string | null;
     viral_panel: string | null;
     pending_tasks: string | null;
-    antibiotics: Array<{ name: string; dose: string }>;
-    medications: string | null;
+    antibiotics: any;
   };
 }
-
-const getServiceColor = (service: string) => {
-  switch (service) {
-    case 'pediatria':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-    case 'cirugia':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
-    case 'ucip':
-      return 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300';
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
-  }
-};
-
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case 'crÃ­tico':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
-    case 'estable':
-      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-    case 'en observaciÃ³n':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
-  }
-};
-
-const PatientCardSkeleton = () => (
-  <div className="border rounded-lg overflow-hidden bg-card">
-    <div className="p-4 space-y-3">
-      <div className="flex items-center space-x-3">
-        <Skeleton className="h-10 w-10 rounded-full" />
-        <div className="space-y-1.5">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-3 w-24" />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-3 w-full" />
-      </div>
-      <Skeleton className="h-8 w-full mt-2" />
-    </div>
-  </div>
-);
-
-const PatientCard = React.memo(({ 
-  bedAssignment,
-  onClick 
-}: { 
-  bedAssignment: BedAssignment;
-  onClick?: () => void;
-}) => {
-  const navigate = useNavigate();
-  const daysInHospital = differenceInDays(new Date(), new Date(bedAssignment.admission.admission_date));
-  const hasOxygen = bedAssignment.admission.oxygen_requirement?.type;
-  const hasAntibiotics = bedAssignment.admission.antibiotics?.length > 0;
-  const age = bedAssignment.patient.date_of_birth 
-    ? Math.floor(differenceInDays(new Date(), new Date(bedAssignment.patient.date_of_birth)) / 365) 
-    : null;
-
-  return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow duration-200">
-      <div className="flex">
-        <div className="w-2 bg-blue-500"></div>
-        <div className="flex-1">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center space-x-3">
-                <Avatar className="h-10 w-10 border">
-                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(bedAssignment.patient.name)}`} />
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {bedAssignment.patient.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <CardTitle className="text-lg font-semibold">
-                    {bedAssignment.patient.name}
-                  </CardTitle>
-                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                    <span>{bedAssignment.patient.rut}</span>
-                    {age !== null && <span>• {age} años</span>}
-                  </div>
-                </div>
-              </div>
-              <Badge variant="outline" className={getServiceColor(bedAssignment.service)}>
-                {bedAssignment.service.charAt(0).toUpperCase() + bedAssignment.service.slice(1)}
-              </Badge>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="pb-4">
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="space-y-1">
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Bed className="h-4 w-4 mr-2" />
-                  <span>Habitación {bedAssignment.room_number} - Cama {bedAssignment.bed_number}</span>
-                </div>
-                <div className="flex items-center text-sm">
-                  <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>{format(new Date(bedAssignment.admission.admission_date), 'PPP', { locale: es })}</span>
-                </div>
-              </div>
-              
-              <div className="space-y-1">
-                <div className="flex items-center">
-                  <Badge variant="outline" className={cn("text-xs")}>
-                    <Clock className="h-3 w-3 mr-1" />
-                    {daysInHospital} {daysInHospital === 1 ? 'día' : 'días'}
-                  </Badge>
-                </div>
-                <div className="flex items-center">
-                  <Badge variant="outline" className={cn("text-xs", getStatusBadge('estable'))}>
-                    <UserCheck className="h-3 w-3 mr-1" />
-                    Estable
-                  </Badge>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Diagnósticos</h4>
-              <div className="flex flex-wrap gap-1">
-                {bedAssignment.admission.admission_diagnoses?.map((dx, i) => (
-                  <Badge key={i} variant="secondary" className="text-xs font-normal">
-                    {dx}
-                  </Badge>
-                )) || <span className="text-sm text-muted-foreground">Sin diagnósticos registrados</span>}
-              </div>
-            </div>
-            
-            {(hasOxygen || hasAntibiotics) && (
-              <div className="mt-3 pt-3 border-t">
-                <div className="flex items-center space-x-4">
-                  {hasOxygen && (
-                    <div className="flex items-center text-amber-600 dark:text-amber-400">
-                      <Wind className="h-4 w-4 mr-1" />
-                      <span className="text-sm">O₂</span>
-                    </div>
-                  )}
-                  {hasAntibiotics && (
-                    <div className="flex items-center text-rose-600 dark:text-rose-400">
-                      <Syringe className="h-4 w-4 mr-1" />
-                      <span className="text-sm">Antibióticos</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </CardContent>
-          
-          <div className="px-6 pb-4">
-            <Button 
-              variant="outline" 
-              className="w-full flex justify-between items-center"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onClick) {
-                  onClick();
-                } else {
-                  navigate(`/patients/${bedAssignment.patient_id}`);
-                }
-              }}
-            >
-              <span>Ver detalles</span>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-});
 
 export default function Patients() {
   const navigate = useNavigate();
   const [bedAssignments, setBedAssignments] = useState<BedAssignment[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [filterService, setFilterService] = useState<"all" | "pediatria" | "cirugia" | "ucip">("all");
+  const [selectedService, setSelectedService] = useState<'pediatria'>('pediatria');
 
   useEffect(() => {
     fetchBedAssignments();
@@ -277,14 +91,6 @@ export default function Patients() {
     };
   }, []);
 
-  const getServiceFromRoom = (roomNumber: string): 'pediatria' | 'cirugia' | 'ucip' => {
-    const room = parseInt(roomNumber);
-    if (room >= 500 && room <= 515) return 'pediatria';
-    if (room >= 516 && room <= 535) return 'cirugia';
-    if (room >= 536) return 'ucip';
-    return 'pediatria';
-  };
-
   const fetchBedAssignments = async () => {
     try {
       const { data, error } = await supabase
@@ -300,16 +106,10 @@ export default function Patients() {
 
       if (error) throw error;
       
-      // Map the data to include the service field and correct types
       const mappedData = (data || []).map(item => ({
         ...item,
-        service: getServiceFromRoom(item.room_number),
-        admission: {
-          ...item.admission,
-          oxygen_requirement: item.admission?.oxygen_requirement as any || null,
-          antibiotics: item.admission?.antibiotics as any || []
-        }
-      })) as BedAssignment[];
+        service: 'pediatria' as const
+      }));
       
       setBedAssignments(mappedData);
     } catch (error) {
@@ -320,16 +120,12 @@ export default function Patients() {
     }
   };
 
-  const calculateAge = (dateOfBirth: string) => {
-    const today = new Date();
-    const birth = new Date(dateOfBirth);
-    const years = today.getFullYear() - birth.getFullYear();
-    const months = today.getMonth() - birth.getMonth();
-    
-    if (years < 1) {
-      return `${months + (years * 12)}m`;
-    }
-    return `${years}a`;
+  const handlePatientClick = (patientId: string) => {
+    navigate(`/patients/${patientId}`);
+  };
+
+  const handleAssignBed = (roomNumber: string, bedNumber: string) => {
+    navigate(`/admission/new?room=${roomNumber}&bed=${bedNumber}`);
   };
 
   const getDaysHospitalized = (admissionDate: string) => {
@@ -343,79 +139,48 @@ export default function Patients() {
         bed.patient.rut.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bed.room_number.includes(searchTerm);
 
-      const matchesService = 
-        filterService === "all" ||
-        (filterService === "pediatria" && bed.room_number.startsWith("50")) ||
-        (filterService === "cirugia" && bed.room_number.startsWith("60")) ||
-        (filterService === "ucip" && bed.room_number.startsWith("70"));
+      const matchesService = bed.room_number.startsWith("50");
 
       return matchesSearch && matchesService;
     });
-  }, [bedAssignments, searchTerm, filterService]);
+  }, [bedAssignments, searchTerm]);
 
-  // Group patients by room and service
+  // Agrupar pacientes por sala
   const roomGroups = useMemo(() => {
-    const groups: {[key: string]: any} = {};
+    const groups: { [key: string]: BedAssignment[] } = {};
     
+    // Inicializar TODAS las salas (incluso vacías)
+    ALL_PEDIATRIA_ROOMS.forEach(room => {
+      groups[room.number] = [];
+    });
+
+    // Agregar pacientes a sus salas correspondientes
     filteredPatients.forEach(patient => {
-      const service = 
-        patient.room_number.startsWith("50") ? "pediatria" :
-        patient.room_number.startsWith("60") ? "cirugia" : "ucip";
-      
-      const roomKey = `${service}-${patient.room_number}`;
-      
-      if (!groups[roomKey]) {
-        groups[roomKey] = {
-          roomNumber: patient.room_number,
-          service,
-          patients: []
-        };
+      if (groups[patient.room_number]) {
+        groups[patient.room_number].push(patient);
       }
-      
-      groups[roomKey].patients.push(patient);
     });
     
-    // Sort rooms by service and room number
-    return Object.values(groups).sort((a, b) => {
-      if (a.service !== b.service) {
-        return a.service.localeCompare(b.service);
-      }
-      return a.roomNumber.localeCompare(b.roomNumber, undefined, {numeric: true});
-    });
+    return groups;
   }, [filteredPatients]);
 
-  // Calcular estadÃ­sticas
+  // Estadísticas
   const stats = useMemo(() => {
+    const occupied = bedAssignments.filter(b => b.room_number.startsWith("50")).length;
+    const occupancyRate = Math.round((occupied / TOTAL_BEDS) * 100);
+    
     return {
-      total: filteredPatients.length,
+      total: occupied,
+      capacity: TOTAL_BEDS,
+      occupancyRate,
       withO2: filteredPatients.filter(b => b.admission.oxygen_requirement && Object.keys(b.admission.oxygen_requirement).length > 0).length,
       withATB: filteredPatients.filter(b => b.admission.antibiotics && b.admission.antibiotics.length > 0).length,
       withPending: filteredPatients.filter(b => b.admission.pending_tasks && b.admission.pending_tasks.trim().length > 0).length,
       avgDays: filteredPatients.length > 0 
         ? Math.round(filteredPatients.reduce((sum, b) => sum + getDaysHospitalized(b.admission.admission_date), 0) / filteredPatients.length)
         : 0,
-      byService: {
-        pediatria: filteredPatients.filter(p => p.room_number.startsWith("50")).length,
-        cirugia: filteredPatients.filter(p => p.room_number.startsWith("60")).length,
-        ucip: filteredPatients.filter(p => p.room_number.startsWith("70")).length,
-      }
     };
-  }, [filteredPatients]);
-
-  const getStatusBadge = (bed: BedAssignment) => {
-    const { oxygen_requirement, antibiotics, viral_panel } = bed.admission;
-    
-    if (oxygen_requirement && Object.keys(oxygen_requirement).length > 0) {
-      return <Badge variant="destructive">Requiere O2</Badge>;
-    }
-    if (antibiotics && Object.keys(antibiotics).length > 0) {
-      return <Badge className="bg-yellow-600">Con ATB</Badge>;
-    }
-    if (viral_panel && viral_panel.toLowerCase().includes("positivo")) {
-      return <Badge variant="secondary">Panel Viral +</Badge>;
-    }
-    return <Badge variant="outline">Estable</Badge>;
-  };
+  }, [bedAssignments, filteredPatients]);
 
   return (
     <div className="container mx-auto p-6 space-y-6 animate-fade-in">
@@ -423,10 +188,10 @@ export default function Patients() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Pacientes Hospitalizados
+            Gestión de Camas - Pediatría
           </h1>
           <p className="text-muted-foreground mt-1">
-            GestiÃ³n y seguimiento de pacientes activos
+            Salas 501-512 • Ocupación: {stats.total}/{stats.capacity} camas ({stats.occupancyRate}%)
           </p>
         </div>
         <div className="flex gap-2">
@@ -443,22 +208,35 @@ export default function Patients() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow">
+        <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Pacientes</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Ocupación</CardTitle>
               <Users className="h-4 w-4 text-blue-500" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{stats.total}</div>
+            <div className="text-3xl font-bold text-blue-600">{stats.occupancyRate}%</div>
+            <p className="text-xs text-muted-foreground">{stats.total}/{stats.capacity} camas</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500 hover:shadow-lg transition-shadow">
+        <Card className="border-l-4 border-l-green-500">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Con Soporte O2</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Pacientes</CardTitle>
+              <Users className="h-4 w-4 text-green-500" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-green-600">{stats.total}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-red-500">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Con O₂</CardTitle>
               <Wind className="h-4 w-4 text-red-500" />
             </div>
           </CardHeader>
@@ -467,11 +245,11 @@ export default function Patients() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-yellow-500 hover:shadow-lg transition-shadow">
+        <Card className="border-l-4 border-l-yellow-500">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Con AntibiÃ³ticos</CardTitle>
-              <Pill className="h-4 w-4 text-yellow-600" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Con Antibióticos</CardTitle>
+              <Syringe className="h-4 w-4 text-yellow-500" />
             </div>
           </CardHeader>
           <CardContent>
@@ -479,23 +257,11 @@ export default function Patients() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow">
+        <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Con Pendientes</CardTitle>
-              <AlertCircle className="h-4 w-4 text-orange-500" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-600">{stats.withPending}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-purple-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Promedio DÃ­as</CardTitle>
-              <TrendingUp className="h-4 w-4 text-purple-500" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Promedio Días</CardTitle>
+              <Clock className="h-4 w-4 text-purple-500" />
             </div>
           </CardHeader>
           <CardContent>
@@ -504,188 +270,39 @@ export default function Patients() {
         </Card>
       </div>
 
-      {/* Filters and Search */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Buscar por paciente, RUT o nÃºmero de sala..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Tabs value={filterService} onValueChange={(v) => setFilterService(v as any)} className="w-full md:w-auto">
-              <TabsList className="grid w-full md:w-auto grid-cols-3">
-                <TabsTrigger value="all">Todos</TabsTrigger>
-                <TabsTrigger value="pediatria">PediatrÃ­a</TabsTrigger>
-                <TabsTrigger value="cirugia">CirugÃ­a</TabsTrigger>
-              </TabsList>
-            </Tabs>
+      {/* Search */}
+      <Card className="p-4">
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Buscar por paciente, RUT o número de sala..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
         </div>
       </Card>
 
-      {/* Patients List */}
-      <div>
+      {/* Rooms Display */}
+      <div className="space-y-4">
         {loading ? (
-          <Card className="p-12">
-            <div className="text-center">
-              <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-4 animate-pulse" />
-              <p className="text-lg font-medium">Cargando pacientes...</p>
-            </div>
-          </Card>
-        ) : filteredPatients.length === 0 ? (
-          <Card className="p-12">
-            <div className="text-center">
-              <UserPlus className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <p className="text-xl font-semibold mb-2">
-                {searchTerm ? "No se encontraron pacientes" : "No hay pacientes hospitalizados"}
-              </p>
-              <p className="text-muted-foreground mb-6">
-                {searchTerm ? "Intenta con otro tÃ©rmino de bÃºsqueda" : "Los pacientes hospitalizados aparecerÃ¡n aquÃ­"}
-              </p>
-              {!searchTerm && (
-                <Button onClick={() => navigate("/admission/new")}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Crear Nuevo Ingreso
-                </Button>
-              )}
-            </div>
-          </Card>
+          <div className="text-center py-12">Cargando salas...</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredPatients.map((bed) => {
-              const days = getDaysHospitalized(bed.admission.admission_date);
-              const hasO2 = bed.admission.oxygen_requirement && Object.keys(bed.admission.oxygen_requirement).length > 0;
-              const hasATB = bed.admission.antibiotics && Object.keys(bed.admission.antibiotics).length > 0;
-              const hasViralPanel = bed.admission.viral_panel && bed.admission.viral_panel.toLowerCase().includes("positivo");
-              
-              return (
-                <Card
-                  key={bed.id}
-                  className="h-full flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer border-l-4 hover:scale-[1.01]"
-                  style={{
-                    borderLeftColor: hasO2 ? '#ef4444' : hasATB ? '#eab308' : hasViralPanel ? '#3b82f6' : '#10b981',
-                    minHeight: '200px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between'
-                  }}
-                  onClick={() => navigate(`/patient/${bed.patient_id}`)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2 flex-wrap">
-                          <CardTitle className="text-xl font-bold">{bed.patient.name}</CardTitle>
-                          {bed.patient.allergies && (
-                            <Badge variant="destructive" className="text-xs animate-pulse">
-                              <AlertCircle className="h-3 w-3 mr-1" />
-                              Alergia
-                            </Badge>
-                          )}
-                        </div>
-                        <CardDescription className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                          <span className="font-medium">RUT: {bed.patient.rut}</span>
-                          <span>Edad: {calculateAge(bed.patient.date_of_birth)}</span>
-                          <span className="flex items-center gap-1">
-                            <Bed className="w-3 h-3" />
-                            Sala {bed.room_number}-{bed.bed_number}
-                          </span>
-                          <span className="flex items-center gap-1 font-medium">
-                            <Clock className="w-3 h-3" />
-                            {days} {days === 1 ? 'dÃ­a' : 'dÃ­as'}
-                          </span>
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {/* Status Badges */}
-                    <div className="flex flex-wrap gap-2">
-                      {hasO2 && (
-                        <Badge variant="destructive" className="gap-1">
-                          <Wind className="h-3 w-3" />
-                          Soporte O2
-                        </Badge>
-                      )}
-                      {hasATB && (
-                        <Badge className="bg-yellow-600 hover:bg-yellow-700 gap-1">
-                          <Pill className="h-3 w-3" />
-                          AntibiÃ³ticos
-                        </Badge>
-                      )}
-                      {hasViralPanel && (
-                        <Badge variant="secondary" className="gap-1">
-                          <Droplet className="h-3 w-3" />
-                          Panel Viral +
-                        </Badge>
-                      )}
-                      {bed.admission.respiratory_score && (
-                        <Badge variant="outline" className="gap-1">
-                          <Activity className="h-3 w-3" />
-                          Score: {bed.admission.respiratory_score}
-                        </Badge>
-                      )}
-                      {!hasO2 && !hasATB && !hasViralPanel && (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                          Estable
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Diagnosis */}
-                    {bed.admission.admission_diagnoses && bed.admission.admission_diagnoses.length > 0 && (
-                      <div className="bg-muted/50 p-3 rounded-lg">
-                        <span className="text-sm font-semibold text-foreground">DiagnÃ³stico: </span>
-                        <span className="text-sm text-muted-foreground">
-                          {bed.admission.admission_diagnoses[0]}
-                        </span>
-                        {bed.admission.admission_diagnoses.length > 1 && (
-                          <Badge variant="secondary" className="ml-2 text-xs">
-                            +{bed.admission.admission_diagnoses.length - 1} mÃ¡s
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Pending Tasks */}
-                    {bed.admission.pending_tasks && bed.admission.pending_tasks.trim().length > 0 && (
-                      <div className="bg-orange-50 dark:bg-orange-950/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
-                        <div className="flex items-start gap-2">
-                          <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <span className="text-sm font-semibold text-orange-900 dark:text-orange-100">Pendientes: </span>
-                            <span className="text-sm text-orange-800 dark:text-orange-200">
-                              {bed.admission.pending_tasks}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Allergies */}
-                    {bed.patient.allergies && (
-                      <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
-                        <div className="flex items-start gap-2">
-                          <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <span className="text-sm font-semibold text-red-900 dark:text-red-100">Alergias: </span>
-                            <span className="text-sm text-red-800 dark:text-red-200">
-                              {bed.patient.allergies}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          <>
+            {ALL_PEDIATRIA_ROOMS.map((room) => (
+              <RoomGroup
+                key={room.number}
+                roomNumber={room.number}
+                service="pediatria"
+                patients={roomGroups[room.number] || []}
+                onPatientClick={handlePatientClick}
+                onAssignBed={handleAssignBed}
+                defaultExpanded={false}
+              />
+            ))}
+          </>
         )}
       </div>
     </div>
