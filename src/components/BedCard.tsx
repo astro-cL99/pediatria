@@ -101,129 +101,118 @@ export function BedCard({ roomNumber, beds, onUpdate }: BedCardProps) {
 
   return (
     <>
-      <Card className="hover:shadow-lg transition-all duration-200 border-l-4" 
+      <Card className="hover:shadow-lg transition-all duration-200 border-l-4 h-full" 
             style={{ borderLeftColor: getServiceColor(roomNumber) }}>
-        <CardHeader className="pb-2 pt-3 px-3">
+        <CardHeader className="pb-2 pt-2 px-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Bed className="h-4 w-4" />
-              Sala {roomNumber}
+            <CardTitle className="text-sm font-bold flex items-center gap-1">
+              <Bed className="h-3 w-3" />
+              {roomNumber}
             </CardTitle>
-            <Badge variant="outline" className="text-xs">
-              {beds.length}/3 camas
+            <Badge variant="outline" className="text-xs px-1 py-0">
+              {beds.length}/{roomNumber === "507" ? "1" : "3"}
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="p-3 pt-0 space-y-2">
+        <CardContent className="p-2 pt-0 space-y-1.5">
           {beds.length === 0 ? (
-            <div className="text-center py-4 bg-muted/30 rounded-md">
-              <p className="text-xs text-muted-foreground">Sala disponible</p>
+            <div className="text-center py-3 bg-muted/30 rounded-md">
+              <p className="text-xs text-muted-foreground">Disponible</p>
             </div>
           ) : (
             beds.map((bed) => (
               <div
                 key={bed.id}
                 onClick={() => setSelectedBed(bed)}
-                className="p-2 rounded-md border cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all duration-200 bg-card"
+                className="p-1.5 rounded-md border cursor-pointer hover:shadow-md hover:border-primary transition-all duration-200 bg-card"
               >
-                {/* Header con nombre, edad, RUT */}
-                <div className="flex justify-between items-start mb-1">
-                  <div className="flex-1">
-                    <p className="font-bold text-sm truncate">{bed.patient.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      RUT: {bed.patient.rut} • {calculateDetailedAge(bed.patient.date_of_birth)}
+                {/* Header compacto */}
+                <div className="flex justify-between items-start mb-0.5">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-xs truncate">{bed.patient.name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {bed.patient.rut} • {calculateDetailedAge(bed.patient.date_of_birth)}
                     </p>
                   </div>
-                  <Badge variant={isNewAdmission(bed) ? "destructive" : "outline"} className="ml-2 text-xs">
-                    {isNewAdmission(bed) ? "NUEVO" : `${getDaysHospitalized(bed.admission.admission_date)}d`}
+                  <Badge variant={isNewAdmission(bed) ? "destructive" : "outline"} className="ml-1 text-[10px] px-1 py-0">
+                    {isNewAdmission(bed) ? "NEW" : `${getDaysHospitalized(bed.admission.admission_date)}d`}
                   </Badge>
                 </div>
 
-                {/* Fecha ingreso */}
-                <p className="text-xs text-muted-foreground mb-2">
-                  📅 Ingreso: {format(new Date(bed.admission.admission_date), "dd/MM/yyyy HH:mm")}
+                {/* Fecha ingreso compacta */}
+                <p className="text-[10px] text-muted-foreground mb-1">
+                  📅 {format(new Date(bed.admission.admission_date), "dd/MM/yy HH:mm")}
                 </p>
 
-                {/* Diagnósticos */}
-                <div className="mb-2">
-                  <p className="text-xs font-semibold">Dx Ingreso:</p>
-                  <p className="text-xs text-muted-foreground line-clamp-1">
-                    {bed.admission.admission_diagnoses?.[0] || "N/A"}
-                  </p>
+                {/* Diagnósticos compactos */}
+                <div className="mb-1 space-y-0.5">
+                  <div className="flex items-start gap-1">
+                    <span className="text-[10px] font-semibold min-w-[30px]">Dx I:</span>
+                    <p className="text-[10px] text-muted-foreground line-clamp-1 flex-1">
+                      {bed.admission.admission_diagnoses?.[0] || "N/A"}
+                    </p>
+                  </div>
                   {bed.admission.current_diagnoses && bed.admission.current_diagnoses.length > 0 && (
-                    <>
-                      <p className="text-xs font-semibold mt-1">Dx Actual:</p>
-                      <p className="text-xs text-muted-foreground line-clamp-1">
+                    <div className="flex items-start gap-1">
+                      <span className="text-[10px] font-semibold min-w-[30px]">Dx A:</span>
+                      <p className="text-[10px] text-muted-foreground line-clamp-1 flex-1">
                         {bed.admission.current_diagnoses[0]}
                       </p>
-                    </>
+                    </div>
                   )}
                 </div>
 
-                {/* Scores respiratorios */}
-                {bed.admission.respiratory_score && (
-                  <div className="flex gap-2 text-xs mb-2">
-                    <Badge variant="outline">
+                {/* Badges compactos en línea */}
+                <div className="flex flex-wrap gap-1 mb-1">
+                  {bed.admission.respiratory_score && (
+                    <Badge variant="outline" className="text-[10px] px-1 py-0">
                       Score: {(() => {
                         try {
                           const score = typeof bed.admission.respiratory_score === 'string' 
                             ? JSON.parse(bed.admission.respiratory_score) 
                             : bed.admission.respiratory_score;
-                          return score?.at_admission || score || "N/A";
+                          return score?.current || score?.at_admission || score || "?";
                         } catch {
                           return bed.admission.respiratory_score;
                         }
                       })()}
                       {getScoreDelta(bed.admission)}
                     </Badge>
-                  </div>
-                )}
-
-                {/* Oxígeno */}
-                {bed.admission.oxygen_requirement && Object.keys(bed.admission.oxygen_requirement).length > 0 && (
-                  <div className="bg-red-50 dark:bg-red-950/20 p-2 rounded text-xs mb-2">
-                    <p className="font-semibold flex items-center">
-                      <Wind className="h-3 w-3 mr-1" />
+                  )}
+                  
+                  {bed.admission.oxygen_requirement && Object.keys(bed.admission.oxygen_requirement).length > 0 && (
+                    <Badge variant="destructive" className="text-[10px] px-1 py-0">
+                      <Wind className="h-2 w-2 mr-0.5" />
                       {bed.admission.oxygen_requirement.type || "O₂"}
-                    </p>
-                    {bed.admission.oxygen_requirement.type === "CNAF" && (
-                      <p>Flujo: {bed.admission.oxygen_requirement.flow} L/min • FiO₂: {bed.admission.oxygen_requirement.fio2}%</p>
-                    )}
-                    {bed.admission.oxygen_requirement.type === "CPAP" && (
-                      <p>PEEP: {bed.admission.oxygen_requirement.peep} cmH₂O • FiO₂: {bed.admission.oxygen_requirement.fio2}%</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Panel viral/bacteriano */}
-                {bed.admission.viral_panel && (
-                  <div className="flex items-center gap-1 text-xs mb-2">
-                    <TestTube className="h-3 w-3" />
-                    <span className="font-semibold">Panel:</span>
-                    <Badge variant={getViralPanelVariant(bed.admission.viral_panel)}>
-                      {bed.admission.viral_panel}
                     </Badge>
-                  </div>
-                )}
+                  )}
+                  
+                  {bed.admission.viral_panel && (
+                    <Badge variant={getViralPanelVariant(bed.admission.viral_panel)} className="text-[10px] px-1 py-0">
+                      <TestTube className="h-2 w-2 mr-0.5" />
+                      {bed.admission.viral_panel.substring(0, 10)}
+                    </Badge>
+                  )}
+                </div>
 
-                {/* Antibióticos con tracking de días */}
+                {/* Antibióticos ultra-compactos */}
                 {bed.admission.antibiotics_tracking && bed.admission.antibiotics_tracking.length > 0 && (
-                  <div className="space-y-1 mb-2">
+                  <div className="space-y-0.5 mb-1">
                     {bed.admission.antibiotics_tracking.map((atb: any, idx: number) => {
                       const currentDay = differenceInDays(new Date(), new Date(atb.start_date)) + 1;
                       const progress = (currentDay / atb.planned_days) * 100;
                       
                       return (
-                        <div key={idx} className="bg-yellow-50 dark:bg-yellow-950/20 p-2 rounded">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="font-semibold">{atb.name}</span>
-                            <Badge variant="outline">D{currentDay}/{atb.planned_days}</Badge>
+                        <div key={idx} className="bg-yellow-50 dark:bg-yellow-950/20 p-1 rounded">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-semibold truncate flex-1">{atb.name}</span>
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1">
+                              D{currentDay}/{atb.planned_days}
+                            </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground">{atb.dose}</p>
-                          {/* Barra de progreso */}
-                          <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                          <div className="w-full bg-gray-200 rounded-full h-1 mt-0.5">
                             <div 
-                              className="bg-yellow-600 h-1.5 rounded-full transition-all" 
+                              className="bg-yellow-600 h-1 rounded-full transition-all" 
                               style={{ width: `${Math.min(progress, 100)}%` }}
                             />
                           </div>
@@ -233,14 +222,16 @@ export function BedCard({ roomNumber, beds, onUpdate }: BedCardProps) {
                   </div>
                 )}
 
-                {/* Tareas pendientes */}
+                {/* Tareas pendientes compactas */}
                 {bed.admission.pending_tasks && bed.admission.pending_tasks.trim() && (
-                  <Alert variant="destructive" className="py-1 px-2">
-                    <AlertCircle className="h-3 w-3" />
-                    <AlertDescription className="text-xs">
-                      {bed.admission.pending_tasks}
-                    </AlertDescription>
-                  </Alert>
+                  <div className="bg-destructive/10 border-l-2 border-destructive p-1 rounded">
+                    <div className="flex items-start gap-1">
+                      <AlertCircle className="h-2 w-2 mt-0.5 text-destructive flex-shrink-0" />
+                      <p className="text-[10px] text-destructive line-clamp-2">
+                        {bed.admission.pending_tasks}
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
             ))

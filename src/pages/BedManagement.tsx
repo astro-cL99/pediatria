@@ -88,17 +88,30 @@ export default function BedManagement() {
 
     setLoading(true);
     try {
+      // First, deactivate any existing bed assignment for this patient
+      const { error: deactivateError } = await supabase
+        .from("bed_assignments")
+        .update({ is_active: false, discharged_at: new Date().toISOString() })
+        .eq("patient_id", selectedPatient)
+        .eq("is_active", true);
+
+      if (deactivateError) console.log("No previous bed to deactivate");
+
       // Get active admission for patient
       const { data: admissionData, error: admissionError } = await supabase
         .from("admissions")
         .select("id")
         .eq("patient_id", selectedPatient)
         .eq("status", "active")
-        .single();
+        .maybeSingle();
 
       if (admissionError) throw admissionError;
+      if (!admissionData) {
+        toast.error("No se encontró una admisión activa para este paciente");
+        return;
+      }
 
-      // Create bed assignment
+      // Create new bed assignment (works for both new admissions and bed transfers)
       const { error: assignError } = await supabase.from("bed_assignments").insert({
         patient_id: selectedPatient,
         admission_id: admissionData.id,
@@ -115,6 +128,7 @@ export default function BedManagement() {
       setRoomNumber("");
       setBedNumber("1");
       fetchBedAssignments();
+      fetchActivePatients();
     } catch (error: any) {
       console.error("Error assigning bed:", error);
       toast.error(error.message || "Error al asignar cama");
@@ -143,11 +157,8 @@ export default function BedManagement() {
     }
   };
 
-  // Get unassigned patients
-  const unassignedPatients = patients.filter(
-    (patient) =>
-      !bedAssignments.some((assignment) => assignment.patient_id === patient.id)
-  );
+  // Show all active patients (allows for bed transfers)
+  const availablePatients = patients;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -168,6 +179,9 @@ export default function BedManagement() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Asignar Paciente a Cama</DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                Permite ingresos nuevos y traslados de cama
+              </p>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -177,11 +191,15 @@ export default function BedManagement() {
                     <SelectValue placeholder="Seleccione paciente" />
                   </SelectTrigger>
                   <SelectContent>
-                    {unassignedPatients.map((patient) => (
-                      <SelectItem key={patient.id} value={patient.id}>
-                        {patient.name} - {patient.rut}
-                      </SelectItem>
-                    ))}
+                    {availablePatients.map((patient) => {
+                      const hasCurrentBed = bedAssignments.find(a => a.patient_id === patient.id);
+                      return (
+                        <SelectItem key={patient.id} value={patient.id}>
+                          {patient.name} - {patient.rut}
+                          {hasCurrentBed && ` (actual: ${hasCurrentBed.room_number}-${hasCurrentBed.bed_number})`}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -263,17 +281,17 @@ export default function BedManagement() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <UserPlus className="mr-2 h-5 w-5" />
-              Pacientes Sin Cama ({unassignedPatients.length})
+              Pacientes Sin Cama ({patients.filter(p => !bedAssignments.some(a => a.patient_id === p.id)).length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {unassignedPatients.length === 0 ? (
+              {patients.filter(p => !bedAssignments.some(a => a.patient_id === p.id)).length === 0 ? (
                 <p className="text-muted-foreground text-center py-4">
                   Todos los pacientes tienen cama asignada
                 </p>
               ) : (
-                unassignedPatients.map((patient) => (
+                patients.filter(p => !bedAssignments.some(a => a.patient_id === p.id)).map((patient) => (
                   <div key={patient.id} className="p-3 border rounded-lg">
                     <p className="font-semibold">{patient.name}</p>
                     <p className="text-sm text-muted-foreground">{patient.rut}</p>

@@ -140,49 +140,52 @@ export function PhysicalExamForm({ value, onChange }: PhysicalExamFormProps) {
         <CardTitle>Examen Físico</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {Object.entries(physicalExamSystems).map(([system, options]) => (
-          <div key={system} className="space-y-2">
-            <Label>{system}</Label>
-            <Select onValueChange={(value) => handleAddFinding(system, value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar hallazgo..." />
-              </SelectTrigger>
-              <SelectContent className="bg-card z-50">
-                {options.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            {selectedFindings[system] && selectedFindings[system].length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {selectedFindings[system].map((finding) => (
-                  <div
-                    key={finding}
-                    className="inline-flex items-center gap-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm"
-                  >
-                    <span>{finding}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-primary/20"
-                      onClick={() => handleRemoveFinding(system, finding)}
+        {/* Grid layout for better visual organization */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {Object.entries(physicalExamSystems).map(([system, options]) => (
+            <div key={system} className="space-y-2">
+              <Label className="font-semibold">{system}</Label>
+              <Select onValueChange={(value) => handleAddFinding(system, value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar hallazgo..." />
+                </SelectTrigger>
+                <SelectContent className="bg-card z-50">
+                  {options.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {selectedFindings[system] && selectedFindings[system].length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedFindings[system].map((finding) => (
+                    <div
+                      key={finding}
+                      className="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-md text-xs"
                     >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+                      <span>{finding}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-3 w-3 p-0 hover:bg-primary/20"
+                        onClick={() => handleRemoveFinding(system, finding)}
+                      >
+                        <X className="h-2 w-2" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
 
         {Object.keys(selectedFindings).length > 0 && (
-          <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-            <Label className="text-sm font-semibold mb-2 block">Resumen del Examen Físico:</Label>
+          <div className="mt-4 p-4 bg-muted/50 rounded-lg border-l-4 border-primary">
+            <Label className="text-sm font-semibold mb-2 block">📋 Resumen del Examen Físico:</Label>
             <div className="text-sm space-y-1">
               {Object.entries(selectedFindings).map(([system, items]) => (
                 <div key={system}>

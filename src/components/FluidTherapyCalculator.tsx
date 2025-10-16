@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Droplets, Copy, Calculator } from "lucide-react";
+import { Droplets, Copy, Calculator, Activity } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { calculateFluidTherapy, type FluidTherapyCalculation } from "@/utils/fluidTherapy";
+import { calculateFluidTherapy, calculateBSA, type FluidTherapyCalculation } from "@/utils/fluidTherapy";
 
 interface FluidTherapyCalculatorProps {
   initialWeight?: number;
@@ -26,6 +28,7 @@ export function FluidTherapyCalculator({
   const [hasDehydration, setHasDehydration] = useState(false);
   const [dehydrationPercent, setDehydrationPercent] = useState<number>(0);
   const [calculation, setCalculation] = useState<FluidTherapyCalculation | null>(null);
+  const [administeredVolume, setAdministeredVolume] = useState<number>(0);
 
   useEffect(() => {
     if (weight > 0) {
@@ -44,22 +47,51 @@ export function FluidTherapyCalculator({
     toast.success("Copiado al portapapeles");
   };
 
+  const calculateInsensibleLosses = () => {
+    if (!height || height <= 0 || !weight || weight <= 0) return 0;
+    const bsa = calculateBSA(weight, height);
+    return Math.round(bsa * 400); // SC (m²) × 400 ml/m²/día
+  };
+
+  const getVolumePercentage = () => {
+    if (!calculation) return 0;
+    const totalMl = calculation.dehydration 
+      ? calculation.dehydration.total 
+      : calculation.holliday_segar.maintenance_ml_day;
+    return totalMl > 0 ? Math.round((administeredVolume / totalMl) * 100) : 0;
+  };
+
   const generateFluidOrder = () => {
     if (!calculation) return "";
 
     const { holliday_segar, dehydration } = calculation;
     const totalMl = dehydration ? dehydration.total : holliday_segar.maintenance_ml_day;
     const mlPerHour = Math.round(totalMl / 24);
+    const insensibleLosses = calculateInsensibleLosses();
 
-    let order = `Fleboclisis: Suero Ringer Lactato ${totalMl} ml/día (${mlPerHour} ml/h)\n`;
-    order += `Calculado por Holliday-Segar: ${holliday_segar.formula_breakdown}\n`;
+    let order = `💧 FLUIDOTERAPIA\n`;
+    order += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+    order += `Fleboclisis: Suero Ringer Lactato ${totalMl} ml/día (${mlPerHour} ml/h)\n`;
+    order += `Calculado por Holliday-Segar: ${holliday_segar.formula_breakdown}\n\n`;
 
     if (dehydration) {
-      order += `\nPlan ${dehydration.plan} - Deshidratación ${dehydrationPercent}%\n`;
-      order += `Déficit: ${Math.round(dehydration.deficit)} ml\n`;
+      order += `Plan ${dehydration.plan} - Deshidratación ${dehydrationPercent}%\n`;
+      order += `• Déficit: ${Math.round(dehydration.deficit)} ml\n`;
+      order += `• Mantenimiento: ${Math.round(dehydration.maintenance)} ml\n`;
       if (dehydration.bolus) {
-        order += `Bolo inicial: ${Math.round(dehydration.bolus)} ml\n`;
+        order += `• Bolo inicial: ${Math.round(dehydration.bolus)} ml\n`;
       }
+      order += `\n`;
+    }
+
+    if (insensibleLosses > 0) {
+      order += `Pérdidas insensibles estimadas: ${insensibleLosses} ml/día\n`;
+      order += `(SC ${calculateBSA(weight, height).toFixed(2)} m² × 400 ml/m²/día)\n\n`;
+    }
+
+    if (administeredVolume > 0) {
+      const percentage = getVolumePercentage();
+      order += `Volumen administrado: ${administeredVolume} ml (${percentage}% del total calculado)\n`;
     }
 
     return order;
@@ -209,16 +241,67 @@ export function FluidTherapyCalculator({
         )}
 
         {calculation && weight > 0 && (
-          <div className="flex gap-2">
-            <Button
-              onClick={() => copyToClipboard(generateFluidOrder())}
-              className="flex-1"
-              variant="default"
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              Copiar a Indicaciones
-            </Button>
-          </div>
+          <>
+            {/* Insensible Losses Display */}
+            {height > 0 && (
+              <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
+                <Activity className="h-4 w-4" />
+                <AlertDescription>
+                  <div className="space-y-1">
+                    <p className="font-semibold">Pérdidas Insensibles</p>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {calculateInsensibleLosses()} ml/día
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      SC {calculateBSA(weight, height).toFixed(2)} m² × 400 ml/m²/día
+                    </p>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Volume Administration Tracker */}
+            <div className="space-y-3 p-4 border rounded-lg bg-accent/50">
+              <Label htmlFor="administered-volume" className="font-semibold">
+                Volumen Administrado (ml)
+              </Label>
+              <Input
+                id="administered-volume"
+                type="number"
+                value={administeredVolume || ""}
+                onChange={(e) => setAdministeredVolume(parseFloat(e.target.value) || 0)}
+                placeholder="Ej: 800"
+              />
+              
+              {administeredVolume > 0 && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Porcentaje del total calculado:</span>
+                    <Badge variant={getVolumePercentage() >= 80 ? "default" : "secondary"}>
+                      {getVolumePercentage()}%
+                    </Badge>
+                  </div>
+                  <Progress value={getVolumePercentage()} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    {administeredVolume} ml de {calculation.dehydration 
+                      ? Math.round(calculation.dehydration.total) 
+                      : calculation.holliday_segar.maintenance_ml_day} ml calculados
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={() => copyToClipboard(generateFluidOrder())}
+                className="flex-1"
+                variant="default"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copiar a Indicaciones
+              </Button>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

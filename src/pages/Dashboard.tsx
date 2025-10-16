@@ -98,7 +98,10 @@ const Dashboard = () => {
         .limit(10);
 
       if (error) throw error;
-      setAssignedPatients(data || []);
+      
+      // Filter out null patients to prevent errors
+      const validData = (data || []).filter(admission => admission.patient !== null);
+      setAssignedPatients(validData);
     } catch (error) {
       console.error('Error fetching my patients:', error);
     }
