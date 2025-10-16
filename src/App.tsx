@@ -15,6 +15,8 @@ import PatientDetail from "./pages/PatientDetail";
 import AdmissionPrint from "./pages/AdmissionPrint";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
+import DocumentsPage from "./pages/DocumentsPage";
+import TasksPage from "./pages/TasksPage";
 
 // Lazy load heavy components
 const ClinicalProtocols = lazy(() => import("./pages/ClinicalProtocols"));
@@ -79,6 +81,19 @@ const App = () => (
               </AppLayout>
             } 
           />
+          
+          {/* Documentos del paciente */}
+          <Route 
+            path="/patient/:patientId/documents" 
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <DocumentsPage />
+                </Suspense>
+              </AppLayout>
+            } 
+          />
+          
           <Route path="/admission/:id/print" element={<AdmissionPrint />} />
           
           {/* Lazy loaded routes */}

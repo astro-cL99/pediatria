@@ -132,14 +132,33 @@ export default function NewAdmission() {
       const imageBase64 = canvas.toDataURL('image/png').split(',')[1];
 
       // Call edge function to extract data with image
-      const { data: extractedData, error: extractError } = await supabase.functions.invoke(
+      const response = await supabase.functions.invoke(
         'extract-dau-data',
-        { body: { imageBase64, fileName: file.name } }
+        { 
+          body: { imageBase64, fileName: file.name },
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        }
       );
 
-      if (extractError) throw extractError;
+      // Handle non-JSON responses
+      if (response.error) {
+        console.error('Error from extract-dau-data:', response.error);
+        if (response.error.message && response.error.message.includes('Unexpected token')) {
+          throw new Error('El servidor devolvió una respuesta no válida. Por favor, verifica el archivo e inténtalo nuevamente.');
+        }
+        throw response.error;
+      }
 
-      if (extractedData?.success && extractedData?.data) {
+      const extractedData = response.data;
+      
+      if (!extractedData) {
+        throw new Error('No se recibieron datos del servidor');
+      }
+
+      if (extractedData.success && extractedData.data) {
         const data = extractedData.data;
         
         // Auto-fill form with extracted data
