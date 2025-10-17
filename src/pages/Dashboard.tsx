@@ -4,10 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Clock, Plus, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Activity, Clock, Plus, AlertTriangle, CheckCircle, XCircle, BarChart3, Users } from "lucide-react";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
+import { MedicalAnalyticsDashboard } from "@/components/MedicalAnalyticsDashboard";
 
 interface AssignedPatient {
   id: string;
@@ -78,7 +80,11 @@ const Dashboard = () => {
   const fetchMyPatients = async () => {
     try {
       const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return;
+      if (!userData.user) {
+        toast.error("Sesión no válida. Por favor, inicia sesión nuevamente.");
+        navigate("/login");
+        return;
+      }
 
       const { data, error } = await supabase
         .from('admissions')
@@ -90,20 +96,31 @@ const Dashboard = () => {
           pending_tasks,
           antibiotics,
           oxygen_requirement,
-          patient:patients(*)
+          patient:patients!inner(*)
         `)
         .eq('admitted_by', userData.user.id)
         .eq('status', 'active')
+        .not('patient', 'is', null)
         .order('admission_date', { ascending: false })
         .limit(10);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching patients:', error);
+        toast.error("Error al cargar pacientes asignados");
+        return;
+      }
       
-      // Filter out null patients to prevent errors
-      const validData = (data || []).filter(admission => admission.patient !== null);
+      // Validación extra de seguridad
+      const validData = (data || []).filter(admission => 
+        admission.patient && 
+        admission.patient.id && 
+        admission.patient.name
+      );
+      
       setAssignedPatients(validData);
-    } catch (error) {
-      console.error('Error fetching my patients:', error);
+    } catch (error: any) {
+      console.error('Unexpected error in fetchMyPatients:', error);
+      toast.error("Error inesperado al cargar datos");
     }
   };
 
@@ -191,35 +208,35 @@ const Dashboard = () => {
 
       {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="medical-card border-l-4 border-l-primary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Mis Pacientes</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <Activity className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{assignedPatients.length}</div>
+            <div className="text-2xl font-bold text-primary">{assignedPatients.length}</div>
             <p className="text-xs text-muted-foreground">Activos bajo mi cuidado</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="medical-card border-l-4 border-l-warning">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Alertas</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertTriangle className="h-4 w-4" style={{ color: 'hsl(var(--warning))' }} />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{upcomingAlerts.length}</div>
+            <div className="text-2xl font-bold" style={{ color: 'hsl(var(--warning))' }}>{upcomingAlerts.length}</div>
             <p className="text-xs text-muted-foreground">Requieren atención</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="medical-card border-l-4 border-l-success">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Actividad Hoy</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CheckCircle className="h-4 w-4" style={{ color: 'hsl(var(--success))' }} />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{recentActivity.filter(a => {
+            <div className="text-2xl font-bold" style={{ color: 'hsl(var(--success))' }}>{recentActivity.filter(a => {
               const activityDate = new Date(a.created_at);
               const today = new Date();
               return activityDate.toDateString() === today.toDateString();
@@ -254,12 +271,26 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* My Patients */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Mis Pacientes Asignados</CardTitle>
-          <CardDescription>Pacientes actualmente bajo mi cuidado</CardDescription>
-        </CardHeader>
+      {/* Tabs para diferentes vistas */}
+      <Tabs defaultValue="my-patients" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="my-patients" className="gap-2">
+            <Users className="h-4 w-4" />
+            Mis Pacientes
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Analytics Médicos
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="my-patients" className="space-y-6">
+          {/* My Patients */}
+          <Card className="medical-card">
+            <CardHeader>
+              <CardTitle>Mis Pacientes Asignados</CardTitle>
+              <CardDescription>Pacientes actualmente bajo mi cuidado</CardDescription>
+            </CardHeader>
         <CardContent>
           {assignedPatients.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
@@ -301,11 +332,11 @@ const Dashboard = () => {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/* Recent Activity */}
-      <Card>
+          {/* Recent Activity */}
+          <Card className="medical-card">
         <CardHeader>
           <CardTitle>Mi Actividad Reciente</CardTitle>
           <CardDescription>Últimas 5 acciones realizadas</CardDescription>
@@ -332,8 +363,14 @@ const Dashboard = () => {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <MedicalAnalyticsDashboard />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

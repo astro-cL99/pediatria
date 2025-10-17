@@ -57,23 +57,49 @@ const PatientDetail = () => {
 
   const fetchPatientData = async () => {
     try {
+      setLoading(true);
+      
+      // Validar ID antes de consultar
+      if (!id || !isValidUUID(id)) {
+        toast.error("ID de paciente inválido");
+        navigate("/patients");
+        return;
+      }
+
       const { data: patientData, error: patientError } = await supabase
         .from("patients")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
-      if (patientError) throw patientError;
+      if (patientError) {
+        console.error('Error fetching patient:', patientError);
+        toast.error("Error al cargar datos del paciente");
+        setLoading(false);
+        return;
+      }
+
+      if (!patientData) {
+        // 404 - paciente no encontrado
+        setPatient(null);
+        setLoading(false);
+        return;
+      }
+
       setPatient(patientData);
 
+      // Continuar con queries relacionadas solo si el paciente existe
       const { data: anthroData, error: anthroError } = await supabase
         .from("anthropometric_data")
         .select("*")
         .eq("patient_id", id)
         .order("measured_at", { ascending: false });
 
-      if (anthroError) throw anthroError;
-      setAnthroData(anthroData || []);
+      if (anthroError) {
+        console.error('Error fetching anthropometry:', anthroError);
+      } else {
+        setAnthroData(anthroData || []);
+      }
 
       // Fetch active admission
       const { data: admission } = await supabase
@@ -83,17 +109,23 @@ const PatientDetail = () => {
         .eq("status", "active")
         .order("admission_date", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (admission) {
         setActiveAdmission(admission);
       }
     } catch (error: any) {
-      toast.error("Error al cargar datos del paciente");
-      console.error(error);
+      console.error('Unexpected error in fetchPatientData:', error);
+      toast.error("Error inesperado al cargar paciente");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Utilidad de validación UUID
+  const isValidUUID = (uuid: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
   };
 
   const calculateAge = (dateOfBirth: string) => {
@@ -125,16 +157,24 @@ const PatientDetail = () => {
 
   if (!patient && !loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6">
-        <XCircle className="w-16 h-16 text-destructive mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Paciente no encontrado</h2>
-        <p className="text-muted-foreground mb-4 text-center max-w-md">
-          El ID proporcionado no corresponde a ningún paciente registrado en el sistema
-        </p>
-        <Button onClick={() => navigate("/patients")}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver a Pacientes
-        </Button>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--destructive) / 0.1)' }}>
+            <XCircle className="w-8 h-8" style={{ color: 'hsl(var(--destructive))' }} />
+          </div>
+          <h2 className="text-2xl font-bold text-foreground">Paciente no encontrado</h2>
+          <p className="text-muted-foreground">
+            El paciente con ID <code className="px-2 py-1 bg-muted rounded text-xs font-mono">{id}</code> no existe en el sistema.
+          </p>
+          <div className="flex gap-3 justify-center pt-4">
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              Volver Atrás
+            </Button>
+            <Button onClick={() => navigate("/patients")}>
+              Ver Lista de Pacientes
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }

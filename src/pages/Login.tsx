@@ -102,8 +102,11 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                minLength={6}
+                minLength={12}
               />
+              <p className="text-xs text-muted-foreground">
+                Mínimo 12 caracteres con mayúsculas, minúsculas, números y símbolos
+              </p>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
