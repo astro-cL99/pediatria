@@ -17,11 +17,11 @@ import {
   FileSignature, 
   Loader2, 
   FileIcon,
-  FilePdf,
   FileImage,
   FileArchive,
-  FileTextIcon,
-  FileType2
+  FileText as FileTextIcon,
+  FileType2,
+  FileText as FilePdfIcon  // Using FileText as a fallback for PDF files
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -119,16 +119,16 @@ const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
-  const handleDownload = async (document: DocumentMetadata) => {
+  const handleDownload = async (doc: DocumentMetadata) => {
     try {
-      const url = getDocumentUrl(document.storage_path);
+      const url = getDocumentUrl(doc.storage_path);
       const response = await fetch(url);
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       
       const a = document.createElement('a');
       a.href = downloadUrl;
-      a.download = document.file_name;
+      a.download = doc.file_name;
       document.body.appendChild(a);
       a.click();
       
@@ -155,7 +155,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
 
   const getFileIcon = (fileType: string) => {
     if (fileType.includes('pdf')) {
-      return <FilePdf className="h-5 w-5 text-red-500" />;
+      return <FilePdfIcon className="h-5 w-5 text-red-500" />;
     } else if (fileType.includes('image')) {
       return <FileImage className="h-5 w-5 text-blue-500" />;
     } else if (fileType.includes('word') || fileType.includes('document')) {
