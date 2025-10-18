@@ -54,41 +54,66 @@ export function calculateWoodDownes(params: WoodDownesParams): ScoreResult {
   return { score: total, interpretation, severity, recommendations };
 }
 
-// TAL Score (Obstrucción bronquial)
+// TAL Score (Test de Asma Leve) - Para menores de 3 años
 export interface TALParams {
-  respiratoryRate: number;
-  wheezing: 0 | 1 | 2; // 0=none, 1=end-exp, 2=insp+exp
-  cyanosis: boolean;
-  retractions: 0 | 1 | 2; // 0=none, 1=subcostal, 2=universal
-  consciousness: 0 | 1; // 0=normal, 1=altered
-  ageMonths: number;
+  wheezing: 0 | 1; // 0=ausencia, 1=presencia
+  respiratoryRate: number; // frecuencia respiratoria
+  accessoryMuscleUse: 0 | 1 | 2 | 3; // 0=ninguna, 1=subcostal, 2=intercostal, 3=supraclavicular
+  oxygenUse: 0 | 1; // 0=sin oxígeno, 1=con oxígeno (reemplaza valoración de cianosis)
+  ageMonths: number; // edad en meses
 }
 
 export function calculateTAL(params: TALParams): ScoreResult {
-  let rrScore = 0;
-  const normalRR = params.ageMonths < 12 ? 30 : params.ageMonths < 24 ? 24 : 20;
-  
-  if (params.respiratoryRate > normalRR + 20) rrScore = 3;
-  else if (params.respiratoryRate > normalRR + 10) rrScore = 2;
-  else if (params.respiratoryRate > normalRR) rrScore = 1;
-
-  const total = rrScore + params.wheezing + (params.cyanosis ? 3 : 0) + params.retractions + params.consciousness;
-
-  let interpretation = "";
-  let severity: ScoreResult['severity'] = 'normal';
-
-  if (total < 6) {
-    interpretation = "Crisis leve";
-    severity = "leve";
-  } else if (total < 9) {
-    interpretation = "Crisis moderada";
-    severity = "moderado";
-  } else {
-    interpretation = "Crisis grave";
-    severity = "severo";
+  // Validar edad
+  if (params.ageMonths >= 36) {
+    throw new Error("El score TAL solo es aplicable a menores de 3 años");
   }
 
-  return { score: total, interpretation, severity };
+  // Calcular puntaje de frecuencia respiratoria según edad
+  let rrScore = 0;
+  const isUnder6Months = params.ageMonths < 6;
+  const normalRR = isUnder6Months ? 50 : 40;
+  
+  if (params.respiratoryRate > normalRR + 10) rrScore = 3;
+  else if (params.respiratoryRate > normalRR + 5) rrScore = 2;
+  else if (params.respiratoryRate > normalRR) rrScore = 1;
+
+  // Calcular puntaje total (rango 0-12)
+  const total = 
+    (params.wheezing ? 3 : 0) + // Sibilancias: 0 o 3 puntos
+    rrScore + // Frecuencia respiratoria: 0-3 puntos
+    params.accessoryMuscleUse + // Uso de musculatura accesoria: 0-3 puntos
+    (params.oxygenUse ? 3 : 0); // Oxígeno: 0 o 3 puntos (reemplaza cianosis)
+
+  // Interpretación del puntaje
+  let interpretation = "";
+  let severity: ScoreResult['severity'] = 'normal';
+  let recommendations = "";
+
+  if (total <= 3) {
+    interpretation = "Obstrucción bronquial leve";
+    severity = "leve";
+    recommendations = "Manejo ambulatorio con broncodilatadores y control en 24-48h";
+  } else if (total <= 6) {
+    interpretation = "Obstrucción bronquial moderada";
+    severity = "moderado";
+    recommendations = "Considerar hospitalización, oxígeno si es necesario, broncodilatadores en dosis frecuentes";
+  } else if (total <= 9) {
+    interpretation = "Obstrucción bronquial grave";
+    severity = "severo";
+    recommendations = "Hospitalización, oxigenoterapia, broncodilatadores en dosis frecuentes, considerar corticoides";
+  } else {
+    interpretation = "Obstrucción bronquial crítica";
+    severity = "crítico";
+    recommendations = "Ingreso a UCI, soporte ventilatorio si es necesario, tratamiento agresivo";
+  }
+
+  return { 
+    score: total, 
+    interpretation, 
+    severity,
+    recommendations
+  };
 }
 
 // NEUROLOGICAL SCORES
