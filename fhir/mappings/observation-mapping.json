@@ -1,0 +1,23 @@
+{
+  "table": "observations",
+  "mappings": {
+    "id": "id",
+    "status": "'final'",
+    "category[0].coding[0].system": "http://terminology.hl7.org/CodeSystem/observation-category",
+    "category[0].coding[0].code": "'vital-signs'",
+    "code.coding[0].system": "loinc_system_or_snomed",
+    "code.coding[0].code": "loinc",
+    "subject.reference": "concat('Patient/', patient_id)",
+    "effectiveDateTime": "timestamp",
+    "valueQuantity.value": "value",
+    "valueQuantity.unit": "unit",
+    "valueQuantity.system": "http://unitsofmeasure.org",
+    "valueQuantity.code": "ucum_code"
+  },
+  "loinc_examples": {
+    "heart_rate": "8867-4",
+    "respiratory_rate": "9279-1",
+    "oxygen_saturation": "59408-5",
+    "temperature": "8310-5"
+  }
+}

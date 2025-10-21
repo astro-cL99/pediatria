@@ -1,0 +1,25 @@
+---
+interface Props {
+  patient: {
+    id: string;
+    name: string;
+    birthDate?: string;
+    gender?: string;
+  };
+}
+
+const { patient } = Astro.props;
+---
+
+<div class="card bg-base-100 shadow-xl">
+  <div class="card-body">
+    <h2 class="card-title">{patient.name}</h2>
+    {patient.birthDate && (
+      <p>Fecha de Nacimiento: {new Date(patient.birthDate).toLocaleDateString()}</p>
+    )}
+    {patient.gender && <p>Género: {patient.gender}</p>}
+    <div class="card-actions justify-end">
+      <a href={`/patient/${patient.id}`} class="btn btn-primary">Ver Detalles</a>
+    </div>
+  </div>
+</div>

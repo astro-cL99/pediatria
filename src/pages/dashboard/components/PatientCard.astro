@@ -1,0 +1,14 @@
+---
+import ObservationChart from './ObservationChart.astro';
+const { patient } = Astro.props;
+
+const latestHeartRate = patient.observations?.find(o => o.code.coding[0].code === '8867-4')?.valueQuantity.value || 0;
+const latestTemp = patient.observations?.find(o => o.code.coding[0].code === '8310-5')?.valueQuantity.value || 0;
+const critical = latestHeartRate > 160 || latestTemp > 39;
+---
+<div class={`card p-4 border ${critical ? 'border-red-500' : 'border-gray-200'} rounded shadow`}>
+  <h3 class="text-lg font-bold">{patient.name[0].given[0]} {patient.name[0].family}</h3>
+  <p>RUT: {patient.identifier[0].value}</p>
+  {critical && <p class="text-red-600 font-bold">¡Signos vitales críticos!</p>}
+  {patient.observations && <ObservationChart observations={patient.observations} />}
+</div>

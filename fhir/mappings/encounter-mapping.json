@@ -1,0 +1,12 @@
+{
+  "table": "encounters",
+  "mappings": {
+    "id": "id",
+    "status": "status",
+    "class": "class", 
+    "subject.reference": "concat('Patient/', patient_id)",
+    "period.start": "started_at",
+    "period.end": "ended_at",
+    "serviceProvider.reference": "concat('Organization/', facility_id)"
+  }
+}

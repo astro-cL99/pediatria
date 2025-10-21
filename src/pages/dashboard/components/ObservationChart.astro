@@ -1,0 +1,29 @@
+---
+import Chart from 'chart.js/auto';
+const { observations } = Astro.props;
+---
+
+<canvas id="obsChart"></canvas>
+
+<script is:inline>
+const ctx = document.getElementById('obsChart').getContext('2d');
+const obsData = {
+  labels: observations.map(o => new Date(o.effectiveDateTime).toLocaleTimeString()),
+  datasets: [
+    {
+      label: 'Frecuencia cardíaca',
+      data: observations.filter(o => o.code.coding[0].code === '8867-4').map(o => o.valueQuantity.value),
+      borderColor: 'red',
+      fill: false
+    },
+    {
+      label: 'Temperatura',
+      data: observations.filter(o => o.code.coding[0].code === '8310-5').map(o => o.valueQuantity.value),
+      borderColor: 'orange',
+      fill: false
+    }
+  ]
+};
+
+new Chart(ctx, { type: 'line', data: obsData });
+</script>
