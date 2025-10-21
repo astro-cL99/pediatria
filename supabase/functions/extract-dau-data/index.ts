@@ -1,30 +1,53 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface DauRequest {
+  imageBase64: string;
+  fileName: string;
+}
+
+function validateRequest(body: any): DauRequest {
+  if (!body.imageBase64 || typeof body.imageBase64 !== 'string') {
+    throw new Error('imageBase64 es requerido y debe ser una cadena');
+  }
+  
+  const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+  if (!base64Regex.test(body.imageBase64)) {
+    throw new Error('imageBase64 no es válido');
+  }
+  
+  if (body.imageBase64.length > 10 * 1024 * 1024) {
+    throw new Error('La imagen es demasiado grande (máximo 10MB en base64)');
+  }
+  
+  return {
+    imageBase64: body.imageBase64,
+    fileName: body.fileName || 'documento.pdf'
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  
   try {
-    const { imageBase64, fileName } = await req.json();
-    
-    if (!imageBase64) {
-      throw new Error('No se proporcionó la imagen del DAU');
-    }
+    const body = await req.json();
+    const { imageBase64, fileName } = validateRequest(body);
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY no configurado');
+      throw new Error('LOVABLE_API_KEY no configurado en variables de entorno');
     }
 
-    console.log('Extrayendo datos del DAU con IA...');
-    console.log('Archivo:', fileName);
+    console.log(`[extract-dau-data] Procesando: ${fileName}`);
+    console.log(`[extract-dau-data] Tamaño imagen: ${(imageBase64.length / 1024).toFixed(2)} KB`);
 
     const systemPrompt = `Eres un asistente médico especializado en extraer datos de documentos DAU (Dato de Atención de Urgencia) del sistema público de salud chileno.
 
@@ -87,26 +110,27 @@ REGLAS:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.0-flash-exp',
         messages: [
-          { role: 'system', content: systemPrompt },
           { 
             role: 'user', 
             content: [
               {
                 type: 'text',
-                text: 'Extrae los datos estructurados de este documento DAU chileno:'
+                text: systemPrompt
               },
               {
                 type: 'image_url',
                 image_url: {
-                  url: `data:image/png;base64,${imageBase64}`
+                  url: `data:image/png;base64,${imageBase64}`,
+                  detail: 'high'
                 }
               }
             ]
           }
         ],
-        temperature: 0.2,
+        temperature: 0.1,
+        max_tokens: 4000,
       }),
     });
 
@@ -125,41 +149,93 @@ REGLAS:
     }
 
     const data = await response.json();
-    const extractedData = data.choices[0].message.content;
     
-    console.log('Datos extraídos exitosamente');
+    if (!data.choices || !data.choices[0]?.message?.content) {
+      console.error('[extract-dau-data] Respuesta AI sin contenido:', JSON.stringify(data));
+      throw new Error('Respuesta de IA vacía o mal formada');
+    }
+    
+    const extractedData = data.choices[0].message.content;
+    console.log(`[extract-dau-data] Respuesta recibida (${extractedData.length} chars)`);
 
-    // Parse JSON response - handle markdown code blocks
     let parsedData;
     const cleanedData = extractedData.trim();
     
     try {
-      // First try to extract from markdown code blocks
-      const jsonMatch = cleanedData.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        console.log('Extracted JSON from markdown block');
-        parsedData = JSON.parse(jsonMatch[1].trim());
+      const markdownMatch = cleanedData.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (markdownMatch) {
+        console.log('[extract-dau-data] JSON encontrado en bloque markdown');
+        parsedData = JSON.parse(markdownMatch[1].trim());
       } else {
-        // Try direct parse
-        parsedData = JSON.parse(cleanedData);
+        const jsonMatch = cleanedData.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          console.log('[extract-dau-data] JSON encontrado por regex');
+          parsedData = JSON.parse(jsonMatch[0]);
+        } else {
+          console.log('[extract-dau-data] Intentando parse directo');
+          parsedData = JSON.parse(cleanedData);
+        }
       }
-    } catch (e) {
-      console.error('Error parsing JSON:', e);
-      console.error('Raw response:', cleanedData.substring(0, 500));
-      throw new Error('No se pudo parsear la respuesta de IA');
+      
+      if (!parsedData || typeof parsedData !== 'object') {
+        throw new Error('El JSON parseado no es un objeto válido');
+      }
+      
+      if (parsedData.vitalSigns && typeof parsedData.vitalSigns === 'string') {
+        try {
+          parsedData.vitalSigns = JSON.parse(parsedData.vitalSigns);
+        } catch {
+          parsedData.vitalSigns = {};
+        }
+      }
+      
+      console.log('[extract-dau-data] ✓ Datos parseados correctamente');
+      console.log(`[extract-dau-data] Campos extraídos: ${Object.keys(parsedData).length}`);
+      
+    } catch (parseError) {
+      console.error('[extract-dau-data] Error al parsear JSON:', parseError);
+      console.error('[extract-dau-data] Contenido recibido (primeros 1000 chars):', 
+        cleanedData.substring(0, 1000));
+      
+      parsedData = {
+        patientName: "", rut: "", dateOfBirth: "", age: "", gender: "",
+        address: "", contactNumbers: "", caregiver: "", caregiverRut: "",
+        admissionDate: "", admissionTime: "",
+        chiefComplaint: extractedData.substring(0, 500),
+        presentIllness: "",
+        vitalSigns: { weight: "", temperature: "", heartRate: "", respiratoryRate: "", bloodPressure: "", saturation: "" },
+        allergies: "", personalHistory: "", physicalExam: "",
+        labResults: "", imagingResults: "", provisionalDiagnosis: ""
+      };
+      
+      console.warn('[extract-dau-data] Usando estructura de recuperación');
     }
 
+    const processingTime = Date.now() - startTime;
+    console.log(`[extract-dau-data] ✓ Completado en ${processingTime}ms`);
+
     return new Response(
-      JSON.stringify({ success: true, data: parsedData }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        success: true, 
+        data: parsedData,
+        metadata: {
+          fileName,
+          processingTimeMs: Date.now() - startTime,
+          model: 'google/gemini-2.0-flash-exp'
+        }
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error en extract-dau-data:', error);
+    const processingTime = Date.now() - startTime;
+    console.error(`[extract-dau-data] ✗ Error después de ${processingTime}ms:`, error);
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Error desconocido' 
+        error: error instanceof Error ? error.message : 'Error desconocido al procesar DAU',
+        details: error instanceof Error ? error.stack : undefined
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

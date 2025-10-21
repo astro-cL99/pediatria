@@ -20,3 +20,15 @@ verify_jwt = false
 
 [functions.analyze-patterns]
 verify_jwt = false
+
+[functions.real-time-vitals]
+verify_jwt = false
+
+[functions.medication-interactions]
+verify_jwt = false
+
+[functions.smart-discharge-summary]
+verify_jwt = false
+
+[functions.predictive-analytics]
+verify_jwt = false
