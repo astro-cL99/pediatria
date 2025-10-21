@@ -56,7 +56,7 @@ export function calculateWoodDownes(params: WoodDownesParams): ScoreResult {
 
 // TAL Score (Test de Asma Leve) - Para menores de 3 años
 export interface TALParams {
-  wheezing: 0 | 1; // 0=ausencia, 1=presencia
+  wheezing: 0 | 1 | 2 | 3; // 0=ninguna, 1=espiratorias, 2=espiratorias e insipiratorias, 3=audibles a distancia
   respiratoryRate: number; // frecuencia respiratoria
   accessoryMuscleUse: 0 | 1 | 2 | 3; // 0=ninguna, 1=subcostal, 2=intercostal, 3=supraclavicular
   oxygenUse: 0 | 1; // 0=sin oxígeno, 1=con oxígeno (reemplaza valoración de cianosis)
@@ -80,7 +80,7 @@ export function calculateTAL(params: TALParams): ScoreResult {
 
   // Calcular puntaje total (rango 0-12)
   const total = 
-    (params.wheezing ? 3 : 0) + // Sibilancias: 0 o 3 puntos
+    (params.wheezing ? 3 : 0) + // Sibilancias: 0-3 puntos
     rrScore + // Frecuencia respiratoria: 0-3 puntos
     params.accessoryMuscleUse + // Uso de musculatura accesoria: 0-3 puntos
     (params.oxygenUse ? 3 : 0); // Oxígeno: 0 o 3 puntos (reemplaza cianosis)
