@@ -1,0 +1,54 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import PatientCard from '../components/Patient/PatientCard.astro';
+
+// This would typically come from an API
+const patients = [
+  {
+    id: '1',
+    name: 'Juan Pérez López',
+    birthDate: '2020-05-15',
+    gender: 'male'
+  },
+  {
+    id: '2',
+    name: 'María González Rojas',
+    birthDate: '2019-11-22',
+    gender: 'female'
+  },
+  {
+    id: '3',
+    name: 'Pedro Muñoz Soto',
+    birthDate: '2021-03-08',
+    gender: 'male'
+  }
+];
+---
+
+<MainLayout title="Pacientes - PediFlow Chile">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold">Pacientes</h1>
+    <a href="/patient/new" class="btn btn-primary">
+      <i class="fas fa-plus mr-2"></i>Nuevo Paciente
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {patients.map(patient => (
+      <PatientCard patient={patient} />
+    ))}
+  </div>
+
+  {patients.length === 0 && (
+    <div class="text-center py-12">
+      <div class="text-5xl mb-4">
+        <i class="fas fa-user-injured"></i>
+      </div>
+      <h2 class="text-xl font-semibold mb-2">No hay pacientes registrados</h2>
+      <p class="text-gray-500 mb-4">Comienza agregando un nuevo paciente</p>
+      <a href="/patient/new" class="btn btn-primary">
+        <i class="fas fa-plus mr-2"></i>Agregar Paciente
+      </a>
+    </div>
+  )}
+</MainLayout>
