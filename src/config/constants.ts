@@ -5,6 +5,9 @@ export const IS_PRODUCTION = import.meta.env.PROD;
 // API Configuration
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
+// WebSocket Configuration
+export const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
+
 // Local Storage keys
 export const AUTH_TOKEN_KEY = 'auth_token';
 export const USER_DATA_KEY = 'user_data';
