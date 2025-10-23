@@ -187,6 +187,10 @@ export const LaboratoryExamsManager = ({ patientId, admissionId }: LaboratoryExa
         throw new Error(extractionData?.error || 'Error al procesar documento');
       }
 
+      // Obtener usuario autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No autenticado');
+
       // Guardar en la base de datos
       const { error: dbError } = await supabase
         .from('clinical_documents')
@@ -198,6 +202,7 @@ export const LaboratoryExamsManager = ({ patientId, admissionId }: LaboratoryExa
           document_type: extractionData.documentType || 'laboratorio',
           extracted_data: extractionData.extractedData || {},
           confidence_score: extractionData.confidenceScore ?? 0.85,
+          uploaded_by: user.id,
         });
 
       if (dbError) {
