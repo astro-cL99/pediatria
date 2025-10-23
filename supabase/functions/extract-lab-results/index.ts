@@ -28,9 +28,22 @@ serve(async (req) => {
 
     if (downloadError) throw downloadError;
 
-    // Convertir a base64
+    // Convertir archivo a base64
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const base64 = btoa(String.fromCharCode(...uint8Array));
+
+    // Detectar tipo MIME del archivo
+    let mimeType = 'application/pdf';
+    if (filePath.toLowerCase().endsWith('.pdf')) {
+      mimeType = 'application/pdf';
+    } else if (filePath.toLowerCase().endsWith('.jpg') || filePath.toLowerCase().endsWith('.jpeg')) {
+      mimeType = 'image/jpeg';
+    } else if (filePath.toLowerCase().endsWith('.png')) {
+      mimeType = 'image/png';
+    }
+
+    console.log(`Processing file: ${filePath}, MIME type: ${mimeType}`);
 
     // Prompt especializado para extracción de laboratorio pediátrico
     const systemPrompt = `Eres un experto en análisis de exámenes de laboratorio pediátrico chileno. 
@@ -73,7 +86,7 @@ FORMATO DE SALIDA REQUERIDO:
     const userPrompt = `Analiza este examen de laboratorio pediátrico y extrae TODOS los valores con máxima precisión. 
 Identifica valores críticos que requieren atención inmediata médica.`;
 
-    // Llamar a Lovable AI con imagen
+    // Llamar a Lovable AI con el documento
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -94,7 +107,7 @@ Identifica valores críticos que requieren atención inmediata médica.`;
               {
                 type: 'image_url',
                 image_url: {
-                  url: `data:${fileData.type};base64,${base64}`
+                  url: `data:${mimeType};base64,${base64}`
                 }
               }
             ]
