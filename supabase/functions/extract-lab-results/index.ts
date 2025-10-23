@@ -17,6 +17,7 @@ serve(async (req) => {
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -72,10 +73,11 @@ FORMATO DE SALIDA REQUERIDO:
     const userPrompt = `Analiza este examen de laboratorio pediátrico y extrae TODOS los valores con máxima precisión. 
 Identifica valores críticos que requieren atención inmediata médica.`;
 
-    // Llamar a Lovable AI con imagen (sin API key - integrado en Lovable Cloud)
+    // Llamar a Lovable AI con imagen
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
