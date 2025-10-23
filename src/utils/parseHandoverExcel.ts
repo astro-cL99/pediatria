@@ -162,13 +162,14 @@ export async function parseHandoverExcel(file: File): Promise<ParsedPatient[]> {
         
         const patients: ParsedPatient[] = [];
         
-        // Find the header row (looking for "Cama" column)
+        // Find the header row (looking for key columns: "Cama", "C", "NOMBRE", or "RUT")
         let headerRowIndex = -1;
         for (let i = 0; i < Math.min(20, jsonData.length); i++) {
           const row = jsonData[i];
           if (row && row.length > 0) {
-            const firstCell = row[0]?.toString().toLowerCase() || '';
-            if (firstCell.includes('cama')) {
+            // Check if any cell contains header keywords
+            const rowString = row.map((cell: any) => cell?.toString().toLowerCase() || '').join(' ');
+            if (rowString.includes('nombre') && (rowString.includes('rut') || rowString.includes('cama') || rowString.includes('edad'))) {
               headerRowIndex = i;
               break;
             }
@@ -176,21 +177,21 @@ export async function parseHandoverExcel(file: File): Promise<ParsedPatient[]> {
         }
         
         if (headerRowIndex === -1) {
-          throw new Error('No se encontró la fila de encabezados en el Excel');
+          throw new Error('No se encontró la fila de encabezados en el Excel. Asegúrate de que el archivo contenga columnas como NOMBRE, RUT, EDAD.');
         }
         
         const headers = jsonData[headerRowIndex].map((h: any) => h?.toString().toLowerCase() || '');
         
-        // Find column indices
-        const camaIdx = headers.findIndex((h: string) => h.includes('cama'));
+        // Find column indices - be more flexible with column detection
+        const camaIdx = headers.findIndex((h: string) => h.includes('cama') || h === 'c');
         const nombreIdx = headers.findIndex((h: string) => h.includes('nombre'));
         const edadIdx = headers.findIndex((h: string) => h.includes('edad'));
         const rutIdx = headers.findIndex((h: string) => h.includes('rut'));
-        const diagnosticoIdx = headers.findIndex((h: string) => h.includes('diagn'));
-        const fechaIngresoIdx = headers.findIndex((h: string) => h.includes('fecha') || h.includes('ingreso'));
+        const diagnosticoIdx = headers.findIndex((h: string) => h.includes('diagn') || h.includes('dx'));
+        const fechaIngresoIdx = headers.findIndex((h: string) => h.includes('fecha') && h.includes('ingreso'));
         const viralPanelIdx = headers.findIndex((h: string) => h.includes('viral') || h.includes('panel'));
-        const oxygenIdx = headers.findIndex((h: string) => h.includes('o2') || h.includes('oxigeno') || h.includes('requerimiento'));
-        const scoreIdx = headers.findIndex((h: string) => h.includes('score') || h.includes('respiratorio'));
+        const oxygenIdx = headers.findIndex((h: string) => h.toLowerCase() === 'o2' || h.includes('oxigeno') || h.includes('requerimiento'));
+        const scoreIdx = headers.findIndex((h: string) => h.includes('score') || h.includes('respiratorio') || h.includes('tal'));
         const antibioticosIdx = headers.findIndex((h: string) => h.includes('antibi'));
         const pendientesIdx = headers.findIndex((h: string) => h.includes('pendiente'));
         
@@ -202,20 +203,54 @@ export async function parseHandoverExcel(file: File): Promise<ParsedPatient[]> {
           
           if (!row || row.length === 0) continue;
           
-          // Parse bed assignment (format: "501-1" or "501" and separate bed number)
-          const camaStr = row[camaIdx]?.toString().trim() || '';
+          // Parse bed assignment (format: "501-1", "501" or just "1" for bed number)
+          // First try to get room from camaIdx, if not available, look at first columns
+          let camaStr = row[camaIdx]?.toString().trim() || '';
+          
+          // If camaIdx is empty, check if first column has room number (501, 502, etc.)
+          if (!camaStr && row[0]) {
+            const firstCol = row[0]?.toString().trim() || '';
+            if (firstCol && /^[456]\d{2}$/.test(firstCol)) {
+              camaStr = firstCol;
+            }
+          }
+          
           if (!camaStr) {
-            console.log(`Row ${i}: Skipping - no bed number`);
+            console.log(`Row ${i}: Skipping - no bed/room number found`);
             continue;
           }
           
           let room = '';
           let bed = 1;
           
+          // Check if it's a format like "501-1" or "501"
           if (camaStr.includes('-')) {
             const parts = camaStr.split('-');
             room = parts[0].trim();
             bed = parseInt(parts[1]) || 1;
+          } else if (/^[456]\d{2}$/.test(camaStr)) {
+            // If it's a 3-digit room number like "501"
+            room = camaStr;
+            // Try to get bed number from adjacent column if available
+            const nextCol = row[camaIdx + 1]?.toString().trim();
+            if (nextCol && /^\d+$/.test(nextCol) && parseInt(nextCol) <= 3) {
+              bed = parseInt(nextCol);
+            }
+          } else if (/^\d+$/.test(camaStr) && parseInt(camaStr) <= 3) {
+            // If it's just a bed number (1, 2, 3), look for room in previous rows
+            bed = parseInt(camaStr);
+            // Look backwards to find the room number
+            for (let j = i - 1; j >= headerRowIndex + 1; j--) {
+              const prevRoomStr = jsonData[j][0]?.toString().trim() || '';
+              if (/^[456]\d{2}$/.test(prevRoomStr)) {
+                room = prevRoomStr;
+                break;
+              }
+            }
+            if (!room) {
+              console.log(`Row ${i}: Skipping - could not determine room for bed ${bed}`);
+              continue;
+            }
           } else {
             room = camaStr;
           }
