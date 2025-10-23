@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoomGroup } from "@/components/RoomGroup";
+import { BedAssignmentDialog } from "@/components/BedAssignmentDialog";
 import { 
   Search, 
   Plus, 
@@ -73,6 +74,8 @@ export default function Patients() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<'pediatria'>('pediatria');
+  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
+  const [selectedBed, setSelectedBed] = useState<{ room: string; bed: string }>({ room: "", bed: "" });
 
   useEffect(() => {
     fetchBedAssignments();
@@ -125,7 +128,8 @@ export default function Patients() {
   };
 
   const handleAssignBed = (roomNumber: string, bedNumber: string) => {
-    navigate(`/admission/new?room=${roomNumber}&bed=${bedNumber}`);
+    setSelectedBed({ room: roomNumber, bed: bedNumber });
+    setAssignmentDialogOpen(true);
   };
 
   const getDaysHospitalized = (admissionDate: string) => {
@@ -305,6 +309,17 @@ export default function Patients() {
           </>
         )}
       </div>
+
+      {/* Bed Assignment Dialog */}
+      <BedAssignmentDialog
+        open={assignmentDialogOpen}
+        onOpenChange={setAssignmentDialogOpen}
+        roomNumber={selectedBed.room}
+        bedNumber={selectedBed.bed}
+        onAssignmentComplete={() => {
+          fetchBedAssignments();
+        }}
+      />
     </div>
   );
 }
