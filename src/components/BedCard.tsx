@@ -79,15 +79,20 @@ export function BedCard({ roomNumber, beds, onUpdate }: BedCardProps) {
   const getScoreDelta = (admission: any) => {
     if (!admission.respiratory_score) return "";
     
-    const scores = typeof admission.respiratory_score === 'string' 
-      ? JSON.parse(admission.respiratory_score) 
-      : admission.respiratory_score;
-    
-    if (scores.at_admission && scores.current) {
-      const delta = scores.at_admission - scores.current;
-      if (delta > 0) return ` ↓${delta}`;
-      if (delta < 0) return ` ↑${Math.abs(delta)}`;
-      return " →";
+    try {
+      const scores = typeof admission.respiratory_score === 'string' 
+        ? JSON.parse(admission.respiratory_score) 
+        : admission.respiratory_score;
+      
+      if (scores.at_admission && scores.current) {
+        const delta = scores.at_admission - scores.current;
+        if (delta > 0) return ` ↓${delta}`;
+        if (delta < 0) return ` ↑${Math.abs(delta)}`;
+        return " →";
+      }
+    } catch {
+      // Si no es JSON válido, es un string simple como "Tal 5" - no mostrar delta
+      return "";
     }
     return "";
   };
