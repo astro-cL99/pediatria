@@ -138,18 +138,18 @@ export const LabResultsVisualizer = ({ exams, sectionName }: LabResultsVisualize
   };
 
   const criticalExams = exams.filter(e => {
-    const eval = evaluateExam(e);
-    return eval?.status === "critical";
+    const evaluation = evaluateExam(e);
+    return evaluation?.status === "critical";
   });
 
   const alertExams = exams.filter(e => {
-    const eval = evaluateExam(e);
-    return eval?.status === "alert";
+    const evaluation = evaluateExam(e);
+    return evaluation?.status === "alert";
   });
 
   const normalExams = exams.filter(e => {
-    const eval = evaluateExam(e);
-    return !eval || eval.status === "normal";
+    const evaluation = evaluateExam(e);
+    return !evaluation || evaluation.status === "normal";
   });
 
   return (
