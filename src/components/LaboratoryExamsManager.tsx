@@ -127,7 +127,7 @@ export const LaboratoryExamsManager = ({ patientId, admissionId }: LaboratoryExa
     setUploading(true);
 
     try {
-      // Subir archivo a Supabase Storage
+      // Subir archivo a almacenamiento
       const fileName = `${patientId}/${Date.now()}_${file.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("medical-documents")
@@ -135,39 +135,77 @@ export const LaboratoryExamsManager = ({ patientId, admissionId }: LaboratoryExa
 
       if (uploadError) throw uploadError;
 
-      // Llamar a la edge function mejorada para procesar el documento
-      const { data: processData, error: processError } = await supabase.functions.invoke('extract-lab-results', {
-        body: { 
-          filePath: uploadData.path,
-          patientId: patientId,
-          documentType: 'laboratorio'
+      // Preparar imágenes base64 para clasificar y extraer (PDF -> páginas PNG)
+      let imageBase64List: string[] = [];
+      if (file.type === "application/pdf") {
+        const pdfjsLib = await import("pdfjs-dist");
+        // Worker estable vía jsdelivr
+        // @ts-ignore - dynamic version field
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 2.0 });
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+          if (!context) continue;
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          // @ts-ignore - pdfjs types issue
+          await page.render({ canvasContext: context, viewport, intent: 'display' }).promise;
+          imageBase64List.push(canvas.toDataURL("image/png").split(",")[1]);
         }
-      });
+      } else if (file.type.startsWith("image/")) {
+        const toBase64 = (file: File) =>
+          new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve((reader.result as string).split(",")[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        imageBase64List = [await toBase64(file)];
+      }
 
-      if (processError) {
-        console.error("Process error:", processError);
-        throw processError;
+      // Usar la función estable 'classify-and-extract'
+      const { data: extractionData, error: extractionError } = await supabase.functions.invoke(
+        'classify-and-extract',
+        {
+          body: {
+            imageBase64List: imageBase64List.length > 0 ? imageBase64List : undefined,
+            imageBase64: imageBase64List[0],
+            fileName: file.name,
+          },
+        }
+      );
+
+      if (extractionError) {
+        console.error('Extraction error:', extractionError);
+        throw extractionError;
+      }
+      if (!extractionData?.success) {
+        throw new Error(extractionData?.error || 'Error al procesar documento');
       }
 
       // Guardar en la base de datos
       const { error: dbError } = await supabase
-        .from("clinical_documents")
+        .from('clinical_documents')
         .insert({
           patient_id: patientId,
           admission_id: currentAdmissionId,
           file_name: file.name,
           file_path: uploadData.path,
-          document_type: "laboratorio",
-          extracted_data: processData?.extractedData || {},
-          confidence_score: processData?.confidence || 0.8,
+          document_type: extractionData.documentType || 'laboratorio',
+          extracted_data: extractionData.extractedData || {},
+          confidence_score: extractionData.confidenceScore ?? 0.85,
         });
 
       if (dbError) {
-        console.error("Database error:", dbError);
+        console.error('Database error:', dbError);
         throw dbError;
       }
 
-      toast.success("Examen cargado y procesado exitosamente");
+      toast.success('Examen cargado y procesado exitosamente');
       fetchLabDocuments();
     } catch (error: any) {
       console.error("Error uploading lab:", error);
