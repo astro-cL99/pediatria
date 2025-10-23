@@ -15,6 +15,8 @@ serve(async (req) => {
   try {
     const { filePath, patientId, documentType } = await req.json();
     
+    console.log('Processing file:', filePath, 'for patient:', patientId);
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
@@ -26,24 +28,36 @@ serve(async (req) => {
       .from('medical-documents')
       .download(filePath);
 
-    if (downloadError) throw downloadError;
+    if (downloadError) {
+      console.error('Download error:', downloadError);
+      throw downloadError;
+    }
 
     // Convertir archivo a base64
     const arrayBuffer = await fileData.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    const base64 = btoa(String.fromCharCode(...uint8Array));
+    const bytes = new Uint8Array(arrayBuffer);
+    
+    // Convertir a base64 en chunks para evitar problemas de memoria
+    let base64 = '';
+    const chunkSize = 0x8000; // 32KB chunks
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+      base64 += String.fromCharCode(...chunk);
+    }
+    base64 = btoa(base64);
 
     // Detectar tipo MIME del archivo
     let mimeType = 'application/pdf';
-    if (filePath.toLowerCase().endsWith('.pdf')) {
+    const lowerPath = filePath.toLowerCase();
+    if (lowerPath.endsWith('.pdf')) {
       mimeType = 'application/pdf';
-    } else if (filePath.toLowerCase().endsWith('.jpg') || filePath.toLowerCase().endsWith('.jpeg')) {
+    } else if (lowerPath.endsWith('.jpg') || lowerPath.endsWith('.jpeg')) {
       mimeType = 'image/jpeg';
-    } else if (filePath.toLowerCase().endsWith('.png')) {
+    } else if (lowerPath.endsWith('.png')) {
       mimeType = 'image/png';
     }
 
-    console.log(`Processing file: ${filePath}, MIME type: ${mimeType}`);
+    console.log(`File type: ${mimeType}, size: ${arrayBuffer.byteLength} bytes`);
 
     // Prompt especializado para extracción de laboratorio pediátrico chileno
     const systemPrompt = `Eres un experto en análisis de exámenes de laboratorio pediátrico del Hospital Regional Libertador Bernardo O'Higgins de Chile.
@@ -133,7 +147,7 @@ IMPORTANTE:
 - Marca como CRÍTICO según criterios pediátricos definidos
 - Incluye TODOS los exámenes, incluso los normales`;
 
-    // Llamar a Lovable AI con el documento
+    // Llamar a Lovable AI - usar gemini-2.5-pro para PDFs
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -141,16 +155,12 @@ IMPORTANTE:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [
-          { 
-            role: 'system', 
-            content: systemPrompt 
-          },
           { 
             role: 'user', 
             content: [
-              { type: 'text', text: userPrompt },
+              { type: 'text', text: `${systemPrompt}\n\n${userPrompt}` },
               {
                 type: 'image_url',
                 image_url: {
@@ -161,7 +171,7 @@ IMPORTANTE:
           }
         ],
         temperature: 0.1,
-        max_tokens: 4000
+        max_tokens: 8000
       }),
     });
 
@@ -176,13 +186,20 @@ IMPORTANTE:
         );
       }
       
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'Se requiere pago. Por favor agrega créditos a tu cuenta de Lovable.' }), 
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       throw new Error(`AI Gateway error: ${response.status} - ${errorText}`);
     }
 
     const aiResponse = await response.json();
     let extractedText = aiResponse.choices[0]?.message?.content || '';
 
-    console.log('AI Response:', extractedText);
+    console.log('AI Response length:', extractedText.length);
 
     // Limpiar y parsear JSON
     extractedText = extractedText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -192,21 +209,25 @@ IMPORTANTE:
       extractedData = JSON.parse(extractedText);
     } catch (parseError) {
       console.error('JSON Parse Error:', parseError);
-      console.log('Raw text:', extractedText);
+      console.log('Raw text preview:', extractedText.substring(0, 500));
       
       // Fallback: intentar extraer JSON del texto
       const jsonMatch = extractedText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        extractedData = JSON.parse(jsonMatch[0]);
+        try {
+          extractedData = JSON.parse(jsonMatch[0]);
+        } catch (e) {
+          console.error('Failed to parse extracted JSON:', e);
+          throw new Error('No se pudo parsear la respuesta del AI');
+        }
       } else {
-        throw new Error('No se pudo parsear la respuesta del AI');
+        throw new Error('No se encontró JSON válido en la respuesta');
       }
     }
 
     // Calcular score de confianza basado en datos extraídos
     const totalExams = Object.values(extractedData.sections || {})
-      .flat()
-      .length;
+      .reduce((sum, section: any) => sum + (Array.isArray(section) ? section.length : 0), 0);
     
     const confidence = Math.min(0.95, 0.5 + (totalExams * 0.02));
 
