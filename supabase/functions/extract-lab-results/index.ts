@@ -45,46 +45,93 @@ serve(async (req) => {
 
     console.log(`Processing file: ${filePath}, MIME type: ${mimeType}`);
 
-    // Prompt especializado para extracción de laboratorio pediátrico
-    const systemPrompt = `Eres un experto en análisis de exámenes de laboratorio pediátrico chileno. 
-Tu tarea es extraer TODOS los valores de laboratorio del documento con absoluta precisión.
+    // Prompt especializado para extracción de laboratorio pediátrico chileno
+    const systemPrompt = `Eres un experto en análisis de exámenes de laboratorio pediátrico del Hospital Regional Libertador Bernardo O'Higgins de Chile.
 
-INSTRUCCIONES CRÍTICAS:
-1. Extrae TODOS los parámetros visibles, incluso si están en formato no estándar
-2. Identifica valores críticos según criterios pediátricos chilenos:
-   - Hemoglobina <7.0 g/dL: CRÍTICO (considerar transfusión)
-   - Plaquetas <10,000/µL: CRÍTICO (alto riesgo de sangrado)
-   - Leucocitos <1,000/µL o >50,000/µL: CRÍTICO
-   - Glucosa <40 mg/dL o >500 mg/dL: CRÍTICO
-   - Potasio <2.5 o >6.5 mEq/L: CRÍTICO (riesgo de arritmia)
-   - Sodio <120 o >160 mEq/L: CRÍTICO
-   - Creatinina >2.0 mg/dL: CRÍTICO (insuficiencia renal)
-   - Bilirrubina >15 mg/dL: CRÍTICO (ictericia severa)
+INSTRUCCIONES CRÍTICAS DE EXTRACCIÓN:
 
-3. Marca como "isAbnormal" si está fuera del rango de referencia
-4. Marca como "isCritical" si cumple criterios críticos
-5. Agrupa por secciones: Hemograma, Química Sanguínea, Electrolitos, Gases Arteriales, Coagulación, Perfil Hepático, Perfil Renal, Marcadores Inflamatorios, etc.
+1. DETECTA Y EXTRAE TODOS LOS VALORES:
+   - Busca tablas con columnas: Examen, Resultado, U.M., Valores de Referencia, Método
+   - Los símbolos ">" o "<" junto al resultado indican valores ANORMALES
+   - Extrae valores numéricos incluso si tienen símbolos o espacios
+   - Ejemplo: "24.2 >" debe extraerse como value: 24.2 con isAbnormal: true
 
-FORMATO DE SALIDA REQUERIDO:
+2. SECCIONES COMUNES A DETECTAR:
+   - HEMOGRAMA: Leucocitos, Eritrocitos, Hemoglobina, Hematocrito, Plaquetas, VCM, HCM, CHCM, ADE, VPM
+   - FÓRMULA DIFERENCIAL: Segmentados, Linfocitos, Monocitos, Eosinófilos, Basófilos (% y #)
+   - ELECTROLITOS: Sodio, Potasio, Cloro
+   - QUÍMICA: Glucosa, Creatinina, Urea, Bilirrubina
+   - MARCADORES INFLAMATORIOS: PCR, Procalcitonina, VHS
+   - BIOLOGÍA MOLECULAR: Panel Viral Respiratorio, SARS-COV-2
+   - COAGULACIÓN: TP, TTPA, INR, Fibrinógeno
+   - PERFIL HEPÁTICO: Transaminasas, Fosfatasa Alcalina
+   - PERFIL RENAL: Creatinina, BUN, Clearance
+
+3. VALORES CRÍTICOS PEDIÁTRICOS:
+   - Hemoglobina: <7.0 g/dL
+   - Leucocitos: <1.0 o >50.0 x10³/mm³
+   - Plaquetas: <10 x10³/mm³
+   - Sodio: <120 o >160 mEq/L
+   - Potasio: <2.5 o >6.5 mEq/L
+   - Glucosa: <40 o >500 mg/dL
+   - PCR: >10 mg/dL
+   - Procalcitonina: >2.0 ng/mL
+
+4. MARCADO DE ANORMALIDADES:
+   - isAbnormal: true si el resultado está FUERA del rango de referencia O tiene símbolo > o <
+   - isCritical: true si cumple criterios críticos listados arriba
+
+5. METADATOS A EXTRAER:
+   - Nombre del paciente
+   - RUT del paciente
+   - Edad del paciente
+   - Fecha/Hora de Ingreso
+   - Fecha de Toma de Muestras
+   - Procedencia (URGENCIA PEDIATRICA, PEDIATRIA, etc.)
+   - Número de Solicitud
+
+FORMATO JSON REQUERIDO:
 {
   "sections": {
     "Hemograma": [
-      {"name": "Hemoglobina", "value": 8.5, "unit": "g/dL", "referenceRange": "11.5-15.5", "isAbnormal": true, "isCritical": false},
-      {"name": "Plaquetas", "value": 45000, "unit": "/µL", "referenceRange": "150,000-450,000", "isAbnormal": true, "isCritical": false}
+      {"name": "RECUENTO DE LEUCOCITOS", "value": 24.2, "unit": "x10³/mm³", "referenceRange": "5.50-18.00", "isAbnormal": true, "isCritical": false},
+      {"name": "HEMOGLOBINA", "value": 12.4, "unit": "g/dL", "referenceRange": "9.2-13.6", "isAbnormal": false, "isCritical": false}
     ],
-    "Química": [
-      {"name": "Glucosa", "value": 95, "unit": "mg/dL", "referenceRange": "70-100", "isAbnormal": false, "isCritical": false}
+    "Electrolitos": [
+      {"name": "SODIO", "value": 127.9, "unit": "mEq/L", "referenceRange": "135-145", "isAbnormal": true, "isCritical": true}
+    ],
+    "Panel Viral": [
+      {"name": "Virus Respiratorio Sincicial A/B", "value": "POSITIVO", "unit": "", "referenceRange": "Negativo", "isAbnormal": true, "isCritical": false}
     ]
   },
   "metadata": {
-    "laboratoryName": "nombre del laboratorio",
-    "sampleDate": "fecha de toma de muestra",
-    "reportDate": "fecha del informe"
+    "laboratoryName": "HOSPITAL REGIONAL LIBERTADOR BERNARDO O'HIGGINS",
+    "patientName": "nombre del paciente",
+    "patientRUT": "RUT",
+    "patientAge": "edad",
+    "admissionDate": "fecha ingreso",
+    "sampleDate": "fecha toma muestra",
+    "reportDate": "fecha informe",
+    "requestNumber": "número solicitud",
+    "origin": "procedencia"
   }
 }`;
 
-    const userPrompt = `Analiza este examen de laboratorio pediátrico y extrae TODOS los valores con máxima precisión. 
-Identifica valores críticos que requieren atención inmediata médica.`;
+    const userPrompt = `Analiza este documento de laboratorio pediátrico del Hospital Regional de Rancagua.
+
+INSTRUCCIONES ESPECÍFICAS:
+1. Extrae TODOS los valores de exámenes, sin omitir ninguno
+2. Detecta los símbolos ">" o "<" que indican valores fuera de rango
+3. Identifica valores CRÍTICOS que requieren atención médica inmediata
+4. Agrupa los exámenes por sección (Hemograma, Electrolitos, etc.)
+5. Extrae todos los metadatos del paciente y del documento
+6. Para resultados cualitativos (POSITIVO, Negativo), marca como anormal si es POSITIVO
+
+IMPORTANTE: 
+- Si un valor tiene ">" o "<", es ANORMAL
+- Compara con rangos de referencia para detectar anormalidades
+- Marca como CRÍTICO según criterios pediátricos definidos
+- Incluye TODOS los exámenes, incluso los normales`;
 
     // Llamar a Lovable AI con el documento
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
