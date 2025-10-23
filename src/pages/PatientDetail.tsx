@@ -60,10 +60,15 @@ const PatientDetail = () => {
       setLoading(true);
       
       // Validar ID antes de consultar
-      if (!id || !isValidUUID(id)) {
+      if (!id) {
         toast.error("ID de paciente inválido");
         navigate("/patients");
         return;
+      }
+
+      // Validar formato UUID solo si es necesario
+      if (!isValidUUID(id)) {
+        console.warn("ID no es UUID válido, intentando buscar de todas formas:", id);
       }
 
       const { data: patientData, error: patientError } = await supabase

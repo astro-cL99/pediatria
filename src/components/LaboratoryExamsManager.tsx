@@ -12,6 +12,7 @@ import { es } from "date-fns/locale";
 import { toast } from "sonner";
 import { useDropzone } from "react-dropzone";
 import { Line } from "react-chartjs-2";
+import { LabResultsVisualizer } from "./LabResultsVisualizer";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -134,12 +135,19 @@ export const LaboratoryExamsManager = ({ patientId, admissionId }: LaboratoryExa
 
       if (uploadError) throw uploadError;
 
-      // Llamar a la edge function para procesar el documento
-      const { data: processData, error: processError } = await supabase.functions.invoke('classify-and-extract', {
-        body: { filePath: uploadData.path }
+      // Llamar a la edge function mejorada para procesar el documento
+      const { data: processData, error: processError } = await supabase.functions.invoke('extract-lab-results', {
+        body: { 
+          filePath: uploadData.path,
+          patientId: patientId,
+          documentType: 'laboratorio'
+        }
       });
 
-      if (processError) throw processError;
+      if (processError) {
+        console.error("Process error:", processError);
+        throw processError;
+      }
 
       // Guardar en la base de datos
       const { error: dbError } = await supabase
@@ -178,15 +186,6 @@ export const LaboratoryExamsManager = ({ patientId, admissionId }: LaboratoryExa
     maxFiles: 1
   });
 
-  // Función para formatear exámenes en formato compacto
-  const formatCompactExams = (exams: LabExam[]) => {
-    return exams.map(exam => {
-      const valueStr = `${exam.value}${exam.unit ? ' ' + exam.unit : ''}`;
-      const alert = exam.isCritical || exam.isAbnormal ? ' ⚠️' : '';
-      return `${exam.name} ${valueStr}${alert}`;
-    }).join(' // ');
-  };
-
   const renderExamSection = (sectionName: string, exams: LabExam[]) => {
     const filteredExams = exams.filter(exam =>
       exam.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -194,17 +193,12 @@ export const LaboratoryExamsManager = ({ patientId, admissionId }: LaboratoryExa
 
     if (filteredExams.length === 0) return null;
 
-    const compactText = formatCompactExams(filteredExams);
-
     return (
-      <div key={sectionName} className="space-y-2">
-        <h3 className="text-sm font-semibold text-foreground">
-          {sectionName}:
-        </h3>
-        <p className="text-sm text-foreground bg-muted/50 p-3 rounded-lg font-mono">
-          {compactText}
-        </p>
-      </div>
+      <LabResultsVisualizer 
+        key={sectionName}
+        sectionName={sectionName}
+        exams={filteredExams}
+      />
     );
   };
 

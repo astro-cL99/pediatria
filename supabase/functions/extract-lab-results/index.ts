@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,121 +13,166 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64, imageBase64List, fileName } = await req.json();
-    console.log('Extrayendo datos de laboratorio...');
-    console.log('Archivo:', fileName);
+    const { filePath, patientId, documentType } = await req.json();
+    
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY no configurado');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY no está configurada');
     }
 
-    const systemPrompt = `Eres un asistente especializado en extraer datos de exámenes de laboratorio médicos.
-Analiza TODAS las páginas del reporte de laboratorio y extrae la siguiente información en formato JSON:
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-{
-  "procedencia": "origen del examen (ej: URGENCIA PEDIATRICA, otro hospital, etc)",
-  "fechaToma": "fecha de toma de muestra en formato DD/MM/YYYY",
-  "resultados": [
-    {
-      "categoria": "nombre del sistema (ej: Química, Hemograma, Coagulación)",
-      "examenes": [
-        {
-          "nombre": "nombre del examen",
-          "valor": "valor numérico limpio sin unidades",
-          "referencia": "rango de referencia del documento",
-          "alterado": true o false
-        }
-      ]
-    }
-  ]
-}
+    // Descargar archivo desde storage
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from('medical-documents')
+      .download(filePath);
+
+    if (downloadError) throw downloadError;
+
+    // Convertir a base64
+    const arrayBuffer = await fileData.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+    // Prompt especializado para extracción de laboratorio pediátrico
+    const systemPrompt = `Eres un experto en análisis de exámenes de laboratorio pediátrico chileno. 
+Tu tarea es extraer TODOS los valores de laboratorio del documento con absoluta precisión.
 
 INSTRUCCIONES CRÍTICAS:
-1. LEE TODAS LAS PÁGINAS DEL DOCUMENTO - no solo la primera
-2. Extrae TODOS los exámenes que encuentres en cada página
-3. Agrupa los resultados por categorías/sistemas (Química, Hemograma, Coagulación, etc.)
-4. Para cada examen:
-   - Extrae solo el nombre limpio del examen (ej: "Glucosa", "Hemoglobina", "Leucocitos")
-   - Extrae solo el VALOR NUMÉRICO sin unidades (ej: "79", "15.2", "9800")
-   - Extrae el rango de referencia si está disponible en el documento (ej: "70-100", "<1.0")
-   - Determina si está alterado comparando el valor con la referencia
-5. NO incluyas:
-   - Unidades como mg/dL, g/dL, x10^3/mm3, etc.
-   - Símbolos como #, %, etc. en el nombre del examen
-   - Texto descriptivo adicional
-6. Si un valor está marcado como alto/bajo en el documento, marca "alterado": true
-7. Mantén los valores numéricos limpios y fáciles de leer
-8. Si hay múltiples fechas, usa la fecha de toma de muestra más reciente`;
+1. Extrae TODOS los parámetros visibles, incluso si están en formato no estándar
+2. Identifica valores críticos según criterios pediátricos chilenos:
+   - Hemoglobina <7.0 g/dL: CRÍTICO (considerar transfusión)
+   - Plaquetas <10,000/µL: CRÍTICO (alto riesgo de sangrado)
+   - Leucocitos <1,000/µL o >50,000/µL: CRÍTICO
+   - Glucosa <40 mg/dL o >500 mg/dL: CRÍTICO
+   - Potasio <2.5 o >6.5 mEq/L: CRÍTICO (riesgo de arritmia)
+   - Sodio <120 o >160 mEq/L: CRÍTICO
+   - Creatinina >2.0 mg/dL: CRÍTICO (insuficiencia renal)
+   - Bilirrubina >15 mg/dL: CRÍTICO (ictericia severa)
 
-    // Construir contenido con una o varias imágenes (todas las páginas)
-    const content: any[] = [{ type: 'text', text: systemPrompt }];
-    if (Array.isArray(imageBase64List) && imageBase64List.length > 0) {
-      for (const img of imageBase64List) {
-        content.push({
-          type: 'image_url',
-          image_url: { url: `data:image/png;base64,${img}` }
-        });
-      }
-      console.log('Páginas recibidas:', imageBase64List.length);
-    } else if (imageBase64) {
-      content.push({
-        type: 'image_url',
-        image_url: { url: `data:image/png;base64,${imageBase64}` }
-      });
-      console.log('Páginas recibidas:', 1);
-    } else {
-      throw new Error('No se recibió ninguna imagen para procesar');
-    }
+3. Marca como "isAbnormal" si está fuera del rango de referencia
+4. Marca como "isCritical" si cumple criterios críticos
+5. Agrupa por secciones: Hemograma, Química Sanguínea, Electrolitos, Gases Arteriales, Coagulación, Perfil Hepático, Perfil Renal, Marcadores Inflamatorios, etc.
 
+FORMATO DE SALIDA REQUERIDO:
+{
+  "sections": {
+    "Hemograma": [
+      {"name": "Hemoglobina", "value": 8.5, "unit": "g/dL", "referenceRange": "11.5-15.5", "isAbnormal": true, "isCritical": false},
+      {"name": "Plaquetas", "value": 45000, "unit": "/µL", "referenceRange": "150,000-450,000", "isAbnormal": true, "isCritical": false}
+    ],
+    "Química": [
+      {"name": "Glucosa", "value": 95, "unit": "mg/dL", "referenceRange": "70-100", "isAbnormal": false, "isCritical": false}
+    ]
+  },
+  "metadata": {
+    "laboratoryName": "nombre del laboratorio",
+    "sampleDate": "fecha de toma de muestra",
+    "reportDate": "fecha del informe"
+  }
+}`;
+
+    const userPrompt = `Analiza este examen de laboratorio pediátrico y extrae TODOS los valores con máxima precisión. 
+Identifica valores críticos que requieren atención inmediata médica.`;
+
+    // Llamar a Lovable AI con imagen
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'user', content }
+          { 
+            role: 'system', 
+            content: systemPrompt 
+          },
+          { 
+            role: 'user', 
+            content: [
+              { type: 'text', text: userPrompt },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${fileData.type};base64,${base64}`
+                }
+              }
+            ]
+          }
         ],
-        response_format: { type: 'json_object' }
+        temperature: 0.1,
+        max_tokens: 4000
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error en AI Gateway:', response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
+      console.error('AI Gateway error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Límite de tasa excedido. Por favor intenta de nuevo más tarde.' }), 
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      throw new Error(`AI Gateway error: ${response.status} - ${errorText}`);
     }
 
     const aiResponse = await response.json();
-    let extractedText = aiResponse.choices[0].message.content;
+    let extractedText = aiResponse.choices[0]?.message?.content || '';
 
-    // Handle markdown JSON blocks
-    if (extractedText.includes('```json')) {
-      extractedText = extractedText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-      console.log('Extracted JSON from markdown block');
+    console.log('AI Response:', extractedText);
+
+    // Limpiar y parsear JSON
+    extractedText = extractedText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    let extractedData;
+    try {
+      extractedData = JSON.parse(extractedText);
+    } catch (parseError) {
+      console.error('JSON Parse Error:', parseError);
+      console.log('Raw text:', extractedText);
+      
+      // Fallback: intentar extraer JSON del texto
+      const jsonMatch = extractedText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        extractedData = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No se pudo parsear la respuesta del AI');
+      }
     }
 
-    const extractedData = JSON.parse(extractedText);
+    // Calcular score de confianza basado en datos extraídos
+    const totalExams = Object.values(extractedData.sections || {})
+      .flat()
+      .length;
+    
+    const confidence = Math.min(0.95, 0.5 + (totalExams * 0.02));
 
-    console.log('Datos de laboratorio extraídos exitosamente');
-    console.log('Categorías encontradas:', extractedData.resultados?.length || 0);
+    console.log(`Extraídos ${totalExams} exámenes con confianza ${confidence}`);
 
     return new Response(
-      JSON.stringify({ success: true, data: extractedData }),
+      JSON.stringify({ 
+        extractedData,
+        confidence,
+        totalExams
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in extract-lab-results:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ 
+        error: error.message || 'Error desconocido',
+        details: error.toString()
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
