@@ -69,7 +69,7 @@ const App = () => (
           <Route path="/patient/new" element={<AppLayout><NewPatient /></AppLayout>} />
           <Route path="/admission/new" element={<AppLayout><NewAdmission /></AppLayout>} />
           <Route path="/patient/:id" element={<AppLayout><PatientDetail /></AppLayout>} />
-          <Route path="/patients/:id" element={<Navigate to="/patient/:id" replace />} />
+          <Route path="/patients/:id" element={<AppLayout><PatientDetail /></AppLayout>} />
           <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
           <Route 
             path="/patient/:id/anthropometry" 
