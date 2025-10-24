@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { differenceInDays } from "date-fns";
+import { calculatePediatricAge } from "@/utils/calculatePediatricAge";
 
 // Components
 import { HandoverStats } from "@/components/HandoverStats";

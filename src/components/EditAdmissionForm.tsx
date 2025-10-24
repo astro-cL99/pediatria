@@ -45,8 +45,10 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
     dietType: currentData.diet?.type || "",
     dietNotes: currentData.diet?.notes || "",
     ivTherapyActive: currentData.iv_therapy?.active || false,
+    ivTherapyType: currentData.iv_therapy?.type || "",
     ivTherapyPercentage: currentData.iv_therapy?.percentage || "",
-    ivTherapyCorrections: currentData.iv_therapy?.corrections || "",
+    ivNaCl: currentData.iv_therapy?.nacl || "",
+    ivKCl: currentData.iv_therapy?.kcl || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,8 +85,10 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
       const ivTherapy = formData.ivTherapyActive
         ? {
             active: true,
+            type: formData.ivTherapyType || null,
             percentage: formData.ivTherapyPercentage,
-            corrections: formData.ivTherapyCorrections || null,
+            nacl: formData.ivNaCl || null,
+            kcl: formData.ivKCl || null,
           }
         : null;
 
@@ -318,23 +322,81 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
         {formData.ivTherapyActive && (
           <>
             <div>
-              <Label htmlFor="ivTherapyPercentage">% de Requerimientos</Label>
-              <Input
-                id="ivTherapyPercentage"
-                value={formData.ivTherapyPercentage}
-                onChange={(e) => setFormData({ ...formData, ivTherapyPercentage: e.target.value })}
-                placeholder="Ej: 75% (recibiendo 3/4 de sus necesidades)"
-              />
+              <Label htmlFor="ivTherapyType">Tipo de Suero</Label>
+              <Select
+                value={formData.ivTherapyType || ""}
+                onValueChange={(value) => setFormData({ ...formData, ivTherapyType: value })}
+              >
+                <SelectTrigger id="ivTherapyType">
+                  <SelectValue placeholder="Seleccionar tipo de suero" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SF 0.9%">Suero Fisiológico 0.9%</SelectItem>
+                  <SelectItem value="Ringer Lactato">Ringer Lactato</SelectItem>
+                  <SelectItem value="Glucosado 2.5%">Suero Glucosado 2.5%</SelectItem>
+                  <SelectItem value="Glucosado 5%">Suero Glucosado 5%</SelectItem>
+                  <SelectItem value="Glucosado 7.5%">Suero Glucosado 7.5%</SelectItem>
+                  <SelectItem value="Glucosado 10%">Suero Glucosado 10%</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            
             <div>
-              <Label htmlFor="ivTherapyCorrections">Correcciones Electrolíticas</Label>
-              <Textarea
-                id="ivTherapyCorrections"
-                value={formData.ivTherapyCorrections}
-                onChange={(e) => setFormData({ ...formData, ivTherapyCorrections: e.target.value })}
-                placeholder="Ej: KCl 10 mEq/L, NaCl 20 mEq/L"
-                rows={2}
-              />
+              <Label htmlFor="ivTherapyPercentage">% de Requerimientos</Label>
+              <Select
+                value={formData.ivTherapyPercentage}
+                onValueChange={(value) => setFormData({ ...formData, ivTherapyPercentage: value })}
+              >
+                <SelectTrigger id="ivTherapyPercentage">
+                  <SelectValue placeholder="Seleccionar porcentaje" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="50%">50%</SelectItem>
+                  <SelectItem value="60%">60%</SelectItem>
+                  <SelectItem value="70%">70%</SelectItem>
+                  <SelectItem value="80%">80%</SelectItem>
+                  <SelectItem value="90%">90%</SelectItem>
+                  <SelectItem value="100%">100%</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="ivNaCl">NaCl 10%</Label>
+                <Select
+                  value={formData.ivNaCl || ""}
+                  onValueChange={(value) => setFormData({ ...formData, ivNaCl: value })}
+                >
+                  <SelectTrigger id="ivNaCl">
+                    <SelectValue placeholder="cc" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">No aplica</SelectItem>
+                    <SelectItem value="5cc">5 cc</SelectItem>
+                    <SelectItem value="10cc">10 cc</SelectItem>
+                    <SelectItem value="20cc">20 cc</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="ivKCl">KCl 7.5%</Label>
+                <Select
+                  value={formData.ivKCl || ""}
+                  onValueChange={(value) => setFormData({ ...formData, ivKCl: value })}
+                >
+                  <SelectTrigger id="ivKCl">
+                    <SelectValue placeholder="cc" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">No aplica</SelectItem>
+                    <SelectItem value="5cc">5 cc</SelectItem>
+                    <SelectItem value="10cc">10 cc</SelectItem>
+                    <SelectItem value="20cc">20 cc</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </>
         )}

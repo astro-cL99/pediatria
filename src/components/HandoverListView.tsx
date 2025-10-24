@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { EditAdmissionForm } from "./EditAdmissionForm";
 import { Pencil, Droplet, Wind, Pill } from "lucide-react";
 import { differenceInDays } from "date-fns";
+import { calculatePediatricAgeShort } from "@/utils/calculatePediatricAge";
 
 interface BedData {
   id: string;
@@ -41,17 +42,6 @@ interface HandoverListViewProps {
 export function HandoverListView({ beds, onUpdate }: HandoverListViewProps) {
   const [editingAdmission, setEditingAdmission] = useState<string | null>(null);
   const [selectedBed, setSelectedBed] = useState<BedData | null>(null);
-
-  const calculateAge = (dateOfBirth: string) => {
-    const birthDate = new Date(dateOfBirth);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
 
   const getDaysHospitalized = (admissionDate: string) => {
     return differenceInDays(new Date(), new Date(admissionDate));
@@ -95,7 +85,7 @@ export function HandoverListView({ beds, onUpdate }: HandoverListViewProps) {
           {sortedBeds.map((bed) => {
               const patient = bed.patient;
               const admission = bed.admission;
-              const age = calculateAge(patient.date_of_birth);
+              const age = calculatePediatricAgeShort(patient.date_of_birth);
               const days = getDaysHospitalized(admission.admission_date);
 
               return (
@@ -108,7 +98,7 @@ export function HandoverListView({ beds, onUpdate }: HandoverListViewProps) {
                       <div className="text-sm text-muted-foreground">{patient.rut}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{age}a</TableCell>
+                  <TableCell>{age}</TableCell>
                   <TableCell>{days}d</TableCell>
                   <TableCell>
                     <div className="max-w-xs">

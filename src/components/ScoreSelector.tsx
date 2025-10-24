@@ -101,29 +101,29 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
               value={talParams.frecuenciaRespiratoria.toString()}
               onValueChange={(val) => setTalParams({ ...talParams, frecuenciaRespiratoria: parseInt(val) })}
             >
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="25" id="fr-0" />
-                  <Label htmlFor="fr-0" className="flex-1 cursor-pointer">
-                    <span className="font-medium">0 puntos:</span> {"<30 rpm (< 6 meses: ≤40)"}
+                  <Label htmlFor="fr-0" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">0:</span> {"<30"}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="38" id="fr-1" />
-                  <Label htmlFor="fr-1" className="flex-1 cursor-pointer">
-                    <span className="font-medium">1 punto:</span> 31-45 rpm ({"< 6 meses: 41-55"})
+                  <Label htmlFor="fr-1" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">1:</span> 31-45
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="53" id="fr-2" />
-                  <Label htmlFor="fr-2" className="flex-1 cursor-pointer">
-                    <span className="font-medium">2 puntos:</span> 46-60 rpm ({"< 6 meses: 56-70"})
+                  <Label htmlFor="fr-2" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">2:</span> 46-60
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="65" id="fr-3" />
-                  <Label htmlFor="fr-3" className="flex-1 cursor-pointer">
-                    <span className="font-medium">3 puntos:</span> {">70 rpm (< 6 meses: >70)"}
+                  <Label htmlFor="fr-3" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">3:</span> {">70"}
                   </Label>
                 </div>
               </div>
@@ -137,29 +137,29 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
               value={talParams.sibilancias}
               onValueChange={(val) => setTalParams({ ...talParams, sibilancias: val as any })}
             >
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="ausentes" id="sib-0" />
-                  <Label htmlFor="sib-0" className="flex-1 cursor-pointer">
-                    <span className="font-medium">0 puntos:</span> NO
+                  <Label htmlFor="sib-0" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">0:</span> NO
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="fin_espiracion" id="sib-1" />
-                  <Label htmlFor="sib-1" className="flex-1 cursor-pointer">
-                    <span className="font-medium">1 punto:</span> Fin de espiración c/fonendoscopio
+                  <Label htmlFor="sib-1" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">1:</span> Fin espir.
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="toda_espiracion" id="sib-2" />
-                  <Label htmlFor="sib-2" className="flex-1 cursor-pointer">
-                    <span className="font-medium">2 puntos:</span> Insp. y espir. c/fonendoscopio
+                  <Label htmlFor="sib-2" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">2:</span> Insp+Esp
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="audibles" id="sib-3" />
-                  <Label htmlFor="sib-3" className="flex-1 cursor-pointer">
-                    <span className="font-medium">3 puntos:</span> Audibles a distancia
+                  <Label htmlFor="sib-3" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">3:</span> Audibles
                   </Label>
                 </div>
               </div>
@@ -173,29 +173,29 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
               value={talParams.usoMuscAccesorios}
               onValueChange={(val) => setTalParams({ ...talParams, usoMuscAccesorios: val as any })}
             >
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="ausente" id="retr-0" />
-                  <Label htmlFor="retr-0" className="flex-1 cursor-pointer">
-                    <span className="font-medium">0 puntos:</span> NO
+                  <Label htmlFor="retr-0" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">0:</span> NO
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="leve" id="retr-1" />
-                  <Label htmlFor="retr-1" className="flex-1 cursor-pointer">
-                    <span className="font-medium">1 punto:</span> Peri-oral al llorar
+                  <Label htmlFor="retr-1" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">1:</span> Leve (+)
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="moderado" id="retr-2" />
-                  <Label htmlFor="retr-2" className="flex-1 cursor-pointer">
-                    <span className="font-medium">2 puntos:</span> Subcostal (+)
+                  <Label htmlFor="retr-2" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">2:</span> Subcostal
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="grave" id="retr-3" />
-                  <Label htmlFor="retr-3" className="flex-1 cursor-pointer">
-                    <span className="font-medium">3 puntos:</span> Supraclavicular (++)
+                  <Label htmlFor="retr-3" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">3:</span> Supraclav
                   </Label>
                 </div>
               </div>
@@ -209,29 +209,29 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
               value={talParams.cianosis}
               onValueChange={(val) => setTalParams({ ...talParams, cianosis: val as any })}
             >
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="ausente" id="cian-0" />
-                  <Label htmlFor="cian-0" className="flex-1 cursor-pointer">
-                    <span className="font-medium">0 puntos:</span> NO
+                  <Label htmlFor="cian-0" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">0:</span> NO
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="perioral_llanto" id="cian-1" />
-                  <Label htmlFor="cian-1" className="flex-1 cursor-pointer">
-                    <span className="font-medium">1 punto:</span> Peri-oral al llorar
+                  <Label htmlFor="cian-1" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">1:</span> Llanto
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="perioral_reposo" id="cian-2" />
-                  <Label htmlFor="cian-2" className="flex-1 cursor-pointer">
-                    <span className="font-medium">2 puntos:</span> Peri-oral en reposo
+                  <Label htmlFor="cian-2" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">2:</span> Reposo
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="generalizada" id="cian-3" />
-                  <Label htmlFor="cian-3" className="flex-1 cursor-pointer">
-                    <span className="font-medium">3 puntos:</span> Generalizada en reposo
+                  <Label htmlFor="cian-3" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">3:</span> Generalizada
                   </Label>
                 </div>
               </div>
@@ -245,29 +245,29 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
               value={talParams.nivelConciencia}
               onValueChange={(val) => setTalParams({ ...talParams, nivelConciencia: val as any })}
             >
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="normal" id="conc-0" />
-                  <Label htmlFor="conc-0" className="flex-1 cursor-pointer">
-                    <span className="font-medium">0 puntos:</span> Normal
+                  <Label htmlFor="conc-0" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">0:</span> Normal
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="hiporeactivo" id="conc-1" />
-                  <Label htmlFor="conc-1" className="flex-1 cursor-pointer">
-                    <span className="font-medium">1 punto:</span> Hiporreactivo
+                  <Label htmlFor="conc-1" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">1:</span> Hiporeact.
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="agitado" id="conc-2" />
-                  <Label htmlFor="conc-2" className="flex-1 cursor-pointer">
-                    <span className="font-medium">2 puntos:</span> Agitado
+                  <Label htmlFor="conc-2" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">2:</span> Agitado
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="confuso_letargico" id="conc-3" />
-                  <Label htmlFor="conc-3" className="flex-1 cursor-pointer">
-                    <span className="font-medium">3 puntos:</span> Confuso/Letárgico
+                  <Label htmlFor="conc-3" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">3:</span> Confuso
                   </Label>
                 </div>
               </div>
@@ -332,23 +332,23 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
               value={woodParams.cianosis}
               onValueChange={(val) => setWoodParams({ ...woodParams, cianosis: val as any })}
             >
-              <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="ausente" id="wood-cian-0" />
-                  <Label htmlFor="wood-cian-0" className="flex-1 cursor-pointer">
-                    <span className="font-medium">0 puntos:</span> Ausente
+                  <Label htmlFor="wood-cian-0" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">0:</span> Ausente
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="aire_ambiente" id="wood-cian-2" />
-                  <Label htmlFor="wood-cian-2" className="flex-1 cursor-pointer">
-                    <span className="font-medium">2 puntos:</span> Con aire ambiente
+                  <Label htmlFor="wood-cian-2" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">2:</span> Aire amb.
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="fio2_40" id="wood-cian-3" />
-                  <Label htmlFor="wood-cian-3" className="flex-1 cursor-pointer">
-                    <span className="font-medium">3 puntos:</span> Con FiO₂ {"≥"}40%
+                  <Label htmlFor="wood-cian-3" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">3:</span> FiO₂ {"≥"}40%
                   </Label>
                 </div>
               </div>
@@ -362,29 +362,29 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
               value={woodParams.tiraje}
               onValueChange={(val) => setWoodParams({ ...woodParams, tiraje: val as any })}
             >
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="ausente" id="wood-tir-0" />
-                  <Label htmlFor="wood-tir-0" className="flex-1 cursor-pointer">
-                    <span className="font-medium">0 puntos:</span> Ausente
+                  <Label htmlFor="wood-tir-0" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">0:</span> Ausente
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="leve" id="wood-tir-1" />
-                  <Label htmlFor="wood-tir-1" className="flex-1 cursor-pointer">
-                    <span className="font-medium">1 punto:</span> Subcostal leve (+)
+                  <Label htmlFor="wood-tir-1" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">1:</span> Leve (+)
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="moderado" id="wood-tir-2" />
-                  <Label htmlFor="wood-tir-2" className="flex-1 cursor-pointer">
-                    <span className="font-medium">2 puntos:</span> Intercostal (++)
+                  <Label htmlFor="wood-tir-2" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">2:</span> Intercost.
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="grave" id="wood-tir-3" />
-                  <Label htmlFor="wood-tir-3" className="flex-1 cursor-pointer">
-                    <span className="font-medium">3 puntos:</span> Supraclavicular (+++)
+                  <Label htmlFor="wood-tir-3" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">3:</span> Supraclav.
                   </Label>
                 </div>
               </div>
@@ -398,29 +398,29 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
               value={woodParams.sibilancias}
               onValueChange={(val) => setWoodParams({ ...woodParams, sibilancias: val as any })}
             >
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="ausentes" id="wood-sib-0" />
-                  <Label htmlFor="wood-sib-0" className="flex-1 cursor-pointer">
-                    <span className="font-medium">0 puntos:</span> Ausentes
+                  <Label htmlFor="wood-sib-0" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">0:</span> Ausentes
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="fin_espiracion" id="wood-sib-1" />
-                  <Label htmlFor="wood-sib-1" className="flex-1 cursor-pointer">
-                    <span className="font-medium">1 punto:</span> Fin de espiración
+                  <Label htmlFor="wood-sib-1" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">1:</span> Fin espir.
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="toda_espiracion" id="wood-sib-2" />
-                  <Label htmlFor="wood-sib-2" className="flex-1 cursor-pointer">
-                    <span className="font-medium">2 puntos:</span> Toda la espiración
+                  <Label htmlFor="wood-sib-2" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">2:</span> Toda espir.
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="insp_y_esp_audibles" id="wood-sib-3" />
-                  <Label htmlFor="wood-sib-3" className="flex-1 cursor-pointer">
-                    <span className="font-medium">3 puntos:</span> Insp. y espir. audibles
+                  <Label htmlFor="wood-sib-3" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">3:</span> Insp+Esp
                   </Label>
                 </div>
               </div>
@@ -434,29 +434,29 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
               value={woodParams.frecuenciaRespiratoria.toString()}
               onValueChange={(val) => setWoodParams({ ...woodParams, frecuenciaRespiratoria: parseInt(val) })}
             >
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="35" id="wood-fr-0" />
-                  <Label htmlFor="wood-fr-0" className="flex-1 cursor-pointer">
-                    <span className="font-medium">0 puntos:</span> {"<40 (< 6m) / <30 (≥6m)"}
+                  <Label htmlFor="wood-fr-0" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">0:</span> {"<40/<30"}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="48" id="wood-fr-1" />
-                  <Label htmlFor="wood-fr-1" className="flex-1 cursor-pointer">
-                    <span className="font-medium">1 punto:</span> 41-55 ({"< 6m"}) / 31-45 (≥6m)
+                  <Label htmlFor="wood-fr-1" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">1:</span> 41-55/31-45
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="63" id="wood-fr-2" />
-                  <Label htmlFor="wood-fr-2" className="flex-1 cursor-pointer">
-                    <span className="font-medium">2 puntos:</span> 56-70 ({"< 6m"}) / 46-60 (≥6m)
+                  <Label htmlFor="wood-fr-2" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">2:</span> 56-70/46-60
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="75" id="wood-fr-3" />
-                  <Label htmlFor="wood-fr-3" className="flex-1 cursor-pointer">
-                    <span className="font-medium">3 puntos:</span> {">70 (< 6m) / >60 (≥6m)"}
+                  <Label htmlFor="wood-fr-3" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">3:</span> {">70/>60"}
                   </Label>
                 </div>
               </div>
@@ -470,29 +470,29 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
               value={woodParams.frecuenciaCardiaca.toString()}
               onValueChange={(val) => setWoodParams({ ...woodParams, frecuenciaCardiaca: parseInt(val) })}
             >
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="120" id="wood-fc-0" />
-                  <Label htmlFor="wood-fc-0" className="flex-1 cursor-pointer">
-                    <span className="font-medium">0 puntos:</span> Normal para edad
+                  <Label htmlFor="wood-fc-0" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">0:</span> Normal
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="165" id="wood-fc-1" />
-                  <Label htmlFor="wood-fc-1" className="flex-1 cursor-pointer">
-                    <span className="font-medium">1 punto:</span> Leve aumento (+20 lpm)
+                  <Label htmlFor="wood-fc-1" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">1:</span> +20 lpm
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="185" id="wood-fc-2" />
-                  <Label htmlFor="wood-fc-2" className="flex-1 cursor-pointer">
-                    <span className="font-medium">2 puntos:</span> Moderado aumento (+40 lpm)
+                  <Label htmlFor="wood-fc-2" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">2:</span> +40 lpm
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
                   <RadioGroupItem value="205" id="wood-fc-3" />
-                  <Label htmlFor="wood-fc-3" className="flex-1 cursor-pointer">
-                    <span className="font-medium">3 puntos:</span> Severo aumento ({">+40 lpm"})
+                  <Label htmlFor="wood-fc-3" className="flex-1 cursor-pointer text-sm">
+                    <span className="font-medium">3:</span> {">+40 lpm"}
                   </Label>
                 </div>
               </div>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { BedAssignment } from "@/types/bed-assignment";
+import { calculatePediatricAge } from "@/utils/calculatePediatricAge";
 
 // Extend the BedAssignment type to include additional properties
 interface ExtendedBedAssignment {
@@ -50,19 +51,7 @@ const generateAllBeds = (roomNumber: string): string[] => {
   return Array.from({ length: bedCount }, (_, i) => (i + 1).toString());
 };
 
-// Calculate patient age from date of birth
-const calculateAge = (dob: string): string => {
-  const birthDate = new Date(dob);
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  
-  return age > 1 ? `${age} años` : 'Menos de 1 año';
-};
+// Format days hospitalized
 
 // Format days hospitalized
 const formatDaysHospitalized = (days: number): string => {
@@ -149,7 +138,7 @@ export function RoomGroup({
       } as const;
       
       const statusColor = statusMap[patient.status || 'estable'] || 'bg-gray-400';
-      const age = patient.date_of_birth ? calculateAge(patient.date_of_birth) : 'N/A';
+      const age = patient.date_of_birth ? calculatePediatricAge(patient.date_of_birth) : 'N/A';
 
       return (
         <div

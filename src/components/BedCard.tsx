@@ -5,6 +5,7 @@ import { BedPatientDetail } from "./BedPatientDetail";
 import { useState } from "react";
 import { differenceInDays, differenceInHours, format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { calculatePediatricAge } from "@/utils/calculatePediatricAge";
 
 interface BedData {
   id: string;
@@ -45,22 +46,6 @@ interface BedCardProps {
 
 export function BedCard({ roomNumber, beds, onUpdate }: BedCardProps) {
   const [selectedBed, setSelectedBed] = useState<BedData | null>(null);
-
-  const calculateDetailedAge = (dateOfBirth: string) => {
-    const today = new Date();
-    const birth = new Date(dateOfBirth);
-    const years = today.getFullYear() - birth.getFullYear();
-    const months = today.getMonth() - birth.getMonth();
-    
-    if (years < 1) {
-      const totalMonths = months + (years * 12);
-      return `${totalMonths} ${totalMonths === 1 ? 'mes' : 'meses'}`;
-    }
-    if (years < 2) {
-      return `${years} año ${months} ${months === 1 ? 'mes' : 'meses'}`;
-    }
-    return `${years} años ${months} ${months === 1 ? 'mes' : 'meses'}`;
-  };
 
   const getDaysHospitalized = (admissionDate: string) => {
     return differenceInDays(new Date(), new Date(admissionDate));
@@ -138,7 +123,7 @@ export function BedCard({ roomNumber, beds, onUpdate }: BedCardProps) {
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-xs truncate">{bed.patient.name}</p>
                     <p className="text-[10px] text-muted-foreground truncate">
-                      {bed.patient.rut} • {calculateDetailedAge(bed.patient.date_of_birth)}
+                      {bed.patient.rut} • {calculatePediatricAge(bed.patient.date_of_birth)}
                     </p>
                   </div>
                   <Badge variant={isNewAdmission(bed) ? "destructive" : "outline"} className="ml-1 text-[10px] px-1 py-0">
