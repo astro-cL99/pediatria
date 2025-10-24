@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { differenceInDays, differenceInYears, differenceInMonths } from "date-fns";
 import { Wind, Pill, Activity, AlertCircle, FileText, Pencil, UserCircle, LogOut } from "lucide-react";
 import { EditAdmissionForm } from "./EditAdmissionForm";
+import { ExternalLinksPanel } from "./ExternalLinksPanel";
 import { toast } from "sonner";
 
 interface BedPatientDetailProps {
@@ -196,6 +197,12 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
                 )}
               </CardContent>
             </Card>
+
+            {/* External Links */}
+            <ExternalLinksPanel 
+              patientRut={bed.patient.rut}
+              variant="inline"
+            />
 
             {/* Diagnoses */}
             {bed.admission.admission_diagnoses && bed.admission.admission_diagnoses.length > 0 && (

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { MedicalAnalyticsDashboard } from "@/components/MedicalAnalyticsDashboard";
+import { ExternalLinksPanel } from "@/components/ExternalLinksPanel";
 
 interface AssignedPatient {
   id: string;
@@ -205,6 +206,9 @@ const Dashboard = () => {
           Nuevo Ingreso
         </Button>
       </div>
+
+      {/* External Links - Quick Access */}
+      <ExternalLinksPanel variant="inline" />
 
       {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-3">

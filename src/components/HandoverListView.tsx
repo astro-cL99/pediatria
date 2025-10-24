@@ -7,6 +7,7 @@ import { EditAdmissionForm } from "./EditAdmissionForm";
 import { Pencil, Droplet, Wind, Pill } from "lucide-react";
 import { differenceInDays } from "date-fns";
 import { calculatePediatricAgeShort } from "@/utils/calculatePediatricAge";
+import { ExternalLinksPanel } from "./ExternalLinksPanel";
 
 interface BedData {
   id: string;
@@ -78,6 +79,7 @@ export function HandoverListView({ beds, onUpdate }: HandoverListViewProps) {
               <TableHead className="w-24">Días Hosp.</TableHead>
               <TableHead>Diagnósticos</TableHead>
               <TableHead className="w-32">Estado</TableHead>
+              <TableHead className="w-32">Exámenes</TableHead>
               <TableHead className="w-24">Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -131,6 +133,13 @@ export function HandoverListView({ beds, onUpdate }: HandoverListViewProps) {
                     </div>
                   </TableCell>
                   <TableCell>
+                    <ExternalLinksPanel 
+                      patientRut={patient.rut}
+                      variant="compact"
+                      showLabels={false}
+                    />
+                  </TableCell>
+                  <TableCell>
                     <Button variant="outline" size="sm" onClick={() => handleEdit(bed)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -148,17 +157,23 @@ export function HandoverListView({ beds, onUpdate }: HandoverListViewProps) {
             <DialogTitle>
               Editar Admisión - {selectedBed?.patient.name}
               <div className="text-sm font-normal text-muted-foreground">
-                Sala {selectedBed?.room_number}, Cama {selectedBed?.bed_number}
+                Sala {selectedBed?.room_number}, Cama {selectedBed?.bed_number} • RUT: {selectedBed?.patient.rut}
               </div>
             </DialogTitle>
           </DialogHeader>
           {selectedBed && (
-            <EditAdmissionForm
-              admissionId={selectedBed.admission_id}
-              currentData={selectedBed.admission}
-              onSuccess={handleEditSuccess}
-              onCancel={() => setEditingAdmission(null)}
-            />
+            <>
+              <ExternalLinksPanel 
+                patientRut={selectedBed.patient.rut}
+                variant="inline"
+              />
+              <EditAdmissionForm
+                admissionId={selectedBed.admission_id}
+                currentData={selectedBed.admission}
+                onSuccess={handleEditSuccess}
+                onCancel={() => setEditingAdmission(null)}
+              />
+            </>
           )}
         </DialogContent>
       </Dialog>

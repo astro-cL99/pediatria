@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Wind, Pill, Activity, Clock, TestTube, Bed } from "lucide-react";
 import { BedPatientDetail } from "./BedPatientDetail";
+import { ExternalLinksPanel } from "./ExternalLinksPanel";
 import { useState } from "react";
 import { differenceInDays, differenceInHours, format } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -237,6 +238,15 @@ export function BedCard({ roomNumber, beds, onUpdate }: BedCardProps) {
                     </div>
                   </div>
                 )}
+
+                {/* External Links - Compact */}
+                <div className="mt-1 pt-1 border-t">
+                  <ExternalLinksPanel 
+                    patientRut={bed.patient.rut}
+                    variant="compact"
+                    showLabels={false}
+                  />
+                </div>
               </div>
             ))
           )}
