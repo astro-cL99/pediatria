@@ -177,16 +177,7 @@ const App = () => (
               </AppLayout>
             }
           />
-          <Route
-            path="/handover"
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <HandoverDashboard />
-                </Suspense>
-              </AppLayout>
-            }
-          />
+          <Route path="/handover" element={<Navigate to="/patients" replace />} />
           <Route
             path="/beds"
             element={

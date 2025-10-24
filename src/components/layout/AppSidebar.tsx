@@ -1,4 +1,4 @@
-import { Home, Users, FileText, BookOpen, BarChart3, Settings, Upload, Search, Bot, FileCheck, ClipboardList, Bed, UserCircle } from "lucide-react";
+import { Home, Users, FileText, BookOpen, BarChart3, Settings, Upload, Search, Bot, FileCheck, Bed, UserCircle } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -16,7 +16,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Entrega de Turno", url: "/handover", icon: ClipboardList },
   { title: "Pacientes", url: "/patients", icon: Users },
   { title: "Nuevo Ingreso", url: "/admission/new", icon: FileText },
   { title: "Epicrisis", url: "/epicrisis", icon: FileCheck },
