@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, Bed, Stethoscope, Thermometer, HeartPulse } from "lucide-react";
+import { ChevronDown, ChevronRight, Bed, Stethoscope, Thermometer, HeartPulse, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -45,10 +45,9 @@ interface RoomGroupProps {
   defaultExpanded?: boolean;
 }
 
-// Generate all possible beds (1-3 for rooms 501-512, and 1 for room 7)
+// Generate all possible beds (always 3 beds per room)
 const generateAllBeds = (roomNumber: string): string[] => {
-  const bedCount = roomNumber === '7' ? 1 : 3;
-  return Array.from({ length: bedCount }, (_, i) => (i + 1).toString());
+  return Array.from({ length: 3 }, (_, i) => (i + 1).toString());
 };
 
 // Format days hospitalized
@@ -185,30 +184,27 @@ export function RoomGroup({
       );
     }
 
-    // Available bed
+    // Available bed - mantener las mismas proporciones que las camas ocupadas
     return (
       <div
         key={`available-${roomNumber}-${bedNumber}`}
         className={cn(
-          "border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center",
-          "hover:border-primary/30 transition-colors min-h-[180px] w-full h-full",
-          config.border.replace('border-', 'border-')
+          "border-2 border-dashed rounded-lg p-3 flex flex-col items-center justify-center",
+          "hover:border-primary/50 hover:shadow-md transition-all cursor-pointer h-full",
+          config.border,
+          "min-h-[140px]"
         )}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAssignBed(roomNumber, bedNumber);
+        }}
       >
-        <div className="flex flex-col items-center justify-center h-full w-full gap-3">
-          <Bed className="w-8 h-8 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Cama {bedNumber}</span>
-          <Button 
-            variant="default" 
-            size="sm" 
-            className="mt-2 w-full max-w-[160px]"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAssignBed(roomNumber, bedNumber);
-            }}
-          >
-            Asignar Paciente
-          </Button>
+        <div className="flex flex-col items-center justify-center gap-2 flex-1">
+          <div className="rounded-full border-2 border-dashed border-muted-foreground/50 p-2">
+            <Plus className="w-6 h-6 text-muted-foreground" />
+          </div>
+          <span className="text-sm text-muted-foreground font-medium">Cama {bedNumber}</span>
+          <span className="text-xs text-muted-foreground/70">Disponible</span>
         </div>
       </div>
     );

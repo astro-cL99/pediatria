@@ -39,7 +39,7 @@ const ALL_PEDIATRIA_ROOMS = [
   { number: '504', beds: 3 },
   { number: '505', beds: 3 },
   { number: '506', beds: 3 },
-  { number: '507', beds: 1 },
+  { number: '507', beds: 3 },
   { number: '508', beds: 3 },
   { number: '509', beds: 3 },
   { number: '510', beds: 3 },

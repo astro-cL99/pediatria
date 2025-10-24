@@ -103,7 +103,7 @@ export function BedCard({ roomNumber, beds, onUpdate }: BedCardProps) {
               {roomNumber}
             </CardTitle>
             <Badge variant="outline" className="text-xs px-1 py-0">
-              {beds.length}/{roomNumber === "507" ? "1" : "3"}
+              {beds.length}/3
             </Badge>
           </div>
         </CardHeader>
