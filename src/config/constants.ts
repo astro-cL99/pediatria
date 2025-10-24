@@ -11,6 +11,7 @@ export const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
 // Local Storage keys
 export const AUTH_TOKEN_KEY = 'auth_token';
 export const USER_DATA_KEY = 'user_data';
+export const REFRESH_TOKEN_KEY = 'refresh_token';
 
 // Roles
 export const ROLES = {
@@ -55,3 +56,26 @@ export const GENDERS = [
 export const BLOOD_TYPES = [
   'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'
 ] as const;
+
+// Error messages
+export const ERROR_MESSAGES = {
+  NETWORK_ERROR: 'Error de conexión. Por favor, verifica tu conexión a internet.',
+  UNAUTHORIZED: 'No estás autorizado para realizar esta acción.',
+  FORBIDDEN: 'No tienes permisos para acceder a este recurso.',
+  NOT_FOUND: 'El recurso solicitado no fue encontrado.',
+  SERVER_ERROR: 'Error del servidor. Por favor, intenta más tarde.',
+  UNKNOWN_ERROR: 'Ocurrió un error inesperado.',
+  TIMEOUT: 'La solicitud ha tardado demasiado tiempo.',
+  UNKNOWN: 'Error desconocido.',
+} as const;
+
+// Socket events
+export const SOCKET_EVENTS = {
+  CONNECT: 'connect',
+  DISCONNECT: 'disconnect',
+  ERROR: 'error',
+  PATIENT_UPDATE: 'patient:update',
+  ADMISSION_UPDATE: 'admission:update',
+  VITAL_SIGNS_UPDATE: 'vital_signs:update',
+  NOTIFICATION: 'notification',
+} as const;

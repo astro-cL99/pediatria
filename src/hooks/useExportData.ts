@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import * as XLSX from 'xlsx';
-import { jsPDF } from 'jspdf';
+import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';

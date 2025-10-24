@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-type NotificationType = 'success' | 'error' | 'warning' | 'info' | 'reminder';
+export type NotificationType = 'success' | 'error' | 'warning' | 'info' | 'reminder';
 
 export interface Notification {
   id: string;

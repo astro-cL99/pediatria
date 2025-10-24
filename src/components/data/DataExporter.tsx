@@ -82,7 +82,7 @@ export function DataExporter<T>({
           break;
 
         case 'pdf':
-          await exportToPDF(exportData, {
+          await exportToPDF(exportData, columns, {
             fileName,
             title: fileName,
             subject: `Exportación de datos - ${new Date().toLocaleDateString()}`,
@@ -99,7 +99,7 @@ export function DataExporter<T>({
       console.error(`Error al exportar a ${format.toUpperCase()}:`, error);
       onExportError?.(error as Error, format);
     } finally {
-      setIsExportting(null);
+      setIsExporting(null);
     }
   };
 

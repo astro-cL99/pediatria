@@ -3,7 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Upload, FileSignature, FileCheck, X, Loader2 } from 'lucide-react';
-import SignatureModal from './SignatureModal';
+import SignatureModal, { SignatureModalHandle } from './SignatureModal';
 import { uploadDocument } from '@/services/documentService';
 
 interface DocumentUploaderProps {
@@ -42,7 +42,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
   const [documentTitle, setDocumentTitle] = useState('');
   const [documentDescription, setDocumentDescription] = useState('');
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-  const signatureModalRef = useRef<{ open: () => void; close: () => void }>(null);
+  const signatureModalRef = useRef<SignatureModalHandle>(null);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -93,9 +93,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
         {
           title: documentTitle,
           description: documentDescription || undefined,
-          signature_data: signatureData || null,
-          signed_by: signatureData ? userId : null,
-          created_by: userId,
+          document_type: 'general',
         }
       );
 

@@ -23,6 +23,10 @@ export interface DocumentMetadata {
   updated_at?: string | null;
   status?: DocumentStatus;
   embeddings?: string | null;
+  storage_path?: string | null;
+  signature_data?: string | null;
+  signed_by?: string | null;
+  signed_at?: string | null;
 }
 
 // Type for creating a new document

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useDebounce } from 'use-debounce';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
@@ -43,7 +43,7 @@ export function AdvancedSearch({
   debounceTime = 300,
 }: AdvancedSearchProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm] = useDebounce(searchTerm, debounceTime);
+  const debouncedSearchTerm = useDebounce(searchTerm, debounceTime);
   const [filters, setFilters] = useState<Filter[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
