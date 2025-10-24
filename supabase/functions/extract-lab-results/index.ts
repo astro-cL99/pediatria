@@ -1,6 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,51 +12,18 @@ serve(async (req) => {
   }
 
   try {
-    const { filePath, patientId, documentType } = await req.json();
+    const { imageBase64List, fileName } = await req.json();
     
-    console.log('Processing file:', filePath, 'for patient:', patientId);
+    if (!imageBase64List || !Array.isArray(imageBase64List) || imageBase64List.length === 0) {
+      throw new Error('No se proporcionaron imágenes para procesar');
+    }
     
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Descargar archivo desde storage
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('medical-documents')
-      .download(filePath);
-
-    if (downloadError) {
-      console.error('Download error:', downloadError);
-      throw downloadError;
-    }
-
-    // Convertir archivo a base64
-    const arrayBuffer = await fileData.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
+    console.log(`Processing ${imageBase64List.length} page(s) from:`, fileName);
     
-    // Convertir a base64 en chunks para evitar problemas de memoria
-    let base64 = '';
-    const chunkSize = 0x8000; // 32KB chunks
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-      base64 += String.fromCharCode(...chunk);
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY no está configurada');
     }
-    base64 = btoa(base64);
-
-    // Detectar tipo MIME del archivo
-    let mimeType = 'application/pdf';
-    const lowerPath = filePath.toLowerCase();
-    if (lowerPath.endsWith('.pdf')) {
-      mimeType = 'application/pdf';
-    } else if (lowerPath.endsWith('.jpg') || lowerPath.endsWith('.jpeg')) {
-      mimeType = 'image/jpeg';
-    } else if (lowerPath.endsWith('.png')) {
-      mimeType = 'image/png';
-    }
-
-    console.log(`File type: ${mimeType}, size: ${arrayBuffer.byteLength} bytes`);
 
     // Prompt especializado para extracción de laboratorio pediátrico chileno
     const systemPrompt = `Eres un experto en análisis de exámenes de laboratorio pediátrico del Hospital Regional Libertador Bernardo O'Higgins de Chile.
@@ -147,7 +113,24 @@ IMPORTANTE:
 - Marca como CRÍTICO según criterios pediátricos definidos
 - Incluye TODOS los exámenes, incluso los normales`;
 
-    // Llamar a Lovable AI - usar gemini-2.5-pro para PDFs
+    // Construir el contenido para todas las páginas
+    const contentParts: any[] = [
+      { type: 'text', text: `${systemPrompt}\n\n${userPrompt}` }
+    ];
+    
+    // Agregar cada imagen como parte del mensaje
+    for (const base64Image of imageBase64List) {
+      contentParts.push({
+        type: 'image_url',
+        image_url: {
+          url: `data:image/png;base64,${base64Image}`
+        }
+      });
+    }
+
+    console.log(`Enviando ${imageBase64List.length} imágenes a Lovable AI...`);
+
+    // Llamar a Lovable AI - usar gemini-2.5-pro para análisis multimodal
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -159,19 +142,10 @@ IMPORTANTE:
         messages: [
           { 
             role: 'user', 
-            content: [
-              { type: 'text', text: `${systemPrompt}\n\n${userPrompt}` },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${mimeType};base64,${base64}`
-                }
-              }
-            ]
+            content: contentParts
           }
         ],
-        temperature: 0.1,
-        max_tokens: 8000
+        max_completion_tokens: 8000
       }),
     });
 
@@ -231,13 +205,33 @@ IMPORTANTE:
     
     const confidence = Math.min(0.95, 0.5 + (totalExams * 0.02));
 
-    console.log(`Extraídos ${totalExams} exámenes con confianza ${confidence}`);
+    console.log(`✅ Extraídos ${totalExams} exámenes con confianza ${confidence.toFixed(2)}`);
 
+    // Formato de respuesta compatible con el frontend existente
     return new Response(
       JSON.stringify({ 
-        extractedData,
-        confidence,
-        totalExams
+        success: true,
+        data: {
+          extractedData,
+          sections: extractedData.sections,
+          metadata: extractedData.metadata,
+          confidence,
+          totalExams,
+          fechaToma: extractedData.metadata?.sampleDate || '',
+          procedencia: extractedData.metadata?.origin || '',
+          // Compatibilidad con formato anterior
+          resultados: Object.entries(extractedData.sections || {}).map(([categoria, examenes]) => ({
+            categoria,
+            examenes: Array.isArray(examenes) ? examenes.map((exam: any) => ({
+              nombre: exam.name,
+              valor: exam.value,
+              unidad: exam.unit,
+              referencia: exam.referenceRange,
+              alterado: exam.isAbnormal,
+              critico: exam.isCritical
+            })) : []
+          }))
+        }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

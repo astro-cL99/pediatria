@@ -245,28 +245,35 @@ export default function NewAdmission() {
       if (extractedData?.success && extractedData?.data) {
         const data = extractedData.data;
         
-        // Formatear resultados por categorías con formato limpio
-        let formattedResults = `- ${data.fechaToma} ${data.procedencia}:\n`;
+        // Formato mejorado con marcadores de anormalidades
+        let formattedResults = `📋 ${data.metadata?.sampleDate || 'Fecha no especificada'} - ${data.metadata?.origin || ''}\n`;
+        formattedResults += `Solicitud: ${data.metadata?.requestNumber || 'N/A'}\n\n`;
         
-        if (Array.isArray(data.resultados)) {
-          data.resultados.forEach((categoria: any) => {
-            formattedResults += `\n${categoria.categoria}:\n`;
+        // Iterar por secciones
+        if (data.sections) {
+          for (const [sectionName, exams] of Object.entries(data.sections)) {
+            if (!Array.isArray(exams) || exams.length === 0) continue;
             
-            if (Array.isArray(categoria.examenes)) {
-              categoria.examenes.forEach((examen: any) => {
-                const alteradoMark = examen.alterado ? ' ⚠️' : '';
-                const referencia = examen.referencia ? ` (VR: ${examen.referencia})` : '';
-                formattedResults += `  ${examen.nombre}: ${examen.valor}${referencia}${alteradoMark}\n`;
-              });
+            formattedResults += `\n【${sectionName}】\n`;
+            
+            for (const exam of exams as any[]) {
+              const criticalMark = exam.isCritical ? ' 🔴 CRÍTICO' : '';
+              const abnormalMark = exam.isAbnormal && !exam.isCritical ? ' ⚠️' : '';
+              const valuePart = typeof exam.value === 'number' ? exam.value.toFixed(2) : exam.value;
+              const unitPart = exam.unit ? ` ${exam.unit}` : '';
+              const refPart = exam.referenceRange ? ` (VR: ${exam.referenceRange})` : '';
+              
+              formattedResults += `  • ${exam.name}: ${valuePart}${unitPart}${refPart}${criticalMark}${abnormalMark}\n`;
             }
-          });
+          }
         }
         
-        // Append to existing lab results or replace
+        formattedResults += `\n✅ ${data.totalExams || 0} exámenes extraídos (Confianza: ${((data.confidence || 0) * 100).toFixed(0)}%)\n`;
+        
         setFormData(prev => ({
           ...prev,
           labResults: prev.labResults 
-            ? `${prev.labResults}\n${formattedResults}`
+            ? `${prev.labResults}\n\n${formattedResults}`
             : formattedResults
         }));
 

@@ -178,6 +178,7 @@ export function EnhancedPatientEditForm({
     }
 
     setIsExtractingLab(true);
+    toast.info("Extrayendo datos del laboratorio con IA...");
 
     try {
       const { getDocument, GlobalWorkerOptions, version } = await import('pdfjs-dist');
@@ -209,33 +210,46 @@ export function EnhancedPatientEditForm({
 
       if (extractedData?.success && extractedData?.data) {
         const data = extractedData.data;
-        let formattedResults = `- ${data.fechaToma} ${data.procedencia}:\n`;
         
-        if (Array.isArray(data.resultados)) {
-          data.resultados.forEach((categoria: any) => {
-            formattedResults += `\n${categoria.categoria}:\n`;
-            if (Array.isArray(categoria.examenes)) {
-              categoria.examenes.forEach((examen: any) => {
-                const alteradoMark = examen.alterado ? ' ⚠️' : '';
-                const referencia = examen.referencia ? ` (VR: ${examen.referencia})` : '';
-                formattedResults += `  ${examen.nombre}: ${examen.valor}${referencia}${alteradoMark}\n`;
-              });
+        // Formato mejorado con marcadores de anormalidades
+        let formattedResults = `📋 ${data.metadata?.sampleDate || 'Fecha no especificada'} - ${data.metadata?.origin || ''}\n`;
+        formattedResults += `Solicitud: ${data.metadata?.requestNumber || 'N/A'}\n\n`;
+        
+        // Iterar por secciones
+        if (data.sections) {
+          for (const [sectionName, exams] of Object.entries(data.sections)) {
+            if (!Array.isArray(exams) || exams.length === 0) continue;
+            
+            formattedResults += `\n【${sectionName}】\n`;
+            
+            for (const exam of exams as any[]) {
+              const criticalMark = exam.isCritical ? ' 🔴 CRÍTICO' : '';
+              const abnormalMark = exam.isAbnormal && !exam.isCritical ? ' ⚠️' : '';
+              const valuePart = typeof exam.value === 'number' ? exam.value.toFixed(2) : exam.value;
+              const unitPart = exam.unit ? ` ${exam.unit}` : '';
+              const refPart = exam.referenceRange ? ` (VR: ${exam.referenceRange})` : '';
+              
+              formattedResults += `  • ${exam.name}: ${valuePart}${unitPart}${refPart}${criticalMark}${abnormalMark}\n`;
             }
-          });
+          }
         }
+        
+        formattedResults += `\n✅ ${data.totalExams || 0} exámenes extraídos (Confianza: ${((data.confidence || 0) * 100).toFixed(0)}%)\n`;
         
         setFormData(prev => ({
           ...prev,
           labResults: prev.labResults 
-            ? `${prev.labResults}\n${formattedResults}`
+            ? `${prev.labResults}\n\n${formattedResults}`
             : formattedResults
         }));
 
-        toast.success("Exámenes extraídos automáticamente");
+        toast.success(`✅ ${data.totalExams || 0} exámenes extraídos automáticamente`);
+      } else {
+        throw new Error('No se pudieron extraer datos del laboratorio');
       }
     } catch (error) {
       console.error('Error:', error);
-      toast.error("No se pudo procesar el archivo de laboratorio");
+      toast.error("No se pudo procesar el archivo PDF del laboratorio");
     } finally {
       setIsExtractingLab(false);
     }
