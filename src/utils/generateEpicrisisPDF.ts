@@ -28,6 +28,9 @@ export async function generateEpicrisisPDF(data: EpicrisisData): Promise<Blob> {
     format: 'letter'
   });
 
+  // Cargar fuente Montserrat (usando Helvetica como fallback en jsPDF)
+  pdf.setFont('helvetica');
+
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 15;
@@ -44,35 +47,24 @@ export async function generateEpicrisisPDF(data: EpicrisisData): Promise<Blob> {
     }
   };
 
-  const addText = (text: string, fontSize: number = 10, isBold: boolean = false, align: 'left' | 'center' | 'right' = 'left') => {
-    pdf.setFontSize(fontSize);
-    pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
-    
-    if (align === 'center') {
-      pdf.text(text, pageWidth / 2, yPosition, { align: 'center' });
-      yPosition += fontSize * 0.35 + 3;
-    } else {
-      const lines = pdf.splitTextToSize(text, contentWidth);
-      pdf.text(lines, margin, yPosition);
-      yPosition += lines.length * (fontSize * 0.35) + 3;
-    }
-  };
-
-  const addLine = () => {
-    pdf.setDrawColor(0);
-    pdf.setLineWidth(0.5);
-    pdf.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 5;
-  };
-
   const addHeader = () => {
-    pdf.setFontSize(12);
+    // Logo institucional (esquina superior izquierda)
+    try {
+      const logoUrl = '/images/hospital-logo.png';
+      pdf.addImage(logoUrl, 'PNG', margin, yPosition, 35, 15);
+    } catch (e) {
+      console.warn('Logo no disponible');
+    }
+    
+    yPosition += 5;
+    
+    // Textos del header - centrados
+    pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
     pdf.text('MINISTERIO DE SALUD', pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 5;
     
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(9);
     pdf.text('SERVICIO DE SALUD LIBERTADOR GENERAL BERNARDO O\'HIGGINS', pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 5;
     
@@ -85,193 +77,268 @@ export async function generateEpicrisisPDF(data: EpicrisisData): Promise<Blob> {
       pdf.addPage();
       yPosition = margin;
       addHeader();
-      addLine();
+      // Línea separadora
+      pdf.setDrawColor(0);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 5;
     }
   };
 
   // PÁGINA 1 - Header institucional
   addHeader();
   
+  // EPICRISIS - título centrado y en negrita
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
   pdf.text('EPICRISIS', pageWidth / 2, yPosition, { align: 'center' });
-  yPosition += 10;
-  addLine();
+  yPosition += 8;
 
-  // Tabla de información del paciente - formato institucional
-  const tableY = yPosition;
-  const rowHeight = 10;
-  const col1Width = contentWidth * 0.25;
-  const col2Width = contentWidth * 0.25;
-  const col3Width = contentWidth * 0.25;
-  const col4Width = contentWidth * 0.25;
-  
-  // Definir datos de la tabla
-  const tableRows = [
-    ['NOMBRE', data.patient_name || '', 'EDAD', data.age_at_discharge || 'N/A'],
-    ['RUT', data.patient_rut || '', 'FECHA NACIMIENTO', formatDate(data.date_of_birth)],
-    ['FECHA INGRESO', formatDate(data.admission_date, "dd/MM/yyyy HH:mm"), 'PESO INGRESO', data.admission_weight ? `${data.admission_weight} kg` : 'N/A'],
-    ['FECHA EGRESO', formatDate(data.discharge_date, "dd/MM/yyyy HH:mm"), 'PESO EGRESO', data.discharge_weight ? `${data.discharge_weight} kg` : 'N/A'],
+  // Tabla de información del paciente - formato IDÉNTICO al PDF
+  const startTableY = yPosition;
+  const leftColWidth = 40;
+  const rightColWidth = contentWidth - leftColWidth;
+  const rowHeight = 8;
+
+  // Definir estructura de tabla exactamente como en el PDF
+  const tableStructure = [
+    { label: 'NOMBRE', value: data.patient_name || '', rowSpan: 2 },
+    { label: 'EDAD', value: data.age_at_discharge || 'N/A', row: 0 },
+    { label: 'RUT', value: data.patient_rut || '', row: 1 },
+    { label: 'FECHA NACIMIENTO', value: formatDate(data.date_of_birth), row: 1 },
+    { label: 'FECHA INGRESO', value: formatDate(data.admission_date, "dd/MM/yyyy"), row: 2 },
+    { label: 'PESO INGRESO', value: data.admission_weight ? `${data.admission_weight} kg` : 'N/A', row: 2 },
+    { label: 'FECHA EGRESO', value: formatDate(data.discharge_date, "dd/MM/yyyy"), row: 3 },
+    { label: 'PESO EGRESO', value: data.discharge_weight ? `${data.discharge_weight} kg` : 'N/A', row: 3 },
   ];
 
-  // Dibujar tabla
-  tableRows.forEach((row, idx) => {
-    const currentY = tableY + (idx * rowHeight);
-    
-    // Dibujar celdas con fondo gris para etiquetas
-    pdf.setFillColor(220, 220, 220);
-    pdf.rect(margin, currentY, col1Width, rowHeight, 'FD');
-    pdf.rect(margin + col1Width + col2Width, currentY, col3Width, rowHeight, 'FD');
-    
-    // Dibujar celdas de valores
-    pdf.setFillColor(255, 255, 255);
-    pdf.rect(margin + col1Width, currentY, col2Width, rowHeight, 'D');
-    pdf.rect(margin + col1Width + col2Width + col3Width, currentY, col4Width, rowHeight, 'D');
-    
-    // Texto
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(row[0], margin + 2, currentY + 6.5);
-    pdf.text(row[2], margin + col1Width + col2Width + 2, currentY + 6.5);
-    
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(row[1], margin + col1Width + 2, currentY + 6.5);
-    pdf.text(row[3], margin + col1Width + col2Width + col3Width + 2, currentY + 6.5);
-  });
+  // Dibujar tabla con estructura de 2 columnas
+  const numRows = 4;
   
-  yPosition = tableY + (tableRows.length * rowHeight) + 8;
+  for (let i = 0; i < numRows; i++) {
+    const currentY = startTableY + (i * rowHeight);
+    
+    if (i === 0) {
+      // Primera fila: NOMBRE (ocupa 2 filas) y EDAD
+      // Celda NOMBRE (doble altura)
+      pdf.setDrawColor(0);
+      pdf.setLineWidth(0.3);
+      pdf.rect(margin, currentY, leftColWidth, rowHeight * 2);
+      
+      // Label NOMBRE
+      pdf.setFillColor(220, 220, 220);
+      pdf.rect(margin, currentY, leftColWidth, 6, 'F');
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('NOMBRE', margin + 2, currentY + 4);
+      
+      // Valor NOMBRE
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(data.patient_name || '', margin + 2, currentY + 10);
+      
+      // Celda EDAD
+      pdf.rect(margin + leftColWidth, currentY, rightColWidth, rowHeight);
+      pdf.setFillColor(220, 220, 220);
+      pdf.rect(margin + leftColWidth, currentY, rightColWidth / 2, 6, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('EDAD', margin + leftColWidth + 2, currentY + 4);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(data.age_at_discharge || 'N/A', margin + leftColWidth + rightColWidth / 2 + 2, currentY + 4);
+      
+    } else if (i === 1) {
+      // Segunda fila: RUT y FECHA NACIMIENTO (NOMBRE continúa)
+      pdf.rect(margin + leftColWidth, currentY, rightColWidth / 2, rowHeight);
+      pdf.rect(margin + leftColWidth + rightColWidth / 2, currentY, rightColWidth / 2, rowHeight);
+      
+      // RUT
+      pdf.setFillColor(220, 220, 220);
+      pdf.rect(margin + leftColWidth, currentY, rightColWidth / 2, 6, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('RUT', margin + leftColWidth + 2, currentY + 4);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(data.patient_rut || '', margin + leftColWidth + 2, currentY + 11);
+      
+      // FECHA NACIMIENTO
+      pdf.setFillColor(220, 220, 220);
+      pdf.rect(margin + leftColWidth + rightColWidth / 2, currentY, rightColWidth / 2, 6, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('FECHA NACIMIENTO', margin + leftColWidth + rightColWidth / 2 + 2, currentY + 4);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(formatDate(data.date_of_birth), margin + leftColWidth + rightColWidth / 2 + 2, currentY + 11);
+      
+    } else {
+      // Filas 3 y 4: Formato estándar de 2 columnas
+      const isRow3 = i === 2;
+      const leftLabel = isRow3 ? 'FECHA INGRESO' : 'FECHA EGRESO';
+      const leftValue = isRow3 ? formatDate(data.admission_date, "dd/MM/yyyy") : formatDate(data.discharge_date, "dd/MM/yyyy");
+      const rightLabel = isRow3 ? 'PESO INGRESO' : 'PESO EGRESO';
+      const rightValue = isRow3 
+        ? (data.admission_weight ? `${data.admission_weight} kg` : 'N/A')
+        : (data.discharge_weight ? `${data.discharge_weight} kg` : 'N/A');
+      
+      // Columna izquierda
+      pdf.rect(margin, currentY, leftColWidth, rowHeight);
+      pdf.setFillColor(220, 220, 220);
+      pdf.rect(margin, currentY, leftColWidth, 6, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(leftLabel, margin + 2, currentY + 4);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(leftValue, margin + 2, currentY + 11);
+      
+      // Columna derecha
+      pdf.rect(margin + leftColWidth, currentY, rightColWidth, rowHeight);
+      pdf.setFillColor(220, 220, 220);
+      pdf.rect(margin + leftColWidth, currentY, rightColWidth, 6, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(rightLabel, margin + leftColWidth + 2, currentY + 4);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(rightValue, margin + leftColWidth + 2, currentY + 11);
+    }
+  }
+  
+  yPosition = startTableY + (numRows * rowHeight) + 8;
 
-  // DIAGNÓSTICO DE INGRESO - formato institucional
+  // DIAGNÓSTICO DE INGRESO
   checkPageBreak(25);
-  pdf.setFontSize(11);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.text('DIAGNÓSTICO DE INGRESO', margin, yPosition);
   yPosition += 6;
   
-  pdf.setDrawColor(0);
-  pdf.setLineWidth(0.3);
-  pdf.rect(margin, yPosition, contentWidth, 15);
-  
-  pdf.setFontSize(10);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
-  const admDiagLines = pdf.splitTextToSize(data.admission_diagnosis, contentWidth - 4);
-  pdf.text(admDiagLines, margin + 2, yPosition + 5);
-  yPosition += 15 + 6;
+  const admDiagLines = pdf.splitTextToSize(data.admission_diagnosis, contentWidth);
+  admDiagLines.forEach((line: string) => {
+    checkPageBreak();
+    pdf.text(line, margin, yPosition);
+    yPosition += 4.5;
+  });
+  yPosition += 4;
 
-  // DIAGNÓSTICO DE EGRESO - formato institucional
+  // DIAGNÓSTICO DE EGRESO
   checkPageBreak(25);
-  pdf.setFontSize(11);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.text('DIAGNÓSTICO DE EGRESO', margin, yPosition);
   yPosition += 6;
   
-  pdf.rect(margin, yPosition, contentWidth, 15);
-  
-  pdf.setFontSize(10);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
-  const disDiagLines = pdf.splitTextToSize(data.discharge_diagnosis, contentWidth - 4);
-  pdf.text(disDiagLines, margin + 2, yPosition + 5);
-  yPosition += 15 + 8;
+  const disDiagLines = pdf.splitTextToSize(data.discharge_diagnosis, contentWidth);
+  disDiagLines.forEach((line: string) => {
+    checkPageBreak();
+    pdf.text(line, margin, yPosition);
+    yPosition += 4.5;
+  });
+  yPosition += 4;
 
-  // RESUMEN DE INGRESO - formato institucional
+  // RESUMEN DE INGRESO
   if (data.resumen_ingreso) {
     checkPageBreak(30);
-    pdf.setFontSize(11);
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.text('RESUMEN DE INGRESO', margin, yPosition);
-    yPosition += 7;
+    yPosition += 6;
     
-    pdf.setFontSize(10);
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     const resumenLines = pdf.splitTextToSize(data.resumen_ingreso, contentWidth);
     resumenLines.forEach((line: string) => {
       checkPageBreak();
       pdf.text(line, margin, yPosition);
-      yPosition += 5;
+      yPosition += 4.5;
     });
-    yPosition += 5;
+    yPosition += 4;
   }
 
   // EVOLUCIÓN Y TRATAMIENTO - Nueva página
   pdf.addPage();
   yPosition = margin;
   addHeader();
-  addLine();
   
-  pdf.setFontSize(11);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('EVOLUCIÓN Y TRATAMIENTO', margin, yPosition);
-  yPosition += 7;
+  pdf.setDrawColor(0);
+  pdf.setLineWidth(0.5);
+  pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+  yPosition += 8;
   
   pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('EVOLUCIÓN Y TRATAMIENTO', margin, yPosition);
+  yPosition += 6;
+  
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   const evolutionLines = pdf.splitTextToSize(data.evolution_and_treatment, contentWidth);
   evolutionLines.forEach((line: string) => {
     checkPageBreak();
     pdf.text(line, margin, yPosition);
-    yPosition += 5;
+    yPosition += 4.5;
   });
 
   // EXÁMENES - Nueva página
   pdf.addPage();
   yPosition = margin;
   addHeader();
-  addLine();
+  
+  pdf.setDrawColor(0);
+  pdf.setLineWidth(0.5);
+  pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+  yPosition += 8;
 
   // EXÁMENES DE LABORATORIO
-  pdf.setFontSize(11);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.text('EXÁMENES DE LABORATORIO', margin, yPosition);
-  yPosition += 7;
+  yPosition += 6;
   
-  pdf.setFontSize(10);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   const labLines = pdf.splitTextToSize(data.laboratory_exams || 'No se realizaron exámenes de laboratorio', contentWidth);
   labLines.forEach((line: string) => {
     checkPageBreak();
     pdf.text(line, margin, yPosition);
-    yPosition += 5;
+    yPosition += 4.5;
   });
-  yPosition += 8;
+  yPosition += 6;
 
   // IMAGENOLOGÍA
   checkPageBreak(30);
-  pdf.setFontSize(11);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.text('IMAGENOLOGÍA', margin, yPosition);
-  yPosition += 7;
+  yPosition += 6;
   
-  pdf.setFontSize(10);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   const imgLines = pdf.splitTextToSize(data.imaging_exams || 'No se realizaron estudios imagenológicos', contentWidth);
   imgLines.forEach((line: string) => {
     checkPageBreak();
     pdf.text(line, margin, yPosition);
-    yPosition += 5;
+    yPosition += 4.5;
   });
-  yPosition += 8;
+  yPosition += 6;
 
-  // INDICACIONES - Nueva página si es necesario
+  // INDICACIONES
   checkPageBreak(60);
-  pdf.setFontSize(11);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.text('INDICACIONES', margin, yPosition);
-  yPosition += 7;
+  yPosition += 6;
   
-  pdf.setFontSize(10);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   const instrLines = pdf.splitTextToSize(data.discharge_instructions, contentWidth);
   instrLines.forEach((line: string) => {
     checkPageBreak(30);
     pdf.text(line, margin, yPosition);
-    yPosition += 5;
+    yPosition += 4.5;
   });
 
-  // MÉDICO Y FIRMA - formato institucional
+  // MÉDICO Y FIRMA - en la parte inferior
   checkPageBreak(50);
-  yPosition += 10;
+  yPosition += 15;
   
-  pdf.setFontSize(10);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.text('MÉDICO', margin, yPosition);
   yPosition += 15;
@@ -279,15 +346,15 @@ export async function generateEpicrisisPDF(data: EpicrisisData): Promise<Blob> {
   // Línea para firma
   pdf.setDrawColor(0);
   pdf.setLineWidth(0.3);
-  pdf.line(margin + 50, yPosition, pageWidth - margin, yPosition);
+  const signatureLineStart = margin + 50;
+  const signatureLineEnd = pageWidth - margin;
+  pdf.line(signatureLineStart, yPosition, signatureLineEnd, yPosition);
   
   yPosition += 5;
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
-  pdf.text(data.attending_physician, margin + 50, yPosition);
+  pdf.setFontSize(8);
+  pdf.text(data.attending_physician, signatureLineStart, yPosition);
   
-  yPosition += 2;
-  pdf.text('FIRMA', pageWidth - margin - 15, yPosition);
+  pdf.text('FIRMA', signatureLineEnd - 15, yPosition);
 
   return pdf.output('blob');
 }
