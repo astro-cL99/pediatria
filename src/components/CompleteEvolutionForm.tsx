@@ -535,59 +535,208 @@ Pendientes: ${indications.pending || 'N/A'}`;
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Cabeza, Cuello y Faringe */}
                 <div className="space-y-2">
                   <Label>Cabeza, Cuello y Faringe</Label>
-                  <Textarea
-                    value={physicalExam.headNeck}
-                    onChange={(e) => setPhysicalExam({...physicalExam, headNeck: e.target.value})}
-                    placeholder="Ej: Faringe sin eritema, amígdalas eutróficas sin exudado. Cuello sin adenopatías."
-                    rows={2}
-                  />
+                  <Select
+                    value={physicalExam.headNeck === "" ? "" : physicalExam.headNeck.startsWith("Ej:") ? "free" : physicalExam.headNeck}
+                    onValueChange={(value) => {
+                      if (value === "free") {
+                        setPhysicalExam({...physicalExam, headNeck: ""});
+                      } else {
+                        setPhysicalExam({...physicalExam, headNeck: value});
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="Faringe sin eritema, amígdalas eutróficas sin exudado. Cuello sin adenopatías.">Normal - Sin eritema</SelectItem>
+                      <SelectItem value="Faringe eritematosa, amígdalas hipertróficas. Cuello sin adenopatías.">Faringe eritematosa</SelectItem>
+                      <SelectItem value="Amígdalas con exudado purulento. Adenopatías cervicales palpables.">Con exudado y adenopatías</SelectItem>
+                      <SelectItem value="Cuello móvil, sin rigidez. Faringe normal.">Cuello móvil sin rigidez</SelectItem>
+                      <SelectItem value="free">✏️ Texto libre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(physicalExam.headNeck === "" || !["Faringe sin eritema, amígdalas eutróficas sin exudado. Cuello sin adenopatías.", "Faringe eritematosa, amígdalas hipertróficas. Cuello sin adenopatías.", "Amígdalas con exudado purulento. Adenopatías cervicales palpables.", "Cuello móvil, sin rigidez. Faringe normal."].includes(physicalExam.headNeck)) && (
+                    <Textarea
+                      value={physicalExam.headNeck}
+                      onChange={(e) => setPhysicalExam({...physicalExam, headNeck: e.target.value})}
+                      placeholder="Ej: Faringe sin eritema, amígdalas eutróficas sin exudado. Cuello sin adenopatías."
+                      rows={2}
+                    />
+                  )}
                 </div>
+
+                {/* Tórax y Pulmones */}
                 <div className="space-y-2">
                   <Label>Tórax y Pulmones</Label>
-                  <Textarea
-                    value={physicalExam.chest}
-                    onChange={(e) => setPhysicalExam({...physicalExam, chest: e.target.value})}
-                    placeholder="Ej: Simétrico, normoexpansible, MP+, sibilancias espiratorias, sin UMA."
-                    rows={2}
-                  />
+                  <Select
+                    value={physicalExam.chest === "" ? "" : physicalExam.chest.startsWith("Ej:") ? "free" : physicalExam.chest}
+                    onValueChange={(value) => {
+                      if (value === "free") {
+                        setPhysicalExam({...physicalExam, chest: ""});
+                      } else {
+                        setPhysicalExam({...physicalExam, chest: value});
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="Simétrico, normoexpansible, MP+, sin sibilancias espiratorias, sin UMA.">Simétrico, normoexpansible, MP+</SelectItem>
+                      <SelectItem value="Simétrico, normoexpansible, MP+, sibilancias espiratorias, sin UMA.">Con sibilancias espiratorias</SelectItem>
+                      <SelectItem value="Uso de musculatura accesoria, retracciones subcostales, sibilancias bilaterales.">Retracciones y sibilancias</SelectItem>
+                      <SelectItem value="Crepitaciones bilaterales, sin sibilancias.">Crepitaciones bilaterales</SelectItem>
+                      <SelectItem value="free">✏️ Texto libre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(physicalExam.chest === "" || !["Simétrico, normoexpansible, MP+, sin sibilancias espiratorias, sin UMA.", "Simétrico, normoexpansible, MP+, sibilancias espiratorias, sin UMA.", "Uso de musculatura accesoria, retracciones subcostales, sibilancias bilaterales.", "Crepitaciones bilaterales, sin sibilancias."].includes(physicalExam.chest)) && (
+                    <Textarea
+                      value={physicalExam.chest}
+                      onChange={(e) => setPhysicalExam({...physicalExam, chest: e.target.value})}
+                      placeholder="Ej: Simétrico, normoexpansible, MP+, sibilancias espiratorias, sin UMA."
+                      rows={2}
+                    />
+                  )}
                 </div>
+
+                {/* Cardiovascular */}
                 <div className="space-y-2">
                   <Label>Cardiovascular</Label>
-                  <Textarea
-                    value={physicalExam.heart}
-                    onChange={(e) => setPhysicalExam({...physicalExam, heart: e.target.value})}
-                    placeholder="Ej: RR2T NAS, sin soplos audibles, normocárdico."
-                    rows={2}
-                  />
+                  <Select
+                    value={physicalExam.heart === "" ? "" : physicalExam.heart.startsWith("Ej:") ? "free" : physicalExam.heart}
+                    onValueChange={(value) => {
+                      if (value === "free") {
+                        setPhysicalExam({...physicalExam, heart: ""});
+                      } else {
+                        setPhysicalExam({...physicalExam, heart: value});
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="RR2T NAS, sin soplos audibles, normocárdico.">RR2T NAS, sin soplos</SelectItem>
+                      <SelectItem value="RR2T NAS, sin soplos audibles, taquicárdico.">Taquicárdico, sin soplos</SelectItem>
+                      <SelectItem value="Soplo sistólico audible, normocárdico.">Con soplo sistólico</SelectItem>
+                      <SelectItem value="Pulsos periféricos palpables y simétricos, llene capilar < 2 segundos.">Pulsos normales, LLC {"<"}2s</SelectItem>
+                      <SelectItem value="free">✏️ Texto libre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(physicalExam.heart === "" || !["RR2T NAS, sin soplos audibles, normocárdico.", "RR2T NAS, sin soplos audibles, taquicárdico.", "Soplo sistólico audible, normocárdico.", "Pulsos periféricos palpables y simétricos, llene capilar < 2 segundos."].includes(physicalExam.heart)) && (
+                    <Textarea
+                      value={physicalExam.heart}
+                      onChange={(e) => setPhysicalExam({...physicalExam, heart: e.target.value})}
+                      placeholder="Ej: RR2T NAS, sin soplos audibles, normocárdico."
+                      rows={2}
+                    />
+                  )}
                 </div>
+
+                {/* Abdomen */}
                 <div className="space-y-2">
                   <Label>Abdomen</Label>
-                  <Textarea
-                    value={physicalExam.abdomen}
-                    onChange={(e) => setPhysicalExam({...physicalExam, abdomen: e.target.value})}
-                    placeholder="Ej: Blando, depresible, no doloroso, RHA+, no visceromegalias."
-                    rows={2}
-                  />
+                  <Select
+                    value={physicalExam.abdomen === "" ? "" : physicalExam.abdomen.startsWith("Ej:") ? "free" : physicalExam.abdomen}
+                    onValueChange={(value) => {
+                      if (value === "free") {
+                        setPhysicalExam({...physicalExam, abdomen: ""});
+                      } else {
+                        setPhysicalExam({...physicalExam, abdomen: value});
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="Blando, depresible, no doloroso, RHA+, no visceromegalias.">Blando, depresible, RHA+</SelectItem>
+                      <SelectItem value="Blando, depresible, doloroso a la palpación, RHA+.">Doloroso a la palpación</SelectItem>
+                      <SelectItem value="Distendido, RHA disminuidos, no visceromegalias.">Distendido, RHA disminuidos</SelectItem>
+                      <SelectItem value="Hepatomegalia palpable, RHA+.">Con hepatomegalia</SelectItem>
+                      <SelectItem value="free">✏️ Texto libre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(physicalExam.abdomen === "" || !["Blando, depresible, no doloroso, RHA+, no visceromegalias.", "Blando, depresible, doloroso a la palpación, RHA+.", "Distendido, RHA disminuidos, no visceromegalias.", "Hepatomegalia palpable, RHA+."].includes(physicalExam.abdomen)) && (
+                    <Textarea
+                      value={physicalExam.abdomen}
+                      onChange={(e) => setPhysicalExam({...physicalExam, abdomen: e.target.value})}
+                      placeholder="Ej: Blando, depresible, no doloroso, RHA+, no visceromegalias."
+                      rows={2}
+                    />
+                  )}
                 </div>
+
+                {/* Extremidades */}
                 <div className="space-y-2">
                   <Label>Extremidades</Label>
-                  <Textarea
-                    value={physicalExam.extremities}
-                    onChange={(e) => setPhysicalExam({...physicalExam, extremities: e.target.value})}
-                    placeholder="Ej: Simétricas, sin edema, pulsos presentes."
-                    rows={2}
-                  />
+                  <Select
+                    value={physicalExam.extremities === "" ? "" : physicalExam.extremities.startsWith("Ej:") ? "free" : physicalExam.extremities}
+                    onValueChange={(value) => {
+                      if (value === "free") {
+                        setPhysicalExam({...physicalExam, extremities: ""});
+                      } else {
+                        setPhysicalExam({...physicalExam, extremities: value});
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="Simétricas, sin edema, pulsos presentes.">Simétricas, sin edema</SelectItem>
+                      <SelectItem value="Simétricas, móviles, perfusión distal conservada.">Móviles, perfusión conservada</SelectItem>
+                      <SelectItem value="Edema en miembros inferiores.">Con edema en MMII</SelectItem>
+                      <SelectItem value="Lesiones en piel, sin edema.">Con lesiones en piel</SelectItem>
+                      <SelectItem value="free">✏️ Texto libre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(physicalExam.extremities === "" || !["Simétricas, sin edema, pulsos presentes.", "Simétricas, móviles, perfusión distal conservada.", "Edema en miembros inferiores.", "Lesiones en piel, sin edema."].includes(physicalExam.extremities)) && (
+                    <Textarea
+                      value={physicalExam.extremities}
+                      onChange={(e) => setPhysicalExam({...physicalExam, extremities: e.target.value})}
+                      placeholder="Ej: Simétricas, sin edema, pulsos presentes."
+                      rows={2}
+                    />
+                  )}
                 </div>
+
+                {/* Neurológico */}
                 <div className="space-y-2">
                   <Label>Neurológico</Label>
-                  <Textarea
-                    value={physicalExam.neurological}
-                    onChange={(e) => setPhysicalExam({...physicalExam, neurological: e.target.value})}
-                    placeholder="Ej: Sin focalidad, pares craneales normales, fuerza conservada."
-                    rows={2}
-                  />
+                  <Select
+                    value={physicalExam.neurological === "" ? "" : physicalExam.neurological.startsWith("Ej:") ? "free" : physicalExam.neurological}
+                    onValueChange={(value) => {
+                      if (value === "free") {
+                        setPhysicalExam({...physicalExam, neurological: ""});
+                      } else {
+                        setPhysicalExam({...physicalExam, neurological: value});
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="Sin focalidad, pares craneales normales, fuerza conservada.">Sin focalidad, pares normales</SelectItem>
+                      <SelectItem value="Alerta, reactivo, sin déficit neurológico aparente.">Alerta, reactivo</SelectItem>
+                      <SelectItem value="Reflejos osteotendinosos presentes y simétricos.">ROT presentes y simétricos</SelectItem>
+                      <SelectItem value="Signos meníngeos negativos.">Signos meníngeos negativos</SelectItem>
+                      <SelectItem value="free">✏️ Texto libre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(physicalExam.neurological === "" || !["Sin focalidad, pares craneales normales, fuerza conservada.", "Alerta, reactivo, sin déficit neurológico aparente.", "Reflejos osteotendinosos presentes y simétricos.", "Signos meníngeos negativos."].includes(physicalExam.neurological)) && (
+                    <Textarea
+                      value={physicalExam.neurological}
+                      onChange={(e) => setPhysicalExam({...physicalExam, neurological: e.target.value})}
+                      placeholder="Ej: Sin focalidad, pares craneales normales, fuerza conservada."
+                      rows={2}
+                    />
+                  )}
                 </div>
               </div>
             </CardContent>
