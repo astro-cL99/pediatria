@@ -373,6 +373,7 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
       admissionId={bed.admission.id}
       onSuccess={() => {
         setShowChangeBed(false);
+        onOpenChange(false); // Cerrar también el diálogo principal
         onUpdate();
       }}
     />
