@@ -295,11 +295,11 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
               </Card>
             )}
 
-            {/* Viral Panel */}
+            {/* Panel Respiratorio */}
             {bed.admission.viral_panel && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Panel Viral</CardTitle>
+                  <CardTitle className="text-lg">Panel Respiratorio</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Badge 

@@ -215,7 +215,7 @@ export function ImportHandoverButton({ onImportComplete }: { onImportComplete: (
               <li>Creación/actualización de pacientes</li>
               <li>Creación/actualización de ingresos médicos</li>
               <li>Asignación de camas</li>
-              <li>Diagnósticos, requerimientos de O2, panel viral</li>
+              <li>Diagnósticos, requerimientos de O2, panel respiratorio</li>
               <li>Pendientes y planes de tratamiento</li>
             </ul>
           </div>

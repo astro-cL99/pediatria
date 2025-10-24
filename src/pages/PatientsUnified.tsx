@@ -290,7 +290,7 @@ export default function PatientsUnified() {
         <Card className="border-l-4 border-l-blue-400">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Panel Viral</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Panel Respiratorio</CardTitle>
               <Wind className="h-4 w-4 text-blue-400" />
             </div>
           </CardHeader>
@@ -431,7 +431,7 @@ export default function PatientsUnified() {
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-blue-500" />
-            <span>Panel viral positivo</span>
+            <span>Panel respiratorio positivo</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-purple-500" />

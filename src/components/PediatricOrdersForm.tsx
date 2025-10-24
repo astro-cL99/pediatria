@@ -553,7 +553,7 @@ export function PediatricOrdersForm({ value, onChange, patientWeight, patientHei
         <div>
           <Label>6. Exámenes</Label>
           <Input
-            placeholder="Ej: Pendiente panel viral, GSV + ELP..."
+            placeholder="Ej: Pendiente panel respiratorio, GSV + ELP..."
             value={orders.exams}
             onChange={(e) => updateOrders({ exams: e.target.value })}
           />

@@ -174,38 +174,64 @@ export function FluidTherapyCalculator({
             </TabsList>
 
             <TabsContent value="holliday" className="space-y-4">
-              <div className="bg-primary/5 p-4 rounded-lg space-y-2">
+              <div className="bg-primary/5 p-4 rounded-lg space-y-3">
                 <h4 className="font-semibold">📊 Método Holliday-Segar</h4>
-                <div>
-                  <p className="text-3xl font-bold text-primary">
-                    {calculation.holliday_segar.maintenance_ml_day} ml/día
-                  </p>
-                  <p className="text-xl text-muted-foreground">
-                    {calculation.holliday_segar.maintenance_ml_hour} ml/hora
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Volumen Total</p>
+                    <p className="text-3xl font-bold text-primary">
+                      {calculation.holliday_segar.maintenance_ml_day} ml/día
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Velocidad de Infusión</p>
+                    <p className="text-3xl font-bold text-primary">
+                      {calculation.holliday_segar.maintenance_ml_hour} ml/h
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-primary/20">
+                  <p className="text-xs text-muted-foreground">Cálculo:</p>
+                  <p className="text-sm font-mono bg-background/50 p-2 rounded mt-1">
+                    {calculation.holliday_segar.formula_breakdown}
                   </p>
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {calculation.holliday_segar.formula_breakdown}
-                </p>
               </div>
 
               {calculation.dehydration && (
-                <Alert>
-                  <AlertDescription className="space-y-2">
-                    <p className="font-semibold">
+                <Alert className="bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900">
+                  <AlertDescription className="space-y-3">
+                    <p className="font-semibold text-orange-900 dark:text-orange-100">
                       Plan {calculation.dehydration.plan} - Deshidratación {dehydrationPercent}%
                     </p>
-                    <div className="text-sm space-y-1">
-                      <p>Déficit: {Math.round(calculation.dehydration.deficit)} ml</p>
-                      <p>Mantenimiento: {Math.round(calculation.dehydration.maintenance)} ml</p>
-                      <p className="font-bold">
-                        Total: {Math.round(calculation.dehydration.total)} ml/día (
-                        {Math.round(calculation.dehydration.total / 24)} ml/h)
-                      </p>
-                      {calculation.dehydration.bolus && (
-                        <p className="text-destructive font-medium">
-                          Bolo inicial: {Math.round(calculation.dehydration.bolus)} ml
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Déficit</p>
+                        <p className="font-bold">{Math.round(calculation.dehydration.deficit)} ml</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Mantenimiento</p>
+                        <p className="font-bold">{Math.round(calculation.dehydration.maintenance)} ml</p>
+                      </div>
+                      <div className="col-span-2 pt-2 border-t">
+                        <p className="text-xs text-muted-foreground">Volumen Total Requerido</p>
+                        <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                          {Math.round(calculation.dehydration.total)} ml/día
                         </p>
+                        <p className="text-lg font-semibold text-orange-600 dark:text-orange-400">
+                          {Math.round(calculation.dehydration.total / 24)} ml/h
+                        </p>
+                      </div>
+                      {calculation.dehydration.bolus && (
+                        <div className="col-span-2 pt-2 border-t border-destructive/20">
+                          <p className="text-xs text-muted-foreground">Bolo Inicial</p>
+                          <p className="text-destructive font-bold text-lg">
+                            {Math.round(calculation.dehydration.bolus)} ml
+                          </p>
+                          <p className="text-xs text-destructive/80">
+                            (Administrar en 15-30 min)
+                          </p>
+                        </div>
                       )}
                     </div>
                   </AlertDescription>
@@ -215,19 +241,33 @@ export function FluidTherapyCalculator({
 
             <TabsContent value="bsa" className="space-y-4">
               {height > 0 ? (
-                <div className="bg-secondary/5 p-4 rounded-lg space-y-2">
+                <div className="bg-secondary/5 p-4 rounded-lg space-y-3">
                   <h4 className="font-semibold">📐 Superficie Corporal</h4>
-                  <div>
-                    <p className="text-3xl font-bold text-secondary">
-                      {calculation.body_surface_area.maintenance_ml_day} ml/día
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      SC: {calculation.body_surface_area.bsa_m2.toFixed(2)} m²
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Volumen Total</p>
+                      <p className="text-3xl font-bold text-secondary">
+                        {calculation.body_surface_area.maintenance_ml_day} ml/día
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Velocidad de Infusión</p>
+                      <p className="text-3xl font-bold text-secondary">
+                        {Math.round(calculation.body_surface_area.maintenance_ml_day / 24)} ml/h
+                      </p>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-secondary/20">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Superficie Corporal:</span>
+                      <span className="font-bold text-secondary">
+                        {calculation.body_surface_area.bsa_m2.toFixed(2)} m²
+                      </span>
+                    </div>
+                    <p className="text-xs font-mono bg-background/50 p-2 rounded mt-2">
+                      {calculation.body_surface_area.formula}
                     </p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {calculation.body_surface_area.formula}
-                  </p>
                 </div>
               ) : (
                 <Alert>

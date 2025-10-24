@@ -205,9 +205,9 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
         )}
       </div>
 
-      {/* Panel Viral */}
+      {/* Panel Respiratorio */}
       <div>
-        <Label htmlFor="viralPanel">Panel Viral</Label>
+        <Label htmlFor="viralPanel">Panel Respiratorio</Label>
         <Select
           value={formData.viralPanel}
           onValueChange={(value) => setFormData({ ...formData, viralPanel: value })}
