@@ -110,15 +110,18 @@ export function ChangeBedDialog({
 
       if (createError) throw createError;
 
+      // Esperar más tiempo para que AMBAS operaciones de base de datos 
+      // (desactivar + crear) se completen y las suscripciones en tiempo real se actualicen
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       toast.success(`Paciente movido a Cama ${selectedRoom} - Subcama ${selectedBed}`);
-      
-      // Esperar un momento para que la base de datos termine de procesar
-      await new Promise(resolve => setTimeout(resolve, 500));
       
       setSelectedRoom("");
       setSelectedBed("");
-      onSuccess();
       onOpenChange(false);
+      
+      // Llamar onSuccess al final para forzar una actualización completa
+      onSuccess();
     } catch (error: any) {
       console.error("Error al cambiar de cama:", error);
       toast.error("Error al cambiar de cama: " + error.message);
