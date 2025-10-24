@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Save, Plus, Trash2, FileText, Stethoscope, Activity, Droplets, FileSearch, ClipboardList, Sparkles } from "lucide-react";
+import { Save, Stethoscope, Activity, Droplets, FileSearch, ClipboardList, TestTube } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AITextFormatter } from "./AITextFormatter";
 import { FluidTherapyCalculator } from "./FluidTherapyCalculator";
 import { CIE10Search } from "./CIE10Search";
+import { ScoreSelector } from "./ScoreSelector";
 import type { FluidTherapyCalculation } from "@/utils/fluidTherapy";
 
 interface CompleteEvolutionFormProps {
@@ -37,20 +39,37 @@ export function CompleteEvolutionForm({
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("evaluacion");
   
-  // Form states
+  // Diagnósticos
   const [diagnoses, setDiagnoses] = useState<string[]>(defaultDiagnoses);
-  const [newDiagnosis, setNewDiagnosis] = useState("");
-  const [currentStatus, setCurrentStatus] = useState("");
+  
+  // Estado Actual estructurado
+  const [currentStatus, setCurrentStatus] = useState({
+    generalCondition: "",
+    accompaniedBy: "",
+    symptoms: "",
+    urine: true,
+    stool: true,
+    painLevel: "Sin dolor",
+    freeText: "",
+  });
+  
+  // Signos Vitales
   const [vitalSigns, setVitalSigns] = useState({
+    weight: "",
+    height: "",
     temperature: "",
     heartRate: "",
     respiratoryRate: "",
     bloodPressure: "",
     oxygenSaturation: "",
+    oxygenSupport: "",
     ...defaultVitalSigns
   });
+  
+  // Examen Físico
   const [physicalExam, setPhysicalExam] = useState({
-    generalAppearance: "",
+    consciousness: "",
+    skinPerfusion: "",
     headNeck: "",
     chest: "",
     heart: "",
@@ -58,31 +77,46 @@ export function CompleteEvolutionForm({
     extremities: "",
     neurological: "",
   });
-  const [labResults, setLabResults] = useState("");
-  const [imagingResults, setImagingResults] = useState("");
-  const [plans, setPlans] = useState(["", "", ""]);
+  
+  // Exámenes Complementarios
+  const [exams, setExams] = useState({
+    labResults: "",
+    imagingResults: "",
+  });
+  
+  // Scores Respiratorios
+  const [respiratoryScore, setRespiratoryScore] = useState({
+    type: "",
+    value: "",
+  });
+  
+  // Planes por Sistema
+  const [systemPlans, setSystemPlans] = useState({
+    fen: "",
+    respiratory: "",
+    infectious: "",
+    neurological: "",
+    cardiovascular: "",
+    other: "",
+  });
+  
+  // Indicaciones
   const [indications, setIndications] = useState({
+    position: "",
     diet: "",
-    activity: "",
-    nursingCare: "",
+    nursingCare: [] as string[],
     medications: "",
+    exams: "",
+    consultations: "",
     pending: "",
   });
 
-  // MEJORA 2: Scores respiratorios
-  const [respiratoryScores, setRespiratoryScores] = useState({
-    pulmonary_at_admission: "",
-    pulmonary_current: "",
-    tal_at_admission: "",
-    tal_current: "",
-  });
-
-  // MEJORA 4: Fluidoterapia
+  // Fluidoterapia
   const [fluidCalculation, setFluidCalculation] = useState<FluidTherapyCalculation | null>(null);
   const [patientWeight, setPatientWeight] = useState<number>(0);
   const [patientHeight, setPatientHeight] = useState<number>(0);
 
-  // Cargar peso y talla del paciente
+  // Cargar datos del paciente
   useEffect(() => {
     const loadPatientData = async () => {
       const { data } = await supabase
@@ -91,41 +125,28 @@ export function CompleteEvolutionForm({
         .eq("patient_id", patientId)
         .order("measured_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       
       if (data) {
         setPatientWeight(Number(data.weight_kg) || 0);
         setPatientHeight(Number(data.height_cm) || 0);
+        setVitalSigns(prev => ({
+          ...prev,
+          weight: data.weight_kg?.toString() || "",
+          height: data.height_cm?.toString() || "",
+        }));
       }
     };
     loadPatientData();
   }, [patientId]);
 
-  const addDiagnosis = () => {
-    if (newDiagnosis.trim() && !diagnoses.includes(newDiagnosis)) {
-      setDiagnoses([...diagnoses, newDiagnosis]);
-      setNewDiagnosis("");
-    }
-  };
-
-  const removeDiagnosis = (index: number) => {
-    setDiagnoses(diagnoses.filter((_, i) => i !== index));
-  };
-
-  const addPlan = () => {
-    setPlans([...plans, ""]);
-  };
-
-  const updatePlan = (index: number, value: string) => {
-    const newPlans = [...plans];
-    newPlans[index] = value;
-    setPlans(newPlans);
-  };
-
-  const removePlan = (index: number) => {
-    if (plans.length > 1) {
-      setPlans(plans.filter((_, i) => i !== index));
-    }
+  const toggleNursingCare = (care: string) => {
+    setIndications(prev => ({
+      ...prev,
+      nursingCare: prev.nursingCare.includes(care)
+        ? prev.nursingCare.filter(c => c !== care)
+        : [...prev.nursingCare, care]
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -146,45 +167,64 @@ export function CompleteEvolutionForm({
         return;
       }
 
-      // Preparar scores respiratorios
-      const scoresData = {
-        ...(respiratoryScores.pulmonary_at_admission && respiratoryScores.pulmonary_current
-          ? {
-              pulmonary_score: {
-                at_admission: Number(respiratoryScores.pulmonary_at_admission),
-                current: Number(respiratoryScores.pulmonary_current),
-                date_measured: new Date().toISOString(),
-              },
-            }
-          : {}),
-        ...(respiratoryScores.tal_at_admission && respiratoryScores.tal_current
-          ? {
-              tal_score: {
-                at_admission: Number(respiratoryScores.tal_at_admission),
-                current: Number(respiratoryScores.tal_current),
-                date_measured: new Date().toISOString(),
-              },
-            }
-          : {}),
-      };
+      // Preparar estado actual como texto
+      const currentStatusText = `${currentStatus.generalCondition}. ${currentStatus.accompaniedBy ? `Acompañado por ${currentStatus.accompaniedBy}.` : ''} ${currentStatus.symptoms}. ${currentStatus.painLevel}. Diuresis ${currentStatus.urine ? '(+)' : '(-)'}, Deposiciones ${currentStatus.stool ? '(+)' : '(-)'}.${currentStatus.freeText ? ` ${currentStatus.freeText}` : ''}`;
 
-      const { data, error } = await supabase
+      // Preparar examen físico como texto
+      const examText = `CSV: PA ${vitalSigns.bloodPressure || 'N/A'} mmHg, FC ${vitalSigns.heartRate || 'N/A'} lpm, FR ${vitalSigns.respiratoryRate || 'N/A'} rpm, T° ${vitalSigns.temperature || 'N/A'}°C, SatO2 ${vitalSigns.oxygenSaturation || 'N/A'}% ${vitalSigns.oxygenSupport || 'ambiente'}
+
+${physicalExam.consciousness}
+${physicalExam.skinPerfusion}
+${physicalExam.headNeck ? `Cabeza y Cuello: ${physicalExam.headNeck}` : ''}
+${physicalExam.chest ? `Tórax: ${physicalExam.chest}` : ''}
+${physicalExam.heart ? `Cardiovascular: ${physicalExam.heart}` : ''}
+${physicalExam.abdomen ? `Abdomen: ${physicalExam.abdomen}` : ''}
+${physicalExam.extremities ? `Extremidades: ${physicalExam.extremities}` : ''}
+${physicalExam.neurological ? `Neurológico: ${physicalExam.neurological}` : ''}`;
+
+      // Preparar planes por sistema
+      const allPlans = Object.entries(systemPlans)
+        .filter(([_, value]) => value.trim())
+        .map(([system, plan]) => {
+          const systemNames: Record<string, string> = {
+            fen: 'FEN (Fluidos, Electrolitos, Nutrición)',
+            respiratory: 'Respiratorio',
+            infectious: 'Infeccioso',
+            neurological: 'Neurológico',
+            cardiovascular: 'Cardiovascular',
+            other: 'Otros'
+          };
+          return `${systemNames[system]}: ${plan}`;
+        })
+        .join("\n\n");
+
+      // Preparar indicaciones
+      const indicationsText = `Posición: ${indications.position || 'N/A'}
+Régimen: ${indications.diet || 'N/A'}
+Cuidados enfermería: ${indications.nursingCare.join(', ') || 'N/A'}
+Medicamentos: ${indications.medications || 'N/A'}
+Exámenes pendientes: ${indications.exams || 'N/A'}
+Interconsultas: ${indications.consultations || 'N/A'}
+Pendientes: ${indications.pending || 'N/A'}`;
+
+      const { error } = await supabase
         .from("daily_evolutions")
         .insert([
           {
             patient_id: patientId,
             admission_id: admissionId!,
             created_by: user.id,
-            subjective: currentStatus,
-            objective: JSON.stringify(physicalExam),
-            assessment: diagnoses.filter(d => d.trim() !== "").join(", "),
-            plan: plans.filter(p => p.trim() !== "").join(", "),
+            subjective: currentStatusText,
+            objective: examText,
+            assessment: diagnoses.join(", "),
+            plan: allPlans + "\n\nINDICACIONES:\n" + indicationsText,
             vital_signs: vitalSigns,
-            respiratory_scores: Object.keys(scoresData).length > 0 ? scoresData : null,
-            fluid_calculations: fluidCalculation ? JSON.parse(JSON.stringify(fluidCalculation)) : null,
+            respiratory_scores: respiratoryScore.type && respiratoryScore.value 
+              ? { type: respiratoryScore.type, value: respiratoryScore.value } as any
+              : null,
+            fluid_calculations: fluidCalculation as any,
           },
-        ])
-        .select();
+        ]);
 
       if (error) throw error;
 
@@ -211,8 +251,8 @@ export function CompleteEvolutionForm({
             Examen Físico
           </TabsTrigger>
           <TabsTrigger value="scores">
-            <FileSearch className="w-4 h-4 mr-2" />
-            Scores & Labs
+            <TestTube className="w-4 h-4 mr-2" />
+            Labs & Scores
           </TabsTrigger>
           <TabsTrigger value="fluidos">
             <Droplets className="w-4 h-4 mr-2" />
@@ -224,15 +264,15 @@ export function CompleteEvolutionForm({
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: Evaluación (combina Diagnósticos + Estado Actual + Signos) */}
+        {/* Tab 1: Evaluación */}
         <TabsContent value="evaluacion" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>📋 EVOLUCIÓN DIARIA</CardTitle>
-              <CardDescription>Actualización: peso del día, fiebre, cambios ATB, exámenes, estado general</CardDescription>
+              <CardDescription>Estado actual del paciente y signos vitales</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Diagnósticos con CIE-10 */}
+              {/* Diagnósticos */}
               <div className="space-y-2">
                 <Label className="text-base font-semibold">Diagnósticos</Label>
                 <CIE10Search
@@ -241,33 +281,143 @@ export function CompleteEvolutionForm({
                 />
               </div>
 
-              {/* Estado Actual */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label className="text-base font-semibold">Evolución Actual</Label>
-                  <AITextFormatter 
-                    onFormat={(formattedText) => setCurrentStatus(formattedText)}
-                    placeholder="Describa el estado actual del paciente..."
-                    buttonText="Formatear con IA"
+              {/* Estado Actual con menús desplegables */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">Estado Actual</Label>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Condición General</Label>
+                    <Select
+                      value={currentStatus.generalCondition}
+                      onValueChange={(value) => setCurrentStatus({...currentStatus, generalCondition: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        <SelectItem value="Estable, en buenas condiciones generales">Estable, buenas condiciones</SelectItem>
+                        <SelectItem value="Estable hemodinámicamente">Estable hemodinámicamente</SelectItem>
+                        <SelectItem value="Lúcido y orientado en TEP">Lúcido y orientado</SelectItem>
+                        <SelectItem value="En buenas condiciones generales, jugando">Buenas condiciones, jugando</SelectItem>
+                        <SelectItem value="Inestable, requiere monitorización">Inestable</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Acompañado por</Label>
+                    <Select
+                      value={currentStatus.accompaniedBy}
+                      onValueChange={(value) => setCurrentStatus({...currentStatus, accompaniedBy: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        <SelectItem value="Madre">Madre</SelectItem>
+                        <SelectItem value="Padre">Padre</SelectItem>
+                        <SelectItem value="Ambos padres">Ambos padres</SelectItem>
+                        <SelectItem value="Abuela">Abuela</SelectItem>
+                        <SelectItem value="Familiar">Otro familiar</SelectItem>
+                        <SelectItem value="Solo">Solo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Dolor</Label>
+                  <Select
+                    value={currentStatus.painLevel}
+                    onValueChange={(value) => setCurrentStatus({...currentStatus, painLevel: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="Sin dolor">Sin dolor</SelectItem>
+                      <SelectItem value="Dolor leve">Dolor leve</SelectItem>
+                      <SelectItem value="Dolor moderado">Dolor moderado</SelectItem>
+                      <SelectItem value="Dolor severo">Dolor severo</SelectItem>
+                      <SelectItem value="No refiere dolor ni molestias">No refiere dolor ni molestias</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex gap-6">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="urine"
+                      checked={currentStatus.urine}
+                      onCheckedChange={(checked) => setCurrentStatus({...currentStatus, urine: checked as boolean})}
+                    />
+                    <Label htmlFor="urine" className="cursor-pointer">Diuresis (+)</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="stool"
+                      checked={currentStatus.stool}
+                      onCheckedChange={(checked) => setCurrentStatus({...currentStatus, stool: checked as boolean})}
+                    />
+                    <Label htmlFor="stool" className="cursor-pointer">Deposiciones (+)</Label>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Síntomas y Evolución</Label>
+                  <Textarea
+                    value={currentStatus.symptoms}
+                    onChange={(e) => setCurrentStatus({...currentStatus, symptoms: e.target.value})}
+                    placeholder="Ej: Afebril, eupneico, tolerando vía oral sin incidentes, sin uso de musculatura accesoria..."
+                    rows={3}
                   />
                 </div>
-                <Textarea
-                  value={currentStatus}
-                  onChange={(e) => setCurrentStatus(e.target.value)}
-                  placeholder="Describa el estado actual del paciente..."
-                  rows={6}
-                  className="min-h-[150px]"
-                />
+                
+                <div className="space-y-2">
+                  <Label>Texto Adicional (Opcional)</Label>
+                  <Textarea
+                    value={currentStatus.freeText}
+                    onChange={(e) => setCurrentStatus({...currentStatus, freeText: e.target.value})}
+                    placeholder="Información adicional relevante..."
+                    rows={2}
+                  />
+                </div>
               </div>
 
               {/* Signos Vitales */}
-              <div className="space-y-2">
-                <Label className="text-base font-semibold">Signos Vitales</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">Signos Vitales (CSV)</Label>
+                
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Temperatura (°C)</Label>
+                    <Label>Peso (kg)</Label>
                     <Input
                       type="number"
+                      step="0.1"
+                      value={vitalSigns.weight}
+                      onChange={(e) => setVitalSigns({...vitalSigns, weight: e.target.value})}
+                      placeholder="Peso actual"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Talla (cm)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={vitalSigns.height}
+                      onChange={(e) => setVitalSigns({...vitalSigns, height: e.target.value})}
+                      placeholder="Talla actual"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="space-y-2">
+                    <Label>T° (°C)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
                       value={vitalSigns.temperature}
                       onChange={(e) => setVitalSigns({...vitalSigns, temperature: e.target.value})}
                       placeholder="36.5"
@@ -300,7 +450,7 @@ export function CompleteEvolutionForm({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Sat O₂ (%)</Label>
+                    <Label>SatO₂ (%)</Label>
                     <Input
                       type="number"
                       value={vitalSigns.oxygenSaturation}
@@ -309,128 +459,106 @@ export function CompleteEvolutionForm({
                     />
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Estado Actual */}
-        <TabsContent value="actual" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Estado Actual</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label>Evolución actual</Label>
-                  <AITextFormatter 
-                    onFormat={(formattedText) => setCurrentStatus(formattedText)}
-                    placeholder="Describa el estado actual del paciente..."
-                    buttonText="Formatear con IA"
-                  />
-                </div>
-                <Textarea
-                  value={currentStatus}
-                  onChange={(e) => setCurrentStatus(e.target.value)}
-                  placeholder="Describa el estado actual del paciente..."
-                  rows={8}
-                  className="min-h-[200px]"
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                
                 <div className="space-y-2">
-                  <Label>Temperatura (°C)</Label>
-                  <Input
-                    type="number"
-                    value={vitalSigns.temperature}
-                    onChange={(e) => setVitalSigns({...vitalSigns, temperature: e.target.value})}
-                    placeholder="36.5"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Frecuencia Cardíaca (lpm)</Label>
-                  <Input
-                    type="number"
-                    value={vitalSigns.heartRate}
-                    onChange={(e) => setVitalSigns({...vitalSigns, heartRate: e.target.value})}
-                    placeholder="80"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Presión Arterial (mmHg)</Label>
-                  <Input
-                    value={vitalSigns.bloodPressure}
-                    onChange={(e) => setVitalSigns({...vitalSigns, bloodPressure: e.target.value})}
-                    placeholder="120/80"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Frecuencia Respiratoria (rpm)</Label>
-                  <Input
-                    type="number"
-                    value={vitalSigns.respiratoryRate}
-                    onChange={(e) => setVitalSigns({...vitalSigns, respiratoryRate: e.target.value})}
-                    placeholder="16"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Sat O₂ (%)</Label>
-                  <Input
-                    type="number"
-                    value={vitalSigns.oxygenSaturation}
-                    onChange={(e) => setVitalSigns({...vitalSigns, oxygenSaturation: e.target.value})}
-                    placeholder="98"
-                  />
+                  <Label>Aporte de O₂</Label>
+                  <Select
+                    value={vitalSigns.oxygenSupport}
+                    onValueChange={(value) => setVitalSigns({...vitalSigns, oxygenSupport: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="Ambiente">Ambiente (AMB)</SelectItem>
+                      <SelectItem value="1L O2 x NRC">1L O₂ x NRC</SelectItem>
+                      <SelectItem value="2L O2 x NRC">2L O₂ x NRC</SelectItem>
+                      <SelectItem value="3L O2 x NRC">3L O₂ x NRC</SelectItem>
+                      <SelectItem value="Venturi FiO2 35%">Venturi FiO₂ 35%</SelectItem>
+                      <SelectItem value="Venturi FiO2 40%">Venturi FiO₂ 40%</SelectItem>
+                      <SelectItem value="CNAF">CNAF</SelectItem>
+                      <SelectItem value="CPAP">CPAP</SelectItem>
+                      <SelectItem value="VMI">VMI</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Examen Físico */}
+        {/* Tab 2: Examen Físico */}
         <TabsContent value="examen" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Examen Físico</CardTitle>
+              <CardTitle>Examen Físico Detallado</CardTitle>
+              <CardDescription>Evaluación por sistemas</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Apariencia General</Label>
-                <Textarea
-                  value={physicalExam.generalAppearance}
-                  onChange={(e) => setPhysicalExam({...physicalExam, generalAppearance: e.target.value})}
-                  placeholder="Estado general, hidratación, facies, estado nutricional..."
-                  rows={2}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Estado de Conciencia</Label>
+                  <Select
+                    value={physicalExam.consciousness}
+                    onValueChange={(value) => setPhysicalExam({...physicalExam, consciousness: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="Vigil, atento, cooperador">Vigil, atento, cooperador</SelectItem>
+                      <SelectItem value="Vigil, orientado en TEP">Vigil, orientado en TEP</SelectItem>
+                      <SelectItem value="Somnoliento pero reactivo">Somnoliento pero reactivo</SelectItem>
+                      <SelectItem value="Irritable">Irritable</SelectItem>
+                      <SelectItem value="Letárgico">Letárgico</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Piel y Perfusión</Label>
+                  <Select
+                    value={physicalExam.skinPerfusion}
+                    onValueChange={(value) => setPhysicalExam({...physicalExam, skinPerfusion: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="Bien hidratado y perfundido, llene capilar < 2 seg">Bien hidratado, LLC {"<"}2s</SelectItem>
+                      <SelectItem value="Piel sin lesiones, mucosas hidratadas">Piel sin lesiones, hidratado</SelectItem>
+                      <SelectItem value="Deshidratado leve">Deshidratado leve</SelectItem>
+                      <SelectItem value="Pálido, mala perfusión">Pálido, mala perfusión</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Cabeza y Cuello</Label>
+                  <Label>Cabeza, Cuello y Faringe</Label>
                   <Textarea
                     value={physicalExam.headNeck}
                     onChange={(e) => setPhysicalExam({...physicalExam, headNeck: e.target.value})}
-                    placeholder="Pupilas, mucosas, cuello..."
+                    placeholder="Ej: Faringe sin eritema, amígdalas eutróficas sin exudado. Cuello sin adenopatías."
                     rows={2}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Tórax</Label>
+                  <Label>Tórax y Pulmones</Label>
                   <Textarea
                     value={physicalExam.chest}
                     onChange={(e) => setPhysicalExam({...physicalExam, chest: e.target.value})}
-                    placeholder="Simetría, expansión, murmullo vesicular..."
+                    placeholder="Ej: Simétrico, normoexpansible, MP+, sibilancias espiratorias, sin UMA."
                     rows={2}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Corazón</Label>
+                  <Label>Cardiovascular</Label>
                   <Textarea
                     value={physicalExam.heart}
                     onChange={(e) => setPhysicalExam({...physicalExam, heart: e.target.value})}
-                    placeholder="Ruidos cardíacos, soplos, ritmo..."
+                    placeholder="Ej: RR2T NAS, sin soplos audibles, normocárdico."
                     rows={2}
                   />
                 </div>
@@ -439,7 +567,7 @@ export function CompleteEvolutionForm({
                   <Textarea
                     value={physicalExam.abdomen}
                     onChange={(e) => setPhysicalExam({...physicalExam, abdomen: e.target.value})}
-                    placeholder="Forma, ruidos hidroaéreos, dolor a la palpación..."
+                    placeholder="Ej: Blando, depresible, no doloroso, RHA+, no visceromegalias."
                     rows={2}
                   />
                 </div>
@@ -448,7 +576,7 @@ export function CompleteEvolutionForm({
                   <Textarea
                     value={physicalExam.extremities}
                     onChange={(e) => setPhysicalExam({...physicalExam, extremities: e.target.value})}
-                    placeholder="Pulsos periféricos, edemas, relleno capilar..."
+                    placeholder="Ej: Simétricas, sin edema, pulsos presentes."
                     rows={2}
                   />
                 </div>
@@ -457,7 +585,7 @@ export function CompleteEvolutionForm({
                   <Textarea
                     value={physicalExam.neurological}
                     onChange={(e) => setPhysicalExam({...physicalExam, neurological: e.target.value})}
-                    placeholder="Estado de conciencia, pares craneales, fuerza muscular..."
+                    placeholder="Ej: Sin focalidad, pares craneales normales, fuerza conservada."
                     rows={2}
                   />
                 </div>
@@ -466,105 +594,19 @@ export function CompleteEvolutionForm({
           </Card>
         </TabsContent>
 
-        {/* MEJORA 2: Scores Respiratorios */}
+        {/* Tab 3: Exámenes y Scores */}
         <TabsContent value="scores" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>📊 Scores Respiratorios Evolutivos</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h4 className="font-semibold">Pulmonary Score</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Score al Ingreso</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="12"
-                      value={respiratoryScores.pulmonary_at_admission}
-                      onChange={(e) =>
-                        setRespiratoryScores({
-                          ...respiratoryScores,
-                          pulmonary_at_admission: e.target.value,
-                        })
-                      }
-                      placeholder="0-12"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Score Actual</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="12"
-                      value={respiratoryScores.pulmonary_current}
-                      onChange={(e) =>
-                        setRespiratoryScores({
-                          ...respiratoryScores,
-                          pulmonary_current: e.target.value,
-                        })
-                      }
-                      placeholder="0-12"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-semibold">Score de Tal Modificado</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Score al Ingreso</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="12"
-                      value={respiratoryScores.tal_at_admission}
-                      onChange={(e) =>
-                        setRespiratoryScores({
-                          ...respiratoryScores,
-                          tal_at_admission: e.target.value,
-                        })
-                      }
-                      placeholder="0-12"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Score Actual</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="12"
-                      value={respiratoryScores.tal_current}
-                      onChange={(e) =>
-                        setRespiratoryScores({
-                          ...respiratoryScores,
-                          tal_current: e.target.value,
-                        })
-                      }
-                      placeholder="0-12"
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Estudios */}
-        <TabsContent value="estudios" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Estudios</CardTitle>
+              <CardTitle>📊 Exámenes Complementarios</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label>Exámenes de Laboratorio</Label>
                 <Textarea
-                  value={labResults}
-                  onChange={(e) => setLabResults(e.target.value)}
-                  placeholder="Ingrese resultados de laboratorio..."
+                  value={exams.labResults}
+                  onChange={(e) => setExams({...exams, labResults: e.target.value})}
+                  placeholder="Ej: Hb 12.9, Hto 38.5, Leucos 8.000 (Seg 68%), PCR 22 mg/L, Plaquetas 223.000"
                   rows={4}
                 />
               </div>
@@ -572,17 +614,49 @@ export function CompleteEvolutionForm({
               <div className="space-y-2">
                 <Label>Imagenología</Label>
                 <Textarea
-                  value={imagingResults}
-                  onChange={(e) => setImagingResults(e.target.value)}
-                  placeholder="Ingrese resultados de imagenología..."
-                  rows={4}
+                  value={exams.imagingResults}
+                  onChange={(e) => setExams({...exams, imagingResults: e.target.value})}
+                  placeholder="Ej: Rx Tórax: infiltrado intersticial bilateral, TC Cerebro: sin hallazgos agudos"
+                  rows={3}
                 />
+              </div>
+
+              <div className="space-y-4 mt-6">
+                <Label className="text-base font-semibold">Score Respiratorio</Label>
+                <div className="space-y-2">
+                  <Label>Tipo de Score</Label>
+                  <Select
+                    value={respiratoryScore.type}
+                    onValueChange={(value) => setRespiratoryScore({...respiratoryScore, type: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar score" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="No aplica">No aplica</SelectItem>
+                      <SelectItem value="TAL">TAL</SelectItem>
+                      <SelectItem value="Pulmonary">Pulmonary (Wood-Downes)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {(respiratoryScore.type === "TAL" || respiratoryScore.type === "Pulmonary") && (
+                  <ScoreSelector 
+                    scoreType={respiratoryScore.type as "TAL" | "Pulmonary"}
+                    onScoreCalculated={(result) => {
+                      setRespiratoryScore({
+                        ...respiratoryScore,
+                        value: `${result.score} puntos - ${result.severity}`
+                      });
+                    }}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* MEJORA 4: Fluidoterapia */}
+        {/* Tab 4: Fluidoterapia */}
         <TabsContent value="fluidos">
           <FluidTherapyCalculator
             initialWeight={patientWeight}
@@ -591,107 +665,198 @@ export function CompleteEvolutionForm({
           />
         </TabsContent>
 
-        {/* Plan e Indicaciones */}
+        {/* Tab 5: Planes por Sistema e Indicaciones */}
         <TabsContent value="plan" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Plan e Indicaciones</CardTitle>
+              <CardTitle>📝 Evaluación y Planes por Sistema</CardTitle>
+              <CardDescription>Plan médico organizado por sistemas</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-medium">Planes</h3>
-                  <Button type="button" variant="outline" size="sm" onClick={addPlan}>
-                    <Plus className="w-4 h-4 mr-1" />
-                    Agregar Plan
-                  </Button>
+                <div className="space-y-2">
+                  <Label className="font-semibold">1) FEN (Fluidos, Electrolitos, Nutrición)</Label>
+                  <Textarea
+                    value={systemPlans.fen}
+                    onChange={(e) => setSystemPlans({...systemPlans, fen: e.target.value})}
+                    placeholder="Ej: Paciente tolerando vía oral sin incidentes. PLAN: Régimen escolar común a tolerancia."
+                    rows={3}
+                  />
                 </div>
                 
-                <div className="space-y-4">
-                  {plans.map((plan, index) => (
-                    <div key={index} className="flex gap-2 items-start">
-                      <div className="flex-1">
-                        <Input
-                          value={plan}
-                          onChange={(e) => updatePlan(index, e.target.value)}
-                          placeholder={`Plan ${index + 1}`}
-                        />
-                      </div>
-                      {plans.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removePlan(index)}
-                          className="h-10 w-10"
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
+                <div className="space-y-2">
+                  <Label className="font-semibold">2) Respiratorio</Label>
+                  <Textarea
+                    value={systemPlans.respiratory}
+                    onChange={(e) => setSystemPlans({...systemPlans, respiratory: e.target.value})}
+                    placeholder="Ej: Paciente con mejoría clínica, sin uso de musculatura accesoria. PLAN: Mantener O2 para Sat>93%, KNT c/8hrs."
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="font-semibold">3) Infeccioso</Label>
+                  <Textarea
+                    value={systemPlans.infectious}
+                    onChange={(e) => setSystemPlans({...systemPlans, infectious: e.target.value})}
+                    placeholder="Ej: En tratamiento con Ampicilina/Sulbactam D2/7, afebril. PLAN: Completar esquema antibiótico."
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="font-semibold">4) Neurológico</Label>
+                  <Textarea
+                    value={systemPlans.neurological}
+                    onChange={(e) => setSystemPlans({...systemPlans, neurological: e.target.value})}
+                    placeholder="Ej: Sin nuevos episodios convulsivos, mantiene tratamiento con FAE. PLAN: Seguimiento ambulatorio."
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="font-semibold">5) Cardiovascular</Label>
+                  <Textarea
+                    value={systemPlans.cardiovascular}
+                    onChange={(e) => setSystemPlans({...systemPlans, cardiovascular: e.target.value})}
+                    placeholder="Ej: Hemodinámicamente estable, sin conflicto. PLAN: Monitorización c/6hrs."
+                    rows={2}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="font-semibold">Otros Sistemas</Label>
+                  <Textarea
+                    value={systemPlans.other}
+                    onChange={(e) => setSystemPlans({...systemPlans, other: e.target.value})}
+                    placeholder="Otros planes relevantes (Social, Quirúrgico, etc)"
+                    rows={2}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Indicaciones Médicas */}
+          <Card>
+            <CardHeader>
+              <CardTitle>📋 INDICACIONES MÉDICAS</CardTitle>
+              <CardDescription>Órdenes médicas y cuidados de enfermería</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Posición</Label>
+                  <Select
+                    value={indications.position}
+                    onValueChange={(value) => setIndications({...indications, position: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar posición" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="Reposo relativo">Reposo relativo</SelectItem>
+                      <SelectItem value="Fowler 30°">Fowler 30°</SelectItem>
+                      <SelectItem value="Fowler 45°">Fowler 45°</SelectItem>
+                      <SelectItem value="Decúbito lateral">Decúbito lateral</SelectItem>
+                      <SelectItem value="Decúbito supino">Decúbito supino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Régimen / Dieta</Label>
+                  <Select
+                    value={indications.diet}
+                    onValueChange={(value) => setIndications({...indications, diet: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar régimen" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="Régimen cero (NPO)">Régimen cero (NPO)</SelectItem>
+                      <SelectItem value="Régimen común">Régimen común</SelectItem>
+                      <SelectItem value="Régimen liviano">Régimen liviano</SelectItem>
+                      <SelectItem value="Régimen escolar común">Régimen escolar común</SelectItem>
+                      <SelectItem value="Régimen escolar liviano">Régimen escolar liviano</SelectItem>
+                      <SelectItem value="A tolerancia">A tolerancia</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Cuidados de Enfermería</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-muted/30 rounded-lg">
+                  {[
+                    "VVP (mantener)",
+                    "CSV c/6 horas",
+                    "CSV c/8 horas",
+                    "Curva febril",
+                    "O2 para Sat >93%",
+                    "Monitorización continua",
+                    "HGT c/12 horas",
+                    "Prevención LPP",
+                    "Prevención caídas",
+                    "Control balance hídrico",
+                  ].map((care) => (
+                    <div key={care} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={care}
+                        checked={indications.nursingCare.includes(care)}
+                        onCheckedChange={() => toggleNursingCare(care)}
+                      />
+                      <Label htmlFor={care} className="cursor-pointer text-sm">{care}</Label>
                     </div>
                   ))}
                 </div>
               </div>
-              
-              <div className="space-y-4">
-                <h3 className="font-medium">Indicaciones</h3>
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Dieta</Label>
-                    <Input
-                      value={indications.diet}
-                      onChange={(e) => setIndications({...indications, diet: e.target.value})}
-                      placeholder="Ej: Régimen escolar liviano"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Actividad</Label>
-                    <Input
-                      value={indications.activity}
-                      onChange={(e) => setIndications({...indications, activity: e.target.value})}
-                      placeholder="Ej: Reposo relativo, Fowler 30°"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Cuidados de Enfermería</Label>
-                    <Textarea
-                      value={indications.nursingCare}
-                      onChange={(e) => setIndications({...indications, nursingCare: e.target.value})}
-                      placeholder="Ej: CSV c/6 horas, monitorización continua, O2 para Sat > 93%"
-                      rows={2}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Medicamentos</Label>
-                    <Textarea
-                      value={indications.medications}
-                      onChange={(e) => setIndications({...indications, medications: e.target.value})}
-                      placeholder="Ej: Ampicilina/Sulbactam 850mg c/6h EV, Paracetamol 250mg c/6h SOS"
-                      rows={3}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Pendientes</Label>
-                    <Textarea
-                      value={indications.pending}
-                      onChange={(e) => setIndications({...indications, pending: e.target.value})}
-                      placeholder="Ej: Seguimiento por Infectología, control de exámenes"
-                      rows={2}
-                    />
-                  </div>
-                </div>
+
+              <div className="space-y-2">
+                <Label>Medicamentos (con dosis)</Label>
+                <Textarea
+                  value={indications.medications}
+                  onChange={(e) => setIndications({...indications, medications: e.target.value})}
+                  placeholder="Ej: Ampicilina/Sulbactam 1.8g c/6hrs EV (FI 21/10), Paracetamol 500mg c/6hrs VO SOS"
+                  rows={4}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Exámenes Pendientes</Label>
+                <Textarea
+                  value={indications.exams}
+                  onChange={(e) => setIndications({...indications, exams: e.target.value})}
+                  placeholder="Ej: Rx control 23/10, Hemograma control"
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Interconsultas</Label>
+                <Textarea
+                  value={indications.consultations}
+                  onChange={(e) => setIndications({...indications, consultations: e.target.value})}
+                  placeholder="Ej: Seguimiento por Infectología, Evaluación por Neurología"
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Tareas Pendientes / Seguimiento</Label>
+                <Textarea
+                  value={indications.pending}
+                  onChange={(e) => setIndications({...indications, pending: e.target.value})}
+                  placeholder="Ej: Control ambulatorio Dr. Chasi, Derivar nutricionista CESFAM"
+                  rows={2}
+                />
               </div>
             </CardContent>
             
             <CardFooter className="flex justify-end border-t pt-4">
-              <Button type="submit" disabled={loading}>
-                <Save className="w-4 h-4 mr-2" />
-                {loading ? "Guardando..." : "Guardar Evolución"}
+              <Button type="submit" disabled={loading} className="gap-2">
+                <Save className="w-4 h-4" />
+                {loading ? "Guardando..." : "Guardar Evolución Completa"}
               </Button>
             </CardFooter>
           </Card>

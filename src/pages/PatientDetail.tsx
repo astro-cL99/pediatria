@@ -277,28 +277,17 @@ const PatientDetail = () => {
           </TabsList>
 
           <TabsContent value="evolutions">
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Nueva Evolución</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <DailyEvolutionForm 
-                    patientId={id!} 
-                    admissionId={activeAdmission?.id}
-                    onSuccess={() => {}}
-                  />
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Historial de Evoluciones</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <EvolutionsList patientId={id!} />
-                </CardContent>
-              </Card>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Historial de Evoluciones Diarias</CardTitle>
+                <CardDescription>
+                  Visualice el registro completo de evoluciones. Use la pestaña "Evolución" para crear una nueva.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EvolutionsList patientId={id!} />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="exams">
