@@ -110,7 +110,7 @@ REGLAS:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.0-flash-exp',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { 
             role: 'user', 
@@ -129,8 +129,7 @@ REGLAS:
             ]
           }
         ],
-        temperature: 0.1,
-        max_tokens: 4000,
+        max_completion_tokens: 4000,
       }),
     });
 
@@ -221,7 +220,7 @@ REGLAS:
         metadata: {
           fileName,
           processingTimeMs: Date.now() - startTime,
-          model: 'google/gemini-2.0-flash-exp'
+          model: 'google/gemini-2.5-flash'
         }
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
