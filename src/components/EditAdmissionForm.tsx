@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { ScoreSelector } from "@/components/ScoreSelector";
 
 interface EditAdmissionFormProps {
@@ -19,6 +21,8 @@ interface EditAdmissionFormProps {
     pending_tasks?: string;
     antibiotics?: any;
     current_medications?: string;
+    diet?: any;
+    iv_therapy?: any;
   };
   onSuccess: () => void;
   onCancel: () => void;
@@ -26,8 +30,9 @@ interface EditAdmissionFormProps {
 
 export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCancel }: EditAdmissionFormProps) {
   const [loading, setLoading] = useState(false);
+  const [diagnoses, setDiagnoses] = useState<string[]>(currentData.admission_diagnoses || []);
+  const [diagnosisInput, setDiagnosisInput] = useState("");
   const [formData, setFormData] = useState({
-    diagnoses: currentData.admission_diagnoses?.join(", ") || "",
     oxygenType: currentData.oxygen_requirement?.type || "",
     oxygenFlow: currentData.oxygen_requirement?.flow || "",
     oxygenPeep: currentData.oxygen_requirement?.peep || "",
@@ -37,6 +42,11 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
     pendingTasks: currentData.pending_tasks || "",
     antibiotics: currentData.antibiotics?.map((a: any) => `${a.name} (${a.dose})`).join(", ") || "",
     medications: currentData.current_medications || "",
+    dietType: currentData.diet?.type || "",
+    dietNotes: currentData.diet?.notes || "",
+    ivTherapyActive: currentData.iv_therapy?.active || false,
+    ivTherapyPercentage: currentData.iv_therapy?.percentage || "",
+    ivTherapyCorrections: currentData.iv_therapy?.corrections || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,11 +54,6 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
     setLoading(true);
 
     try {
-      const diagnosesArray = formData.diagnoses
-        .split(",")
-        .map((d) => d.trim())
-        .filter(Boolean);
-
       const antibioticsArray = formData.antibiotics
         ? formData.antibiotics.split(",").map((ab) => {
             const match = ab.match(/(.+?)\s*\((.+?)\)/);
@@ -68,16 +73,33 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
           }
         : null;
 
+      const diet = formData.dietType
+        ? {
+            type: formData.dietType,
+            notes: formData.dietNotes || null,
+          }
+        : null;
+
+      const ivTherapy = formData.ivTherapyActive
+        ? {
+            active: true,
+            percentage: formData.ivTherapyPercentage,
+            corrections: formData.ivTherapyCorrections || null,
+          }
+        : null;
+
       const { error } = await supabase
         .from("admissions")
         .update({
-          admission_diagnoses: diagnosesArray,
+          admission_diagnoses: diagnoses,
           oxygen_requirement: oxygenRequirement,
           respiratory_score: formData.respiratoryScore || null,
           viral_panel: formData.viralPanel || null,
           pending_tasks: formData.pendingTasks || null,
           antibiotics: antibioticsArray.length > 0 ? antibioticsArray : null,
           current_medications: formData.medications || null,
+          diet: diet,
+          iv_therapy: ivTherapy,
         })
         .eq("id", admissionId);
 
@@ -93,19 +115,44 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
     }
   };
 
+  const handleDiagnosisKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && diagnosisInput.trim()) {
+      e.preventDefault();
+      setDiagnoses([...diagnoses, diagnosisInput.trim()]);
+      setDiagnosisInput("");
+    }
+  };
+
+  const removeDiagnosis = (index: number) => {
+    setDiagnoses(diagnoses.filter((_, i) => i !== index));
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Diagnósticos con Tags */}
       <div>
-        <Label htmlFor="diagnoses">Diagnósticos (separados por coma)</Label>
-        <Textarea
+        <Label htmlFor="diagnoses">Diagnósticos</Label>
+        <Input
           id="diagnoses"
-          value={formData.diagnoses}
-          onChange={(e) => setFormData({ ...formData, diagnoses: e.target.value })}
-          placeholder="Ej: Bronquiolitis, Neumonía"
-          rows={2}
+          value={diagnosisInput}
+          onChange={(e) => setDiagnosisInput(e.target.value)}
+          onKeyDown={handleDiagnosisKeyDown}
+          placeholder="Escribir diagnóstico y presionar Enter"
         />
+        <div className="flex flex-wrap gap-2 mt-2">
+          {diagnoses.map((dx, index) => (
+            <Badge key={index} variant="secondary" className="gap-1">
+              {dx}
+              <X
+                className="h-3 w-3 cursor-pointer hover:text-destructive"
+                onClick={() => removeDiagnosis(index)}
+              />
+            </Badge>
+          ))}
+        </div>
       </div>
 
+      {/* Oxígeno */}
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -139,37 +186,31 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
           </div>
         </div>
 
-        {/* Campos adicionales para CPAP */}
         {(formData.oxygenType === 'CPAP' || formData.oxygenType === 'VMI') && (
           <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
             <div>
-              <Label htmlFor="oxygenPeep" className="text-blue-900 dark:text-blue-100">
-                PEEP (cmH₂O)
-              </Label>
+              <Label htmlFor="oxygenPeep">PEEP (cmH₂O)</Label>
               <Input
                 id="oxygenPeep"
                 value={formData.oxygenPeep}
                 onChange={(e) => setFormData({ ...formData, oxygenPeep: e.target.value })}
                 placeholder="Ej: 5"
-                className="bg-white dark:bg-gray-800"
               />
             </div>
             <div>
-              <Label htmlFor="oxygenFio2" className="text-blue-900 dark:text-blue-100">
-                FiO₂ (%)
-              </Label>
+              <Label htmlFor="oxygenFio2">FiO₂ (%)</Label>
               <Input
                 id="oxygenFio2"
                 value={formData.oxygenFio2}
                 onChange={(e) => setFormData({ ...formData, oxygenFio2: e.target.value })}
                 placeholder="Ej: 40"
-                className="bg-white dark:bg-gray-800"
               />
             </div>
           </div>
         )}
       </div>
 
+      {/* Score Respiratorio */}
       <div>
         <Label htmlFor="respiratoryScore">Score Respiratorio</Label>
         <Select
@@ -186,28 +227,120 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
           </SelectContent>
         </Select>
         
-        {/* Mostrar tabla interactiva del score seleccionado */}
         {(formData.respiratoryScore === "TAL" || formData.respiratoryScore === "Pulmonary") && (
           <ScoreSelector 
             scoreType={formData.respiratoryScore as "TAL" | "Pulmonary"}
             onScoreCalculated={(result) => {
-              // Opcional: guardar el resultado para usarlo después
               console.log("Score calculado:", result);
             }}
           />
         )}
       </div>
 
+      {/* Panel Viral */}
       <div>
         <Label htmlFor="viralPanel">Panel Viral</Label>
-        <Input
-          id="viralPanel"
+        <Select
           value={formData.viralPanel}
-          onChange={(e) => setFormData({ ...formData, viralPanel: e.target.value })}
-          placeholder="Ej: VRS positivo"
-        />
+          onValueChange={(value) => setFormData({ ...formData, viralPanel: value })}
+        >
+          <SelectTrigger id="viralPanel">
+            <SelectValue placeholder="Seleccionar resultado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Pendiente">Pendiente</SelectItem>
+            <SelectItem value="VRS positivo">VRS (Virus Respiratorio Sincicial) +</SelectItem>
+            <SelectItem value="Influenza A positivo">Influenza A +</SelectItem>
+            <SelectItem value="Influenza B positivo">Influenza B +</SelectItem>
+            <SelectItem value="Adenovirus positivo">Adenovirus +</SelectItem>
+            <SelectItem value="Parainfluenza positivo">Parainfluenza +</SelectItem>
+            <SelectItem value="Metapneumovirus positivo">Metapneumovirus +</SelectItem>
+            <SelectItem value="Rinovirus positivo">Rinovirus +</SelectItem>
+            <SelectItem value="SARS-CoV-2 positivo">SARS-CoV-2 (COVID-19) +</SelectItem>
+            <SelectItem value="Neumococo positivo">Neumococo +</SelectItem>
+            <SelectItem value="H. influenzae positivo">H. influenzae +</SelectItem>
+            <SelectItem value="M. pneumoniae positivo">M. pneumoniae +</SelectItem>
+            <SelectItem value="Panel negativo">Panel Negativo</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
+      {/* Alimentación */}
+      <div className="space-y-4 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+        <Label className="text-base font-semibold">Alimentación</Label>
+        <div>
+          <Label htmlFor="dietType">Tipo de Régimen</Label>
+          <Select
+            value={formData.dietType}
+            onValueChange={(value) => setFormData({ ...formData, dietType: value })}
+          >
+            <SelectTrigger id="dietType">
+              <SelectValue placeholder="Seleccionar régimen" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Régimen cero">Régimen cero (NPO)</SelectItem>
+              <SelectItem value="Régimen común">Régimen común</SelectItem>
+              <SelectItem value="Régimen liviano">Régimen liviano</SelectItem>
+              <SelectItem value="Selectividad alimentaria">Selectividad alimentaria</SelectItem>
+              <SelectItem value="Sin gluten">Sin gluten (Celiaquía)</SelectItem>
+              <SelectItem value="Sin lactosa">Sin lactosa</SelectItem>
+              <SelectItem value="Sin APLV">Sin proteínas leche vaca (APLV)</SelectItem>
+              <SelectItem value="Fórmula elemental">Fórmula elemental</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="dietNotes">Notas sobre Alimentación</Label>
+          <Textarea
+            id="dietNotes"
+            value={formData.dietNotes}
+            onChange={(e) => setFormData({ ...formData, dietNotes: e.target.value })}
+            placeholder="Ej: Aceptación 50%, necesita estímulo"
+            rows={2}
+          />
+        </div>
+      </div>
+
+      {/* Sueroterapia EV */}
+      <div className="space-y-4 p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+        <div className="flex items-center justify-between">
+          <Label className="text-base font-semibold">Sueroterapia EV</Label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="ivTherapyActive" className="text-sm">Activa</Label>
+            <Switch
+              id="ivTherapyActive"
+              checked={formData.ivTherapyActive}
+              onCheckedChange={(checked) => setFormData({ ...formData, ivTherapyActive: checked })}
+            />
+          </div>
+        </div>
+        
+        {formData.ivTherapyActive && (
+          <>
+            <div>
+              <Label htmlFor="ivTherapyPercentage">% de Requerimientos</Label>
+              <Input
+                id="ivTherapyPercentage"
+                value={formData.ivTherapyPercentage}
+                onChange={(e) => setFormData({ ...formData, ivTherapyPercentage: e.target.value })}
+                placeholder="Ej: 75% (recibiendo 3/4 de sus necesidades)"
+              />
+            </div>
+            <div>
+              <Label htmlFor="ivTherapyCorrections">Correcciones Electrolíticas</Label>
+              <Textarea
+                id="ivTherapyCorrections"
+                value={formData.ivTherapyCorrections}
+                onChange={(e) => setFormData({ ...formData, ivTherapyCorrections: e.target.value })}
+                placeholder="Ej: KCl 10 mEq/L, NaCl 20 mEq/L"
+                rows={2}
+              />
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Medicamentos y Antibióticos */}
       <div>
         <Label htmlFor="medications">Medicamentos y Antibióticos</Label>
         <Textarea
@@ -222,6 +355,7 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
         </p>
       </div>
 
+      {/* Tareas Pendientes */}
       <div>
         <Label htmlFor="pendingTasks">Tareas Pendientes</Label>
         <Textarea

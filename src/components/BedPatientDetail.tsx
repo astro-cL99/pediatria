@@ -1,16 +1,19 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { differenceInDays, differenceInYears, differenceInMonths } from "date-fns";
-import { Wind, Pill, Activity, AlertCircle, FileText, Pencil } from "lucide-react";
+import { Wind, Pill, Activity, AlertCircle, FileText, Pencil, UserCircle, LogOut } from "lucide-react";
 import { EditAdmissionForm } from "./EditAdmissionForm";
+import { toast } from "sonner";
 
 interface BedPatientDetailProps {
   bed: {
@@ -42,7 +45,9 @@ interface BedPatientDetailProps {
 }
 
 export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatientDetailProps) {
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [isDischarging, setIsDischarging] = useState(false);
 
   const calculateAge = () => {
     const birth = new Date(bed.patient.date_of_birth);
@@ -64,20 +69,86 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
     onUpdate();
   };
 
+  const handleDischarge = async () => {
+    if (!confirm("¿Está seguro de dar de alta a este paciente?")) {
+      return;
+    }
+
+    setIsDischarging(true);
+    try {
+      // Desactivar la asignación de cama
+      const { error: bedError } = await supabase
+        .from("bed_assignments")
+        .update({ is_active: false, discharged_at: new Date().toISOString() })
+        .eq("id", bed.id);
+
+      if (bedError) throw bedError;
+
+      // Actualizar estado de admisión
+      const { error: admissionError } = await supabase
+        .from("admissions")
+        .update({ status: "discharged", discharge_date: new Date().toISOString() })
+        .eq("id", bed.admission.id);
+
+      if (admissionError) throw admissionError;
+
+      // Actualizar estado del paciente
+      const { error: patientError } = await supabase
+        .from("patients")
+        .update({ status: "discharged", discharge_date: new Date().toISOString() })
+        .eq("id", bed.patient.id);
+
+      if (patientError) throw patientError;
+
+      toast.success("Paciente dado de alta exitosamente");
+      onOpenChange(false);
+      onUpdate();
+    } catch (error: any) {
+      console.error("Error al dar de alta:", error);
+      toast.error("Error al dar de alta: " + error.message);
+    } finally {
+      setIsDischarging(false);
+    }
+  };
+
+  const handleGoToPatient = () => {
+    navigate(`/patients/${bed.patient.id}`);
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Cama {bed.room_number} - Subcama {bed.bed_number}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditing(!isEditing)}
-            >
-              <Pencil className="h-4 w-4 mr-2" />
-              {isEditing ? "Ver Detalles" : "Editar"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGoToPatient}
+              >
+                <UserCircle className="h-4 w-4 mr-2" />
+                Ver Perfil Completo
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(!isEditing)}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                {isEditing ? "Ver Detalles" : "Editar"}
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDischarge}
+                disabled={isDischarging}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                {isDischarging ? "Procesando..." : "Dar de Alta"}
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
 

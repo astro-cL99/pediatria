@@ -32,6 +32,8 @@ interface BedData {
     antibiotics: any;
     antibiotics_tracking?: any[];
     medications: any;
+    diet?: any;
+    iv_therapy?: any;
   };
 }
 
@@ -196,6 +198,18 @@ export function BedCard({ roomNumber, beds, onUpdate }: BedCardProps) {
                     <Badge variant={getViralPanelVariant(bed.admission.viral_panel)} className="text-[10px] px-1 py-0">
                       <TestTube className="h-2 w-2 mr-0.5" />
                       {bed.admission.viral_panel.substring(0, 10)}
+                    </Badge>
+                  )}
+                  
+                  {bed.admission.diet && bed.admission.diet.type && (
+                    <Badge variant="secondary" className="text-[10px] px-1 py-0 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      🍽️ {bed.admission.diet.type.substring(0, 8)}
+                    </Badge>
+                  )}
+                  
+                  {bed.admission.iv_therapy && bed.admission.iv_therapy.active && (
+                    <Badge variant="secondary" className="text-[10px] px-1 py-0 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                      💉 EV {bed.admission.iv_therapy.percentage}
                     </Badge>
                   )}
                 </div>

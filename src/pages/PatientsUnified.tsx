@@ -383,17 +383,32 @@ export default function PatientsUnified() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-3">
               {rooms.map((roomNumber) => {
-                const beds = searchTerm 
+                const bedsInRoom = searchTerm 
                   ? filteredBeds.filter(b => b.room_number === roomNumber)
                   : getBedsForRoom(roomNumber);
                 
+                // Buscar el total de camas para esta habitación
+                const roomConfig = ALL_PEDIATRIA_ROOMS.find(r => r.number === roomNumber);
+                const totalBedsInRoom = roomConfig ? roomConfig.beds : 3;
+                
                 return (
-                  <BedCard
-                    key={roomNumber}
-                    roomNumber={roomNumber}
-                    beds={beds}
-                    onUpdate={fetchBedAssignments}
-                  />
+                  <div key={roomNumber} className="relative">
+                    <BedCard
+                      roomNumber={roomNumber}
+                      beds={bedsInRoom}
+                      onUpdate={fetchBedAssignments}
+                    />
+                    {bedsInRoom.length < totalBedsInRoom && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute bottom-2 right-2 h-7 z-10"
+                        onClick={() => handleAssignBed(roomNumber, (bedsInRoom.length + 1).toString())}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -403,8 +418,8 @@ export default function PatientsUnified() {
 
       {/* Legend */}
       <Card className="p-4">
-        <h3 className="font-semibold mb-3">Leyenda de Colores</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <h3 className="font-semibold mb-3">Leyenda de Colores y Estados</h3>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-red-500" />
             <span>Requiere O₂ / CPAP</span>
@@ -418,9 +433,21 @@ export default function PatientsUnified() {
             <span>Panel viral positivo</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-green-500" />
-            <span>Estable / Sin complicaciones</span>
+            <div className="w-4 h-4 rounded bg-purple-500" />
+            <span>Sueroterapia EV</span>
           </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-green-500" />
+            <span>Alimentación oral</span>
+          </div>
+        </div>
+        
+        <h3 className="font-semibold mt-4 mb-3">Tipos de Alimentación</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div><strong>NPO:</strong> Régimen cero</div>
+          <div><strong>Común:</strong> Régimen común</div>
+          <div><strong>Liviano:</strong> Régimen liviano</div>
+          <div><strong>APLV:</strong> Sin proteínas leche vaca</div>
         </div>
       </Card>
 

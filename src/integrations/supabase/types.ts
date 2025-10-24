@@ -28,10 +28,12 @@ export type Database = {
           current_diagnoses: string[] | null
           current_medications: string | null
           dau_file_path: string | null
+          diet: Json | null
           discharge_date: string | null
           family_history: string | null
           id: string
           imaging_results: string | null
+          iv_therapy: Json | null
           lab_results: Json | null
           medications: Json | null
           nursing_orders: string | null
@@ -60,10 +62,12 @@ export type Database = {
           current_diagnoses?: string[] | null
           current_medications?: string | null
           dau_file_path?: string | null
+          diet?: Json | null
           discharge_date?: string | null
           family_history?: string | null
           id?: string
           imaging_results?: string | null
+          iv_therapy?: Json | null
           lab_results?: Json | null
           medications?: Json | null
           nursing_orders?: string | null
@@ -92,10 +96,12 @@ export type Database = {
           current_diagnoses?: string[] | null
           current_medications?: string | null
           dau_file_path?: string | null
+          diet?: Json | null
           discharge_date?: string | null
           family_history?: string | null
           id?: string
           imaging_results?: string | null
+          iv_therapy?: Json | null
           lab_results?: Json | null
           medications?: Json | null
           nursing_orders?: string | null
@@ -893,26 +899,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      binary_quantize: {
-        Args: { "": string } | { "": unknown }
-        Returns: unknown
-      }
-      halfvec_avg: {
-        Args: { "": number[] }
-        Returns: unknown
-      }
-      halfvec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      halfvec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      halfvec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -920,46 +906,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      hnsw_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_sparsevec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnswhandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      is_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
-      ivfflat_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflat_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflathandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      l2_norm: {
-        Args: { "": unknown } | { "": unknown }
-        Returns: number
-      }
-      l2_normalize: {
-        Args: { "": string } | { "": unknown } | { "": unknown }
-        Returns: unknown
-      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       search_clinical_documents: {
         Args: {
           filter_patient_id?: string
@@ -985,42 +932,6 @@ export type Database = {
           uploaded_at: string
           uploaded_by: string
         }[]
-      }
-      sparsevec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      sparsevec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      sparsevec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
-      vector_avg: {
-        Args: { "": number[] }
-        Returns: string
-      }
-      vector_dims: {
-        Args: { "": string } | { "": unknown }
-        Returns: number
-      }
-      vector_norm: {
-        Args: { "": string }
-        Returns: number
-      }
-      vector_out: {
-        Args: { "": string }
-        Returns: unknown
-      }
-      vector_send: {
-        Args: { "": string }
-        Returns: string
-      }
-      vector_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
       }
     }
     Enums: {
