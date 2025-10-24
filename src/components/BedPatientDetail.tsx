@@ -11,9 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { differenceInDays, differenceInYears, differenceInMonths } from "date-fns";
-import { Wind, Pill, Activity, AlertCircle, FileText, Pencil, UserCircle, LogOut } from "lucide-react";
+import { Wind, Pill, Activity, AlertCircle, FileText, Pencil, UserCircle, LogOut, ArrowRightLeft } from "lucide-react";
 import { EditAdmissionForm } from "./EditAdmissionForm";
 import { ExternalLinksPanel } from "./ExternalLinksPanel";
+import { ChangeBedDialog } from "./ChangeBedDialog";
 import { toast } from "sonner";
 
 interface BedPatientDetailProps {
@@ -49,6 +50,7 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [isDischarging, setIsDischarging] = useState(false);
+  const [showChangeBed, setShowChangeBed] = useState(false);
 
   const calculateAge = () => {
     const birth = new Date(bed.patient.date_of_birth);
@@ -118,40 +120,49 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>Cama {bed.room_number} - Subcama {bed.bed_number}</span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGoToPatient}
-              >
-                <UserCircle className="h-4 w-4 mr-2" />
-                Ver Perfil Completo
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(!isEditing)}
-              >
-                <Pencil className="h-4 w-4 mr-2" />
-                {isEditing ? "Ver Detalles" : "Editar"}
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDischarge}
-                disabled={isDischarging}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                {isDischarging ? "Procesando..." : "Dar de Alta"}
-              </Button>
-            </div>
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Cama {bed.room_number} - Subcama {bed.bed_number}</span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGoToPatient}
+                >
+                  <UserCircle className="h-4 w-4 mr-2" />
+                  Ver Perfil Completo
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowChangeBed(true)}
+                >
+                  <ArrowRightLeft className="h-4 w-4 mr-2" />
+                  Cambiar Cama
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(!isEditing)}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  {isEditing ? "Ver Detalles" : "Editar"}
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDischarge}
+                  disabled={isDischarging}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  {isDischarging ? "Procesando..." : "Dar de Alta"}
+                </Button>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
 
         {isEditing ? (
           <EditAdmissionForm
@@ -351,5 +362,20 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
         )}
       </DialogContent>
     </Dialog>
+
+    <ChangeBedDialog
+      open={showChangeBed}
+      onOpenChange={setShowChangeBed}
+      currentBedId={bed.id}
+      currentRoom={bed.room_number}
+      currentBed={bed.bed_number}
+      patientId={bed.patient.id}
+      admissionId={bed.admission.id}
+      onSuccess={() => {
+        setShowChangeBed(false);
+        onUpdate();
+      }}
+    />
+    </>
   );
 }
