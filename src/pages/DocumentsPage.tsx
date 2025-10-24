@@ -5,7 +5,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, FileText } from 'lucide-react';
 import DocumentUploader from '@/components/documents/DocumentUploader';
 import DocumentList from '@/components/documents/DocumentList';
 import { useQueryClient } from '@tanstack/react-query';

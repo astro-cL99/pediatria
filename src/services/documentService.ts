@@ -1,7 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
-import { processDocument } from './documentProcessingService';
-export type { 
+import type { 
   DocumentMetadata, 
   DocumentInsert, 
   DocumentResponse, 
@@ -9,19 +8,13 @@ export type {
   DocumentDeleteResponse
 } from '@/types/documents';
 
-declare module '@supabase/supabase-js' {
-  interface Database {
-    public: {
-      Tables: {
-        clinical_documents: {
-          Row: DocumentMetadata;
-          Insert: DocumentInsert;
-          Update: Partial<DocumentInsert>;
-        };
-      };
-    };
-  }
-}
+export type { 
+  DocumentMetadata, 
+  DocumentInsert, 
+  DocumentResponse, 
+  DocumentListResponse,
+  DocumentDeleteResponse
+};
 
 /**
  * Sube un documento al almacenamiento y guarda sus metadatos en la base de datos
@@ -29,10 +22,9 @@ declare module '@supabase/supabase-js' {
 export const uploadDocument = async (
   file: File,
   patientId: string,
-  metadata: Omit<DocumentInsert, 'file_name' | 'file_type' | 'file_size' | 'file_path' | 'patient_id' | 'uploaded_by'>
+  metadata: Partial<DocumentInsert>
 ): Promise<DocumentResponse> => {
   try {
-    // Validar el tipo de archivo
     const allowedTypes = [
       'application/pdf',
       'application/msword',
@@ -46,12 +38,10 @@ export const uploadDocument = async (
       throw new Error('Tipo de archivo no permitido');
     }
 
-    // Generar un nombre de archivo único
     const fileExt = file.name.split('.').pop();
     const fileName = `${uuidv4()}.${fileExt}`;
     const filePath = `patient-${patientId}/${fileName}`;
 
-    // Subir el archivo a Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('patient-documents')
       .upload(filePath, file, {
@@ -59,15 +49,11 @@ export const uploadDocument = async (
         upsert: false
       });
 
-    if (uploadError) {
-      throw uploadError;
-    }
+    if (uploadError) throw uploadError;
 
-    // Obtener el usuario actual
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Preparar los datos del documento
-    const documentData: DocumentInsert = {
+    const documentData: any = {
       patient_id: patientId,
       title: metadata.title || file.name,
       description: metadata.description || null,
@@ -83,7 +69,6 @@ export const uploadDocument = async (
       status: 'pending'
     };
 
-    // Guardar los metadatos en la base de datos
     const { data: document, error: dbError } = await supabase
       .from('clinical_documents')
       .insert(documentData)
@@ -91,33 +76,14 @@ export const uploadDocument = async (
       .single();
 
     if (dbError) {
-      // Si hay un error, eliminar el archivo subido
       await supabase.storage
         .from('patient-documents')
         .remove([filePath]);
-      
       throw dbError;
     }
 
-    // Iniciar el procesamiento del documento en segundo plano
-    if (document) {
-      try {
-        await processDocument({
-          documentId: document.id,
-          fileInfo: {
-            name: file.name,
-            type: file.type,
-            size: file.size
-          }
-        });
-      } catch (processError) {
-        console.error('Error en el procesamiento en segundo plano:', processError);
-        // No fallar la carga si el procesamiento falla
-      }
-    }
-
     return { 
-      data: document as DocumentMetadata, 
+      data: document as any, 
       error: null 
     };
   } catch (error) {
@@ -143,7 +109,7 @@ export const getPatientDocuments = async (patientId: string): Promise<DocumentLi
     if (error) throw error;
     
     return { 
-      data: data as unknown as DocumentMetadata[], 
+      data: data as any, 
       error: null 
     };
   } catch (error) {
@@ -173,7 +139,7 @@ export const getDocumentById = async (documentId: string): Promise<DocumentRespo
     }
     
     return { 
-      data: data as unknown as DocumentMetadata, 
+      data: data as any, 
       error: null 
     };
   } catch (error) {
@@ -203,7 +169,6 @@ export const getDocumentUrl = (storagePath: string): string => {
  */
 export const deleteDocument = async (documentId: string, storagePath: string): Promise<DocumentDeleteResponse> => {
   try {
-    // Eliminar el archivo del almacenamiento
     const { error: storageError } = await supabase.storage
       .from('patient-documents')
       .remove([storagePath]);
@@ -213,7 +178,6 @@ export const deleteDocument = async (documentId: string, storagePath: string): P
       throw storageError;
     }
 
-    // Eliminar el registro de la base de datos
     const { error: dbError } = await supabase
       .from('clinical_documents')
       .delete()
@@ -258,7 +222,7 @@ export const updateDocument = async (
     if (error) throw error;
     
     return { 
-      data: data as unknown as DocumentMetadata, 
+      data: data as any, 
       error: null 
     };
   } catch (error) {
@@ -266,99 +230,6 @@ export const updateDocument = async (
     return { 
       data: null, 
       error: error instanceof Error ? error.message : 'Error al actualizar el documento' 
-    };
-  }
-};
-
-/**
- * Actualiza la firma de un documento
- */
-export const updateDocumentSignature = async (
-  documentId: string, 
-  signatureData: string,
-  signedBy: string
-): Promise<DocumentResponse> => {
-  try {
-    const { data, error } = await supabase
-      .from('clinical_documents')
-      .update({
-        signature_data: signatureData,
-        signed_by: signedBy,
-        signed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', documentId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    
-    if (!data) {
-      throw new Error('No se pudo actualizar la firma del documento');
-    }
-    
-    return { 
-      data: data as unknown as DocumentMetadata, 
-      error: null 
-    };
-  } catch (error) {
-    console.error('Error al actualizar la firma del documento:', error);
-    return { 
-      data: null, 
-      error: error instanceof Error ? error.message : 'Error al actualizar la firma del documento' 
-    };
-  }
-};
-
-/**
- * Obtiene los documentos firmados por un usuario
- */
-export const getSignedDocumentsByUser = async (userId: string): Promise<DocumentListResponse> => {
-  try {
-    const { data, error } = await supabase
-      .from('clinical_documents')
-      .select('*')
-      .eq('signed_by', userId)
-      .order('signed_at', { ascending: false });
-
-    if (error) throw error;
-    
-    return { 
-      data: data as unknown as DocumentMetadata[], 
-      error: null 
-    };
-  } catch (error) {
-    console.error('Error al obtener los documentos firmados:', error);
-    return { 
-      data: null, 
-      error: error instanceof Error ? error.message : 'Error al obtener los documentos firmados' 
-    };
-  }
-};
-
-/**
- * Obtiene los documentos pendientes de firma para un paciente
- */
-export const getPendingSignatureDocuments = async (patientId: string): Promise<DocumentListResponse> => {
-  try {
-    const { data, error } = await supabase
-      .from('clinical_documents')
-      .select('*')
-      .eq('patient_id', patientId)
-      .is('signed_at', null)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    
-    return { 
-      data: data as unknown as DocumentMetadata[], 
-      error: null 
-    };
-  } catch (error) {
-    console.error('Error al obtener los documentos pendientes de firma:', error);
-    return { 
-      data: null, 
-      error: error instanceof Error ? error.message : 'Error al obtener los documentos pendientes de firma' 
     };
   }
 };

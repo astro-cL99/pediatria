@@ -16,7 +16,6 @@ import AdmissionPrint from "./pages/AdmissionPrint";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import DocumentsPage from "./pages/DocumentsPage";
-import TasksPage from "./pages/TasksPage";
 
 // Lazy load heavy components
 const ClinicalProtocols = lazy(() => import("./pages/ClinicalProtocols"));
@@ -29,7 +28,7 @@ const NewEpicrisis = lazy(() => import("./pages/NewEpicrisis"));
 const EpicrisisView = lazy(() => import("./pages/EpicrisisView"));
 const HandoverDashboard = lazy(() => import("./pages/HandoverDashboard"));
 const BedManagement = lazy(() => import("./pages/BedManagement"));
-const Patients = lazy(() => import("./pages/Patients"));
+const PatientsUnified = lazy(() => import("./pages/PatientsUnified"));
 const AddAnthropometry = lazy(() => import("./pages/AddAnthropometry"));
 
 const queryClient = new QueryClient({
@@ -61,7 +60,7 @@ const App = () => (
             element={
               <AppLayout>
                 <Suspense fallback={<LoadingFallback />}>
-                  <Patients />
+                  <PatientsUnified />
                 </Suspense>
               </AppLayout>
             } 

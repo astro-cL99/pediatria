@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Icons } from '@/components/ui/icons';
+import { Activity } from 'lucide-react';
 
 // Esquema de validación con Zod
 const loginSchema = z.object({
@@ -67,7 +68,7 @@ export function LoginPage() {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <Icons.logo className="h-16 w-auto text-primary-600" />
+          <Icons.activity className="h-16 w-auto text-primary-600" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Iniciar sesión en PediFlow
@@ -183,7 +184,7 @@ export function LoginPage() {
                 disabled={isLoading}
                 className="inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
-                <Icons.google className="h-5 w-5" />
+                <Icons.mail className="h-5 w-5" />
                 <span className="ml-2">Google</span>
               </Button>
 
@@ -193,7 +194,7 @@ export function LoginPage() {
                 disabled={isLoading}
                 className="inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
-                <Icons.microsoft className="h-5 w-5" />
+                <Icons.shield className="h-5 w-5" />
                 <span className="ml-2">Microsoft</span>
               </Button>
             </div>

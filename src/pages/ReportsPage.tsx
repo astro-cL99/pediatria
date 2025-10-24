@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export function ReportsPage() {
   // Datos de ejemplo para gráficos

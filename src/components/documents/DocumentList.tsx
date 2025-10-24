@@ -19,9 +19,7 @@ import {
   FileIcon,
   FileImage,
   FileArchive,
-  FileText as FileTextIcon,
   FileType2,
-  FileText as FilePdfIcon  // Using FileText as a fallback for PDF files
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -29,7 +27,6 @@ import { getPatientDocuments, deleteDocument, getDocumentUrl } from '@/services/
 import { DocumentMetadata } from '@/services/documentService';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import SignaturePreview from './SignaturePreview';
 
 interface DocumentListProps {
   patientId: string;
@@ -155,11 +152,11 @@ const DocumentList: React.FC<DocumentListProps> = ({
 
   const getFileIcon = (fileType: string) => {
     if (fileType.includes('pdf')) {
-      return <FilePdfIcon className="h-5 w-5 text-red-500" />;
+      return <FileText className="h-5 w-5 text-red-500" />;
     } else if (fileType.includes('image')) {
       return <FileImage className="h-5 w-5 text-blue-500" />;
     } else if (fileType.includes('word') || fileType.includes('document')) {
-      return <FileTextIcon className="h-5 w-5 text-blue-600" />;
+      return <FileText className="h-5 w-5 text-blue-600" />;
     } else if (fileType.includes('zip') || fileType.includes('compressed')) {
       return <FileArchive className="h-5 w-5 text-amber-500" />;
     } else if (fileType.includes('text')) {
