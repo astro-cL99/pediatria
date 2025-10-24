@@ -3,17 +3,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { calculateTAL, calculateWoodDownes, type ScoreResult } from "@/utils/clinicalScoresSOCHIPE";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ScoreSelectorProps {
   scoreType: "TAL" | "Pulmonary";
   onScoreCalculated?: (result: ScoreResult) => void;
+  patientAge?: number; // edad en meses
+  hasSupplementalOxygen?: boolean;
 }
 
-export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorProps) {
+export function ScoreSelector({ 
+  scoreType, 
+  onScoreCalculated,
+  patientAge = 24,
+  hasSupplementalOxygen = false 
+}: ScoreSelectorProps) {
   const [talParams, setTalParams] = useState({
-    age: 24, // default 2 años
+    age: patientAge,
     frecuenciaRespiratoria: 0,
     sibilancias: '' as any,
     usoMuscAccesorios: '' as any,
@@ -22,7 +31,7 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
   });
 
   const [woodParams, setWoodParams] = useState({
-    age: 6, // default 6 meses
+    age: patientAge,
     cianosis: '' as any,
     tiraje: '' as any,
     sibilancias: '' as any,
@@ -32,6 +41,13 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
 
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Auto-ajuste de cianosis para TAL si hay O2 suplementario
+  useEffect(() => {
+    if (scoreType === "TAL" && hasSupplementalOxygen) {
+      setTalParams(prev => ({ ...prev, cianosis: 'generalizada' }));
+    }
+  }, [hasSupplementalOxygen, scoreType]);
 
   useEffect(() => {
     calculateScore();
@@ -87,47 +103,164 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
   };
 
   if (scoreType === "TAL") {
+    const isUnder6Months = talParams.age < 6;
+    
     return (
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle className="text-lg">Score TAL (Test de Asma Leve)</CardTitle>
-          <p className="text-sm text-muted-foreground">Para menores de 3 años con crisis de asma/broncoobstrucción</p>
+      <Card className="mt-4 border-2">
+        <CardHeader className="bg-muted/50">
+          <CardTitle className="text-lg">Score TAL Modificado (menores de 3 años)</CardTitle>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Info className="h-4 w-4" />
+            <span>Edad del paciente: {talParams.age} meses</span>
+            {hasSupplementalOxygen && (
+              <Badge variant="destructive" className="ml-2">
+                ⚠️ Cianosis ajustada por O₂ suplementario
+              </Badge>
+            )}
+          </div>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Frecuencia Respiratoria */}
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Frecuencia Respiratoria</Label>
-            <RadioGroup
-              value={talParams.frecuenciaRespiratoria.toString()}
-              onValueChange={(val) => setTalParams({ ...talParams, frecuenciaRespiratoria: parseInt(val) })}
-            >
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="25" id="fr-0" />
-                  <Label htmlFor="fr-0" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">0:</span> {"<30"}
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="38" id="fr-1" />
-                  <Label htmlFor="fr-1" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">1:</span> 31-45
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="53" id="fr-2" />
-                  <Label htmlFor="fr-2" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">2:</span> 46-60
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="65" id="fr-3" />
-                  <Label htmlFor="fr-3" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">3:</span> {">70"}
-                  </Label>
-                </div>
-              </div>
-            </RadioGroup>
+        <CardContent className="pt-6 space-y-1">
+          {/* Tabla Score TAL */}
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse border border-border">
+              <thead>
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-sm font-semibold">Puntaje</th>
+                  <th className="border border-border p-2 text-sm font-semibold">
+                    <div>Frecuencia Respiratoria</div>
+                    <div className="text-xs font-normal mt-1">
+                      <span className="font-medium">&lt;6 meses</span> | <span className="font-medium">≥6 meses</span>
+                    </div>
+                  </th>
+                  <th className="border border-border p-2 text-sm font-semibold">Sibilancias</th>
+                  <th className="border border-border p-2 text-sm font-semibold">Cianosis</th>
+                  <th className="border border-border p-2 text-sm font-semibold">Retracción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Score 0 */}
+                <tr 
+                  className={cn(
+                    "cursor-pointer hover:bg-accent transition-colors",
+                    talParams.frecuenciaRespiratoria > 0 && talParams.frecuenciaRespiratoria <= (isUnder6Months ? 40 : 30) &&
+                    talParams.sibilancias === 'ausentes' &&
+                    talParams.cianosis === 'ausente' &&
+                    talParams.usoMuscAccesorios === 'ausente' &&
+                    "bg-green-100 dark:bg-green-900/20"
+                  )}
+                  onClick={() => {
+                    setTalParams({
+                      ...talParams,
+                      frecuenciaRespiratoria: isUnder6Months ? 35 : 25,
+                      sibilancias: 'ausentes',
+                      cianosis: hasSupplementalOxygen ? 'generalizada' : 'ausente',
+                      usoMuscAccesorios: 'ausente',
+                    });
+                  }}
+                >
+                  <td className="border border-border p-2 text-center font-bold">0</td>
+                  <td className="border border-border p-2 text-center text-sm">
+                    {isUnder6Months ? '≤40' : '≤30'}
+                  </td>
+                  <td className="border border-border p-2 text-xs">NO</td>
+                  <td className="border border-border p-2 text-xs">NO</td>
+                  <td className="border border-border p-2 text-xs">NO</td>
+                </tr>
+                
+                {/* Score 1 */}
+                <tr 
+                  className={cn(
+                    "cursor-pointer hover:bg-accent transition-colors",
+                    ((isUnder6Months && talParams.frecuenciaRespiratoria >= 41 && talParams.frecuenciaRespiratoria <= 55) ||
+                    (!isUnder6Months && talParams.frecuenciaRespiratoria >= 31 && talParams.frecuenciaRespiratoria <= 45)) &&
+                    talParams.sibilancias === 'fin_espiracion' &&
+                    talParams.cianosis === 'perioral_llanto' &&
+                    talParams.usoMuscAccesorios === 'leve' &&
+                    "bg-yellow-100 dark:bg-yellow-900/20"
+                  )}
+                  onClick={() => {
+                    setTalParams({
+                      ...talParams,
+                      frecuenciaRespiratoria: isUnder6Months ? 48 : 38,
+                      sibilancias: 'fin_espiracion',
+                      cianosis: hasSupplementalOxygen ? 'generalizada' : 'perioral_llanto',
+                      usoMuscAccesorios: 'leve',
+                    });
+                  }}
+                >
+                  <td className="border border-border p-2 text-center font-bold">1</td>
+                  <td className="border border-border p-2 text-center text-sm">
+                    {isUnder6Months ? '41-55' : '31-45'}
+                  </td>
+                  <td className="border border-border p-2 text-xs">Fin de espir. c/fonendoscopio</td>
+                  <td className="border border-border p-2 text-xs">Peri-oral al llorar</td>
+                  <td className="border border-border p-2 text-xs">Subcostal (+)</td>
+                </tr>
+                
+                {/* Score 2 */}
+                <tr 
+                  className={cn(
+                    "cursor-pointer hover:bg-accent transition-colors",
+                    ((isUnder6Months && talParams.frecuenciaRespiratoria >= 56 && talParams.frecuenciaRespiratoria <= 70) ||
+                    (!isUnder6Months && talParams.frecuenciaRespiratoria >= 46 && talParams.frecuenciaRespiratoria <= 60)) &&
+                    talParams.sibilancias === 'toda_espiracion' &&
+                    talParams.cianosis === 'perioral_reposo' &&
+                    talParams.usoMuscAccesorios === 'moderado' &&
+                    "bg-orange-100 dark:bg-orange-900/20"
+                  )}
+                  onClick={() => {
+                    setTalParams({
+                      ...talParams,
+                      frecuenciaRespiratoria: isUnder6Months ? 63 : 53,
+                      sibilancias: 'toda_espiracion',
+                      cianosis: hasSupplementalOxygen ? 'generalizada' : 'perioral_reposo',
+                      usoMuscAccesorios: 'moderado',
+                    });
+                  }}
+                >
+                  <td className="border border-border p-2 text-center font-bold">2</td>
+                  <td className="border border-border p-2 text-center text-sm">
+                    {isUnder6Months ? '56-70' : '46-60'}
+                  </td>
+                  <td className="border border-border p-2 text-xs">Insp. y espir. c/fonendoscopio</td>
+                  <td className="border border-border p-2 text-xs">Peri-oral en reposo</td>
+                  <td className="border border-border p-2 text-xs">Intercostal (++)</td>
+                </tr>
+                
+                {/* Score 3 */}
+                <tr 
+                  className={cn(
+                    "cursor-pointer hover:bg-accent transition-colors",
+                    talParams.frecuenciaRespiratoria > (isUnder6Months ? 70 : 60) &&
+                    talParams.sibilancias === 'audibles' &&
+                    (talParams.cianosis === 'generalizada' || hasSupplementalOxygen) &&
+                    talParams.usoMuscAccesorios === 'grave' &&
+                    "bg-red-100 dark:bg-red-900/20"
+                  )}
+                  onClick={() => {
+                    setTalParams({
+                      ...talParams,
+                      frecuenciaRespiratoria: isUnder6Months ? 75 : 65,
+                      sibilancias: 'audibles',
+                      cianosis: 'generalizada',
+                      usoMuscAccesorios: 'grave',
+                    });
+                  }}
+                >
+                  <td className="border border-border p-2 text-center font-bold">3</td>
+                  <td className="border border-border p-2 text-center text-sm">
+                    {isUnder6Months ? '>70' : '>60'}
+                  </td>
+                  <td className="border border-border p-2 text-xs">Audibles a distancia</td>
+                  <td className="border border-border p-2 text-xs">Generalizada en reposo</td>
+                  <td className="border border-border p-2 text-xs">Supraclavicular (+++)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="mt-4 text-xs text-muted-foreground italic p-3 bg-muted/30 rounded">
+            💡 Click en cada fila para seleccionar todos los parámetros correspondientes a ese puntaje
           </div>
 
           {/* Sibilancias */}
@@ -318,13 +451,168 @@ export function ScoreSelector({ scoreType, onScoreCalculated }: ScoreSelectorPro
   }
 
   if (scoreType === "Pulmonary") {
+    const isUnder6Years = (woodParams.age / 12) < 6;
+    
     return (
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle className="text-lg">Score Pulmonary (Wood-Downes modificado)</CardTitle>
-          <p className="text-sm text-muted-foreground">Para evaluar severidad de bronquiolitis</p>
+      <Card className="mt-4 border-2">
+        <CardHeader className="bg-muted/50">
+          <CardTitle className="text-lg">Pulmonary Score (evaluación clínica de crisis de asma)</CardTitle>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Info className="h-4 w-4" />
+            <span>Edad del paciente: {(woodParams.age / 12).toFixed(1)} años</span>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="pt-6 space-y-1">
+          {/* Tabla Score Pulmonary */}
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse border border-border">
+              <thead>
+                <tr className="bg-muted">
+                  <th className="border border-border p-2 text-sm font-semibold">Puntaje</th>
+                  <th className="border border-border p-2 text-sm font-semibold">
+                    <div>Frecuencia Respiratoria</div>
+                    <div className="text-xs font-normal mt-1">
+                      <span className="font-medium">&lt;6 años</span> | <span className="font-medium">≥6 años</span>
+                    </div>
+                  </th>
+                  <th className="border border-border p-2 text-sm font-semibold">Frecuencia Cardíaca</th>
+                  <th className="border border-border p-2 text-sm font-semibold">Uso músculos accesorios/estertores/sibilancias</th>
+                  <th className="border border-border p-2 text-sm font-semibold">Cianosis</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Score 0 */}
+                <tr 
+                  className={cn(
+                    "cursor-pointer hover:bg-accent transition-colors",
+                    woodParams.frecuenciaRespiratoria > 0 && woodParams.frecuenciaRespiratoria <= (isUnder6Years ? 30 : 20) &&
+                    woodParams.frecuenciaCardiaca > 0 && woodParams.frecuenciaCardiaca <= 80 &&
+                    woodParams.tiraje === 'ausente' &&
+                    woodParams.sibilancias === 'ausentes' &&
+                    woodParams.cianosis === 'ausente' &&
+                    "bg-green-100 dark:bg-green-900/20"
+                  )}
+                  onClick={() => {
+                    setWoodParams({
+                      ...woodParams,
+                      frecuenciaRespiratoria: isUnder6Years ? 25 : 18,
+                      frecuenciaCardiaca: 75,
+                      tiraje: 'ausente',
+                      sibilancias: 'ausentes',
+                      cianosis: 'ausente',
+                    });
+                  }}
+                >
+                  <td className="border border-border p-2 text-center font-bold">0</td>
+                  <td className="border border-border p-2 text-center text-sm">
+                    {isUnder6Years ? '≤30' : '≤20'}
+                  </td>
+                  <td className="border border-border p-2 text-center text-sm">≤80</td>
+                  <td className="border border-border p-2 text-xs">No</td>
+                  <td className="border border-border p-2 text-xs">No</td>
+                </tr>
+                
+                {/* Score 1 */}
+                <tr 
+                  className={cn(
+                    "cursor-pointer hover:bg-accent transition-colors",
+                    ((isUnder6Years && woodParams.frecuenciaRespiratoria >= 31 && woodParams.frecuenciaRespiratoria <= 45) ||
+                    (!isUnder6Years && woodParams.frecuenciaRespiratoria >= 21 && woodParams.frecuenciaRespiratoria <= 35)) &&
+                    woodParams.frecuenciaCardiaca >= 81 && woodParams.frecuenciaCardiaca <= 100 &&
+                    woodParams.tiraje === 'leve' &&
+                    woodParams.sibilancias === 'fin_espiracion' &&
+                    woodParams.cianosis === 'ausente' &&
+                    "bg-yellow-100 dark:bg-yellow-900/20"
+                  )}
+                  onClick={() => {
+                    setWoodParams({
+                      ...woodParams,
+                      frecuenciaRespiratoria: isUnder6Years ? 38 : 28,
+                      frecuenciaCardiaca: 90,
+                      tiraje: 'leve',
+                      sibilancias: 'fin_espiracion',
+                      cianosis: 'ausente',
+                    });
+                  }}
+                >
+                  <td className="border border-border p-2 text-center font-bold">1</td>
+                  <td className="border border-border p-2 text-center text-sm">
+                    {isUnder6Years ? '31-45' : '21-35'}
+                  </td>
+                  <td className="border border-border p-2 text-center text-sm">81-100</td>
+                  <td className="border border-border p-2 text-xs">Fin espiración (estetoscopio)</td>
+                  <td className="border border-border p-2 text-xs">No</td>
+                </tr>
+                
+                {/* Score 2 */}
+                <tr 
+                  className={cn(
+                    "cursor-pointer hover:bg-accent transition-colors",
+                    ((isUnder6Years && woodParams.frecuenciaRespiratoria >= 46 && woodParams.frecuenciaRespiratoria <= 60) ||
+                    (!isUnder6Years && woodParams.frecuenciaRespiratoria >= 36 && woodParams.frecuenciaRespiratoria <= 50)) &&
+                    woodParams.frecuenciaCardiaca >= 101 && woodParams.frecuenciaCardiaca <= 120 &&
+                    woodParams.tiraje === 'moderado' &&
+                    woodParams.sibilancias === 'toda_espiracion' &&
+                    woodParams.cianosis === 'aire_ambiente' &&
+                    "bg-orange-100 dark:bg-orange-900/20"
+                  )}
+                  onClick={() => {
+                    setWoodParams({
+                      ...woodParams,
+                      frecuenciaRespiratoria: isUnder6Years ? 53 : 43,
+                      frecuenciaCardiaca: 110,
+                      tiraje: 'moderado',
+                      sibilancias: 'toda_espiracion',
+                      cianosis: 'aire_ambiente',
+                    });
+                  }}
+                >
+                  <td className="border border-border p-2 text-center font-bold">2</td>
+                  <td className="border border-border p-2 text-center text-sm">
+                    {isUnder6Years ? '46-60' : '36-50'}
+                  </td>
+                  <td className="border border-border p-2 text-center text-sm">101-120</td>
+                  <td className="border border-border p-2 text-xs">Toda espiración (estetoscopio)</td>
+                  <td className="border border-border p-2 text-xs">Aumentada</td>
+                </tr>
+                
+                {/* Score 3 */}
+                <tr 
+                  className={cn(
+                    "cursor-pointer hover:bg-accent transition-colors",
+                    woodParams.frecuenciaRespiratoria > (isUnder6Years ? 60 : 50) &&
+                    woodParams.frecuenciaCardiaca > 120 &&
+                    woodParams.tiraje === 'grave' &&
+                    woodParams.sibilancias === 'audibles' &&
+                    woodParams.cianosis === 'fio2_40' &&
+                    "bg-red-100 dark:bg-red-900/20"
+                  )}
+                  onClick={() => {
+                    setWoodParams({
+                      ...woodParams,
+                      frecuenciaRespiratoria: isUnder6Years ? 65 : 55,
+                      frecuenciaCardiaca: 130,
+                      tiraje: 'grave',
+                      sibilancias: 'audibles',
+                      cianosis: 'fio2_40',
+                    });
+                  }}
+                >
+                  <td className="border border-border p-2 text-center font-bold">3</td>
+                  <td className="border border-border p-2 text-center text-sm">
+                    {isUnder6Years ? '>60' : '>50'}
+                  </td>
+                  <td className="border border-border p-2 text-center text-sm">&gt;120</td>
+                  <td className="border border-border p-2 text-xs">Insp. y espir. sin estetoscopio</td>
+                  <td className="border border-border p-2 text-xs">Activa</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="mt-4 text-xs text-muted-foreground italic p-3 bg-muted/30 rounded">
+            💡 Click en cada fila para seleccionar todos los parámetros correspondientes a ese puntaje
+          </div>
           {/* Cianosis */}
           <div>
             <Label className="text-base font-semibold mb-3 block">Cianosis</Label>
