@@ -30,7 +30,7 @@ export async function generateEpicrisisPDF(data: EpicrisisData): Promise<Blob> {
 
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
-  const margin = 20;
+  const margin = 15;
   const contentWidth = pageWidth - (margin * 2);
   let yPosition = margin;
 
@@ -65,91 +65,125 @@ export async function generateEpicrisisPDF(data: EpicrisisData): Promise<Blob> {
     yPosition += 5;
   };
 
+  const addHeader = () => {
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('MINISTERIO DE SALUD', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 5;
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('SERVICIO DE SALUD LIBERTADOR GENERAL BERNARDO O\'HIGGINS', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 5;
+    
+    pdf.text('HOSPITAL FRANCO RAVERA ZUNINO', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 8;
+  };
+
   const checkPageBreak = (requiredSpace: number = 20) => {
-    if (yPosition + requiredSpace > pageHeight - margin) {
+    if (yPosition + requiredSpace > pageHeight - margin - 30) {
       pdf.addPage();
       yPosition = margin;
-      
-      addText('MINISTERIO DE SALUD', 12, true, 'center');
-      addText('SERVICIO DE SALUD LIBERTADOR GENERAL BERNARDO O\'HIGGINS', 10, false, 'center');
-      addText('HOSPITAL FRANCO RAVERA ZUNINO', 10, false, 'center');
-      yPosition += 5;
+      addHeader();
       addLine();
     }
   };
 
   // PÁGINA 1 - Header institucional
-  addText('MINISTERIO DE SALUD', 14, true, 'center');
-  addText('SERVICIO DE SALUD LIBERTADOR GENERAL BERNARDO O\'HIGGINS', 11, false, 'center');
-  addText('HOSPITAL FRANCO RAVERA ZUNINO', 11, false, 'center');
-  yPosition += 3;
-  addText('EPICRISIS', 16, true, 'center');
-  yPosition += 5;
+  addHeader();
+  
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('EPICRISIS', pageWidth / 2, yPosition, { align: 'center' });
+  yPosition += 10;
   addLine();
 
-  // Tabla de información del paciente
-  const tableData = [
+  // Tabla de información del paciente - formato institucional
+  const tableY = yPosition;
+  const rowHeight = 10;
+  const col1Width = contentWidth * 0.25;
+  const col2Width = contentWidth * 0.25;
+  const col3Width = contentWidth * 0.25;
+  const col4Width = contentWidth * 0.25;
+  
+  // Definir datos de la tabla
+  const tableRows = [
     ['NOMBRE', data.patient_name || '', 'EDAD', data.age_at_discharge || 'N/A'],
-    ['RUT', data.patient_rut || '', 'FECHA NAC.', formatDate(data.date_of_birth)],
+    ['RUT', data.patient_rut || '', 'FECHA NACIMIENTO', formatDate(data.date_of_birth)],
     ['FECHA INGRESO', formatDate(data.admission_date, "dd/MM/yyyy HH:mm"), 'PESO INGRESO', data.admission_weight ? `${data.admission_weight} kg` : 'N/A'],
     ['FECHA EGRESO', formatDate(data.discharge_date, "dd/MM/yyyy HH:mm"), 'PESO EGRESO', data.discharge_weight ? `${data.discharge_weight} kg` : 'N/A'],
   ];
 
-  tableData.forEach(row => {
-    checkPageBreak(15);
-    pdf.setFillColor(240, 240, 240);
-    pdf.rect(margin, yPosition, contentWidth / 4, 8, 'F');
-    pdf.rect(margin + contentWidth / 2, yPosition, contentWidth / 4, 8, 'F');
+  // Dibujar tabla
+  tableRows.forEach((row, idx) => {
+    const currentY = tableY + (idx * rowHeight);
     
+    // Dibujar celdas con fondo gris para etiquetas
+    pdf.setFillColor(220, 220, 220);
+    pdf.rect(margin, currentY, col1Width, rowHeight, 'FD');
+    pdf.rect(margin + col1Width + col2Width, currentY, col3Width, rowHeight, 'FD');
+    
+    // Dibujar celdas de valores
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(margin + col1Width, currentY, col2Width, rowHeight, 'D');
+    pdf.rect(margin + col1Width + col2Width + col3Width, currentY, col4Width, rowHeight, 'D');
+    
+    // Texto
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(row[0], margin + 2, yPosition + 5);
-    pdf.text(row[2], margin + contentWidth / 2 + 2, yPosition + 5);
+    pdf.text(row[0], margin + 2, currentY + 6.5);
+    pdf.text(row[2], margin + col1Width + col2Width + 2, currentY + 6.5);
     
     pdf.setFont('helvetica', 'normal');
-    pdf.text(row[1], margin + contentWidth / 4 + 2, yPosition + 5);
-    pdf.text(row[3], margin + contentWidth * 3 / 4 + 2, yPosition + 5);
-    
-    pdf.rect(margin, yPosition, contentWidth, 8);
-    yPosition += 8;
+    pdf.text(row[1], margin + col1Width + 2, currentY + 6.5);
+    pdf.text(row[3], margin + col1Width + col2Width + col3Width + 2, currentY + 6.5);
   });
+  
+  yPosition = tableY + (tableRows.length * rowHeight) + 8;
 
-  // DIAGNÓSTICO DE INGRESO
-  checkPageBreak(20);
-  yPosition += 3;
-  pdf.setFillColor(240, 240, 240);
-  pdf.rect(margin, yPosition, contentWidth / 3, 8, 'F');
-  pdf.setFontSize(9);
+  // DIAGNÓSTICO DE INGRESO - formato institucional
+  checkPageBreak(25);
+  pdf.setFontSize(11);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('DIAGNÓSTICO DE INGRESO', margin + 2, yPosition + 5);
+  pdf.text('DIAGNÓSTICO DE INGRESO', margin, yPosition);
+  yPosition += 6;
+  
+  pdf.setDrawColor(0);
+  pdf.setLineWidth(0.3);
+  pdf.rect(margin, yPosition, contentWidth, 15);
+  
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
-  const admDiagLines = pdf.splitTextToSize(data.admission_diagnosis, contentWidth * 2 / 3 - 4);
-  pdf.text(admDiagLines, margin + contentWidth / 3 + 2, yPosition + 5);
-  const admDiagHeight = Math.max(8, admDiagLines.length * 4);
-  pdf.rect(margin, yPosition, contentWidth, admDiagHeight);
-  yPosition += admDiagHeight;
+  const admDiagLines = pdf.splitTextToSize(data.admission_diagnosis, contentWidth - 4);
+  pdf.text(admDiagLines, margin + 2, yPosition + 5);
+  yPosition += 15 + 6;
 
-  // DIAGNÓSTICO DE EGRESO
-  checkPageBreak(20);
-  pdf.setFillColor(240, 240, 240);
-  pdf.rect(margin, yPosition, contentWidth / 3, 8, 'F');
+  // DIAGNÓSTICO DE EGRESO - formato institucional
+  checkPageBreak(25);
+  pdf.setFontSize(11);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('DIAGNÓSTICO DE EGRESO', margin + 2, yPosition + 5);
+  pdf.text('DIAGNÓSTICO DE EGRESO', margin, yPosition);
+  yPosition += 6;
+  
+  pdf.rect(margin, yPosition, contentWidth, 15);
+  
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
-  const disDiagLines = pdf.splitTextToSize(data.discharge_diagnosis, contentWidth * 2 / 3 - 4);
-  pdf.text(disDiagLines, margin + contentWidth / 3 + 2, yPosition + 5);
-  const disDiagHeight = Math.max(8, disDiagLines.length * 4);
-  pdf.rect(margin, yPosition, contentWidth, disDiagHeight);
-  yPosition += disDiagHeight + 5;
+  const disDiagLines = pdf.splitTextToSize(data.discharge_diagnosis, contentWidth - 4);
+  pdf.text(disDiagLines, margin + 2, yPosition + 5);
+  yPosition += 15 + 8;
 
-  // RESUMEN DE INGRESO (nueva sección según PDF institucional)
+  // RESUMEN DE INGRESO - formato institucional
   if (data.resumen_ingreso) {
     checkPageBreak(30);
-    addText('RESUMEN DE INGRESO', 12, true);
-    addLine();
-    const resumenLines = pdf.splitTextToSize(data.resumen_ingreso, contentWidth);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('RESUMEN DE INGRESO', margin, yPosition);
+    yPosition += 7;
+    
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
+    const resumenLines = pdf.splitTextToSize(data.resumen_ingreso, contentWidth);
     resumenLines.forEach((line: string) => {
       checkPageBreak();
       pdf.text(line, margin, yPosition);
@@ -158,80 +192,102 @@ export async function generateEpicrisisPDF(data: EpicrisisData): Promise<Blob> {
     yPosition += 5;
   }
 
-  // EVOLUCIÓN Y TRATAMIENTO
-  checkPageBreak(30);
-  addText('EVOLUCIÓN Y TRATAMIENTO', 12, true);
+  // EVOLUCIÓN Y TRATAMIENTO - Nueva página
+  pdf.addPage();
+  yPosition = margin;
+  addHeader();
   addLine();
-  const evolutionLines = pdf.splitTextToSize(data.evolution_and_treatment, contentWidth);
+  
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('EVOLUCIÓN Y TRATAMIENTO', margin, yPosition);
+  yPosition += 7;
+  
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
+  const evolutionLines = pdf.splitTextToSize(data.evolution_and_treatment, contentWidth);
   evolutionLines.forEach((line: string) => {
     checkPageBreak();
     pdf.text(line, margin, yPosition);
     yPosition += 5;
   });
 
-  // PÁGINA 2 - Exámenes
+  // EXÁMENES - Nueva página
   pdf.addPage();
   yPosition = margin;
-  
-  addText('MINISTERIO DE SALUD', 14, true, 'center');
-  addText('SERVICIO DE SALUD LIBERTADOR GENERAL BERNARDO O\'HIGGINS', 11, false, 'center');
-  addText('HOSPITAL FRANCO RAVERA ZUNINO', 11, false, 'center');
-  yPosition += 5;
+  addHeader();
   addLine();
 
   // EXÁMENES DE LABORATORIO
-  addText('EXÁMENES DE LABORATORIO', 12, true);
-  yPosition += 3;
-  const labLines = pdf.splitTextToSize(data.laboratory_exams || 'No se realizaron exámenes de laboratorio', contentWidth);
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('EXÁMENES DE LABORATORIO', margin, yPosition);
+  yPosition += 7;
+  
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
+  const labLines = pdf.splitTextToSize(data.laboratory_exams || 'No se realizaron exámenes de laboratorio', contentWidth);
   labLines.forEach((line: string) => {
     checkPageBreak();
     pdf.text(line, margin, yPosition);
     yPosition += 5;
   });
-  yPosition += 5;
+  yPosition += 8;
 
   // IMAGENOLOGÍA
   checkPageBreak(30);
-  addText('IMAGENOLOGÍA', 11, true);
-  const imgLines = pdf.splitTextToSize(data.imaging_exams || 'No se realizaron estudios imagenológicos', contentWidth);
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('IMAGENOLOGÍA', margin, yPosition);
+  yPosition += 7;
+  
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
+  const imgLines = pdf.splitTextToSize(data.imaging_exams || 'No se realizaron estudios imagenológicos', contentWidth);
   imgLines.forEach((line: string) => {
     checkPageBreak();
     pdf.text(line, margin, yPosition);
     yPosition += 5;
   });
-  yPosition += 5;
+  yPosition += 8;
 
-  // INDICACIONES
-  checkPageBreak(30);
-  addText('INDICACIONES', 12, true);
-  addLine();
-  const instrLines = pdf.splitTextToSize(data.discharge_instructions, contentWidth);
+  // INDICACIONES - Nueva página si es necesario
+  checkPageBreak(60);
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('INDICACIONES', margin, yPosition);
+  yPosition += 7;
+  
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
+  const instrLines = pdf.splitTextToSize(data.discharge_instructions, contentWidth);
   instrLines.forEach((line: string) => {
-    checkPageBreak();
+    checkPageBreak(30);
     pdf.text(line, margin, yPosition);
     yPosition += 5;
   });
 
-  // MÉDICO Y FIRMA
-  checkPageBreak(40);
-  yPosition = pageHeight - 50;
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text(`MÉDICO: ${data.attending_physician}`, margin, yPosition);
+  // MÉDICO Y FIRMA - formato institucional
+  checkPageBreak(50);
+  yPosition += 10;
   
-  yPosition += 30;
-  pdf.setDrawColor(0);
-  pdf.line(pageWidth - margin - 60, yPosition, pageWidth - margin, yPosition);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('FIRMA', pageWidth - margin - 30, yPosition + 5, { align: 'center' });
+  pdf.text('MÉDICO', margin, yPosition);
+  yPosition += 15;
+  
+  // Línea para firma
+  pdf.setDrawColor(0);
+  pdf.setLineWidth(0.3);
+  pdf.line(margin + 50, yPosition, pageWidth - margin, yPosition);
+  
+  yPosition += 5;
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(data.attending_physician, margin + 50, yPosition);
+  
+  yPosition += 2;
+  pdf.text('FIRMA', pageWidth - margin - 15, yPosition);
 
   return pdf.output('blob');
 }
