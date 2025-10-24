@@ -111,10 +111,14 @@ export function ChangeBedDialog({
       if (createError) throw createError;
 
       toast.success(`Paciente movido a Cama ${selectedRoom} - Subcama ${selectedBed}`);
+      
+      // Esperar un momento para que la base de datos termine de procesar
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       setSelectedRoom("");
       setSelectedBed("");
-      onOpenChange(false);
       onSuccess();
+      onOpenChange(false);
     } catch (error: any) {
       console.error("Error al cambiar de cama:", error);
       toast.error("Error al cambiar de cama: " + error.message);
