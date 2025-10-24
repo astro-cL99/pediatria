@@ -102,6 +102,7 @@ const physicalExamSystems = {
 
 export function PhysicalExamForm({ value, onChange }: PhysicalExamFormProps) {
   const [selectedFindings, setSelectedFindings] = useState<PhysicalExamFindings>({});
+  const [selectValues, setSelectValues] = useState<{ [key: string]: string }>({});
 
   const handleAddFinding = (system: string, finding: string) => {
     const updated = { ...selectedFindings };
@@ -113,6 +114,8 @@ export function PhysicalExamForm({ value, onChange }: PhysicalExamFormProps) {
       setSelectedFindings(updated);
       updateTextValue(updated);
     }
+    // Reset the select value to allow selecting another option
+    setSelectValues(prev => ({ ...prev, [system]: "" }));
   };
 
   const handleRemoveFinding = (system: string, finding: string) => {
@@ -145,7 +148,10 @@ export function PhysicalExamForm({ value, onChange }: PhysicalExamFormProps) {
           {Object.entries(physicalExamSystems).map(([system, options]) => (
             <div key={system} className="space-y-2">
               <Label className="font-semibold">{system}</Label>
-              <Select onValueChange={(value) => handleAddFinding(system, value)}>
+              <Select 
+                value={selectValues[system] || ""} 
+                onValueChange={(value) => handleAddFinding(system, value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar hallazgo..." />
                 </SelectTrigger>
