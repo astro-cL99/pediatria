@@ -203,56 +203,69 @@ export async function parseHandoverExcel(file: File): Promise<ParsedPatient[]> {
           
           if (!row || row.length === 0) continue;
           
-          // Parse bed assignment (format: "501-1", "501" or just "1" for bed number)
-          // First try to get room from camaIdx, if not available, look at first columns
-          let camaStr = row[camaIdx]?.toString().trim() || '';
-          
-          // If camaIdx is empty, check if first column has room number (501, 502, etc.)
-          if (!camaStr && row[0]) {
-            const firstCol = row[0]?.toString().trim() || '';
-            if (firstCol && /^[456]\d{2}$/.test(firstCol)) {
-              camaStr = firstCol;
-            }
-          }
-          
-          if (!camaStr) {
-            console.log(`Row ${i}: Skipping - no bed/room number found`);
-            continue;
-          }
-          
+          // Parse bed assignment
+          // The Excel structure typically has: Column 1 = Room (501,502), Column 2 = Bed (1,2,3)
           let room = '';
           let bed = 1;
           
-          // Check if it's a format like "501-1" or "501"
-          if (camaStr.includes('-')) {
-            const parts = camaStr.split('-');
-            room = parts[0].trim();
-            bed = parseInt(parts[1]) || 1;
-          } else if (/^[456]\d{2}$/.test(camaStr)) {
-            // If it's a 3-digit room number like "501"
-            room = camaStr;
-            // Try to get bed number from adjacent column if available
-            const nextCol = row[camaIdx + 1]?.toString().trim();
-            if (nextCol && /^\d+$/.test(nextCol) && parseInt(nextCol) <= 3) {
-              bed = parseInt(nextCol);
-            }
-          } else if (/^\d+$/.test(camaStr) && parseInt(camaStr) <= 3) {
-            // If it's just a bed number (1, 2, 3), look for room in previous rows
-            bed = parseInt(camaStr);
-            // Look backwards to find the room number
-            for (let j = i - 1; j >= headerRowIndex + 1; j--) {
-              const prevRoomStr = jsonData[j][0]?.toString().trim() || '';
-              if (/^[456]\d{2}$/.test(prevRoomStr)) {
-                room = prevRoomStr;
-                break;
-              }
-            }
-            if (!room) {
-              console.log(`Row ${i}: Skipping - could not determine room for bed ${bed}`);
-              continue;
+          // First, try to find room number in column 1 (index 1)
+          const col1 = row[1]?.toString().trim() || '';
+          if (col1 && /^[456]\d{2}$/.test(col1)) {
+            room = col1;
+            
+            // Then try to find bed number in column 2 (camaIdx or index 2)
+            const col2 = row[2]?.toString().trim() || row[camaIdx]?.toString().trim() || '';
+            if (col2 && /^\d+$/.test(col2) && parseInt(col2) <= 3) {
+              bed = parseInt(col2);
             }
           } else {
-            room = camaStr;
+            // Fallback: try the old logic for different Excel formats
+            let camaStr = row[camaIdx]?.toString().trim() || '';
+            
+            if (!camaStr && row[0]) {
+              const firstCol = row[0]?.toString().trim() || '';
+              if (firstCol && /^[456]\d{2}$/.test(firstCol)) {
+                camaStr = firstCol;
+              }
+            }
+            
+            if (!camaStr) {
+              console.log(`Row ${i}: Skipping - no bed/room number found`);
+              continue;
+            }
+            
+            if (camaStr.includes('-')) {
+              const parts = camaStr.split('-');
+              room = parts[0].trim();
+              bed = parseInt(parts[1]) || 1;
+            } else if (/^[456]\d{2}$/.test(camaStr)) {
+              room = camaStr;
+              const nextCol = row[camaIdx + 1]?.toString().trim();
+              if (nextCol && /^\d+$/.test(nextCol) && parseInt(nextCol) <= 3) {
+                bed = parseInt(nextCol);
+              }
+            } else if (/^\d+$/.test(camaStr) && parseInt(camaStr) <= 3) {
+              bed = parseInt(camaStr);
+              // Look backwards in column 1 (not column 0) for room number
+              for (let j = i - 1; j >= headerRowIndex + 1; j--) {
+                const prevRoomStr = jsonData[j][1]?.toString().trim() || '';
+                if (/^[456]\d{2}$/.test(prevRoomStr)) {
+                  room = prevRoomStr;
+                  break;
+                }
+              }
+              if (!room) {
+                console.log(`Row ${i}: Skipping - could not determine room for bed ${bed}`);
+                continue;
+              }
+            } else {
+              room = camaStr;
+            }
+          }
+          
+          if (!room) {
+            console.log(`Row ${i}: Skipping - no room number found`);
+            continue;
           }
           
           // Log room being processed
