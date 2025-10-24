@@ -30,6 +30,7 @@ const HandoverDashboard = lazy(() => import("./pages/HandoverDashboard"));
 const BedManagement = lazy(() => import("./pages/BedManagement"));
 const PatientsUnified = lazy(() => import("./pages/PatientsUnified"));
 const AddAnthropometry = lazy(() => import("./pages/AddAnthropometry"));
+const Calculator = lazy(() => import("./pages/Calculator"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -184,6 +185,16 @@ const App = () => (
               <AppLayout>
                 <Suspense fallback={<LoadingFallback />}>
                   <BedManagement />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/calculator"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Calculator />
                 </Suspense>
               </AppLayout>
             }
