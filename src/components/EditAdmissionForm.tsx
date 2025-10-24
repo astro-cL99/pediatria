@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Loader2, X } from "lucide-react";
 import { ScoreSelector } from "@/components/ScoreSelector";
+import { OxygenTherapySelector } from "@/components/OxygenTherapySelector";
 
 interface EditAdmissionFormProps {
   admissionId: string;
@@ -158,60 +159,23 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
 
       {/* Oxígeno */}
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="oxygenType">Tipo de Oxígeno</Label>
-            <Select
-              value={formData.oxygenType}
-              onValueChange={(value) => setFormData({ ...formData, oxygenType: value })}
-            >
-              <SelectTrigger id="oxygenType">
-                <SelectValue placeholder="Seleccionar tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Ambiental">Ambiental</SelectItem>
-                <SelectItem value="Naricera">Naricera</SelectItem>
-                <SelectItem value="Venturi">Venturi</SelectItem>
-                <SelectItem value="CNAF">CNAF</SelectItem>
-                <SelectItem value="CPAP">CPAP</SelectItem>
-                <SelectItem value="VMI">VMI</SelectItem>
-                <SelectItem value="Otro">Otro</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="oxygenFlow">Flujo (L/min)</Label>
-            <Input
-              id="oxygenFlow"
-              value={formData.oxygenFlow}
-              onChange={(e) => setFormData({ ...formData, oxygenFlow: e.target.value })}
-              placeholder="Ej: 2"
-            />
-          </div>
-        </div>
-
-        {(formData.oxygenType === 'CPAP' || formData.oxygenType === 'VMI') && (
-          <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <div>
-              <Label htmlFor="oxygenPeep">PEEP (cmH₂O)</Label>
-              <Input
-                id="oxygenPeep"
-                value={formData.oxygenPeep}
-                onChange={(e) => setFormData({ ...formData, oxygenPeep: e.target.value })}
-                placeholder="Ej: 5"
-              />
-            </div>
-            <div>
-              <Label htmlFor="oxygenFio2">FiO₂ (%)</Label>
-              <Input
-                id="oxygenFio2"
-                value={formData.oxygenFio2}
-                onChange={(e) => setFormData({ ...formData, oxygenFio2: e.target.value })}
-                placeholder="Ej: 40"
-              />
-            </div>
-          </div>
-        )}
+        <OxygenTherapySelector
+          value={{
+            type: formData.oxygenType,
+            flow: formData.oxygenFlow,
+            peep: formData.oxygenPeep,
+            fio2: formData.oxygenFio2,
+          }}
+          onChange={(oxygenData) => {
+            setFormData({
+              ...formData,
+              oxygenType: oxygenData.type,
+              oxygenFlow: oxygenData.flow,
+              oxygenPeep: oxygenData.peep || "",
+              oxygenFio2: oxygenData.fio2 || "",
+            });
+          }}
+        />
       </div>
 
       {/* Score Respiratorio */}
