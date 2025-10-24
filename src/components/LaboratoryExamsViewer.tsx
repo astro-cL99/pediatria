@@ -88,14 +88,53 @@ export const LaboratoryExamsViewer = ({ patientId }: LaboratoryExamsViewerProps)
     </Badge>;
   };
 
-  // Función para formatear exámenes en formato compacto
-  const formatCompactExams = (exams: LabExam[]) => {
-    return exams.map(exam => {
-      const valueStr = `${exam.value}${exam.unit ? ' ' + exam.unit : ''}`;
-      const alert = exam.isCritical || exam.isAbnormal ? ' ⚠️' : '';
-      return `${exam.name} ${valueStr}${alert}`;
-    }).join(' // ');
-  };
+// Función para normalizar distintas estructuras de extracción a un formato único
+const mapExam = (e: any): LabExam => ({
+  name: e.name ?? e.nombre,
+  value: e.value ?? e.valor,
+  unit: e.unit ?? e.unidad,
+  referenceRange: e.referenceRange ?? e.referencia,
+  isAbnormal: Boolean(e.isAbnormal ?? e.alterado),
+  isCritical: Boolean(e.isCritical ?? e.critico),
+});
+
+const normalizeLabData = (raw: any) => {
+  const sections: Record<string, LabExam[]> = {};
+  const directExams: LabExam[] = [];
+
+  // Formato nuevo esperado
+  if (raw?.sections && typeof raw.sections === 'object') {
+    Object.entries(raw.sections).forEach(([k, arr]: any) => {
+      sections[k] = Array.isArray(arr) ? (arr as any[]).map(mapExam) : [];
+    });
+  }
+  if (Array.isArray(raw?.exams)) {
+    directExams.push(...raw.exams.map(mapExam));
+  }
+
+  // Formato anterior: categorias -> examenes
+  if (Array.isArray(raw?.categorias)) {
+    raw.categorias.forEach((cat: any) => {
+      const key = cat?.nombre || 'Otros';
+      const list = Array.isArray(cat?.examenes) ? cat.examenes.map(mapExam) : [];
+      sections[key] = (sections[key] || []).concat(list);
+    });
+  }
+
+  const dateText = raw?.date || raw?.fechaToma || raw?.metadata?.sampleDate;
+  const origin = raw?.procedencia || raw?.metadata?.origin;
+
+  return { sections, exams: directExams, dateText, origin };
+};
+
+// Formato compacto en una sola línea por sección
+const formatCompactExams = (exams: LabExam[]) => {
+  return exams.map(exam => {
+    const valueStr = `${exam.value}${exam.unit ? ' ' + exam.unit : ''}`;
+    const alert = exam.isCritical ? ' 🔴' : (exam.isAbnormal ? ' ⚠️' : '');
+    return `${exam.name}: ${valueStr}${alert}`;
+  }).join('  //  ');
+};
 
   const renderExamSection = (sectionName: string, exams: LabExam[]) => {
     const filteredExams = exams.filter(exam =>
@@ -148,10 +187,8 @@ export const LaboratoryExamsViewer = ({ patientId }: LaboratoryExamsViewerProps)
     );
   }
 
-  const extractedData = selectedDoc?.extracted_data || {};
-  const sections = extractedData.sections || {};
-  const exams = extractedData.exams || [];
-
+  const rawExtracted = selectedDoc?.extracted_data || {};
+  const { sections, exams, dateText } = normalizeLabData(rawExtracted);
   // Contar alertas
   const allExams = [
     ...exams,
@@ -231,10 +268,10 @@ export const LaboratoryExamsViewer = ({ patientId }: LaboratoryExamsViewerProps)
           </div>
 
           {/* Fecha del examen */}
-          {extractedData.date && (
+          {dateText && (
             <div className="bg-primary/10 border-l-4 border-primary p-3 rounded">
               <p className="text-lg font-bold text-primary">
-                {extractedData.date}
+                {dateText}
               </p>
             </div>
           )}

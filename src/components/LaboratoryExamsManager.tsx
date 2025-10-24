@@ -53,6 +53,40 @@ interface LabDocument {
   extracted_data: any;
 }
 
+// Normalización de estructuras de laboratorios (compatibilidad hacia atrás)
+const mapExam = (e: any): LabExam => ({
+  name: e.name ?? e.nombre,
+  value: e.value ?? e.valor,
+  unit: e.unit ?? e.unidad,
+  referenceRange: e.referenceRange ?? e.referencia,
+  isAbnormal: Boolean(e.isAbnormal ?? e.alterado),
+  isCritical: Boolean(e.isCritical ?? e.critico),
+});
+
+const normalizeLabData = (raw: any) => {
+  const sections: Record<string, LabExam[]> = {};
+  const directExams: LabExam[] = [];
+
+  if (raw?.sections && typeof raw.sections === 'object') {
+    Object.entries(raw.sections).forEach(([k, arr]: any) => {
+      sections[k] = Array.isArray(arr) ? (arr as any[]).map(mapExam) : [];
+    });
+  }
+  if (Array.isArray(raw?.exams)) {
+    directExams.push(...raw.exams.map(mapExam));
+  }
+  if (Array.isArray(raw?.categorias)) {
+    raw.categorias.forEach((cat: any) => {
+      const key = cat?.nombre || 'Otros';
+      const list = Array.isArray(cat?.examenes) ? cat.examenes.map(mapExam) : [];
+      sections[key] = (sections[key] || []).concat(list);
+    });
+  }
+  const dateText = raw?.date || raw?.fechaToma || raw?.metadata?.sampleDate;
+  const origin = raw?.procedencia || raw?.metadata?.origin;
+  return { sections, exams: directExams, dateText, origin };
+};
+
 interface LaboratoryExamsManagerProps {
   patientId: string;
   admissionId?: string;
