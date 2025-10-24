@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -108,12 +109,23 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="oxygenType">Tipo de Oxígeno</Label>
-            <Input
-              id="oxygenType"
+            <Select
               value={formData.oxygenType}
-              onChange={(e) => setFormData({ ...formData, oxygenType: e.target.value })}
-              placeholder="Ej: Naricera, CNAF, CPAP"
-            />
+              onValueChange={(value) => setFormData({ ...formData, oxygenType: value })}
+            >
+              <SelectTrigger id="oxygenType">
+                <SelectValue placeholder="Seleccionar tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Ambiental">Ambiental</SelectItem>
+                <SelectItem value="Naricera">Naricera</SelectItem>
+                <SelectItem value="Venturi">Venturi</SelectItem>
+                <SelectItem value="CNAF">CNAF</SelectItem>
+                <SelectItem value="CPAP">CPAP</SelectItem>
+                <SelectItem value="VMI">VMI</SelectItem>
+                <SelectItem value="Otro">Otro</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label htmlFor="oxygenFlow">Flujo (L/min)</Label>
@@ -127,7 +139,7 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
         </div>
 
         {/* Campos adicionales para CPAP */}
-        {formData.oxygenType?.toLowerCase().includes('cpap') && (
+        {(formData.oxygenType === 'CPAP' || formData.oxygenType === 'VMI') && (
           <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
             <div>
               <Label htmlFor="oxygenPeep" className="text-blue-900 dark:text-blue-100">
@@ -159,12 +171,19 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
 
       <div>
         <Label htmlFor="respiratoryScore">Score Respiratorio</Label>
-        <Input
-          id="respiratoryScore"
+        <Select
           value={formData.respiratoryScore}
-          onChange={(e) => setFormData({ ...formData, respiratoryScore: e.target.value })}
-          placeholder="Ej: TAL 5"
-        />
+          onValueChange={(value) => setFormData({ ...formData, respiratoryScore: value })}
+        >
+          <SelectTrigger id="respiratoryScore">
+            <SelectValue placeholder="Seleccionar score" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="No aplica">No aplica</SelectItem>
+            <SelectItem value="TAL">TAL</SelectItem>
+            <SelectItem value="Pulmonary">Pulmonary</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div>
@@ -178,14 +197,17 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
       </div>
 
       <div>
-        <Label htmlFor="antibiotics">Antibióticos (formato: nombre (dosis), separados por coma)</Label>
+        <Label htmlFor="medications">Medicamentos y Antibióticos</Label>
         <Textarea
-          id="antibiotics"
-          value={formData.antibiotics}
-          onChange={(e) => setFormData({ ...formData, antibiotics: e.target.value })}
-          placeholder="Ej: Ampicilina (100mg/kg/día), Gentamicina (5mg/kg/día)"
-          rows={2}
+          id="medications"
+          value={formData.medications}
+          onChange={(e) => setFormData({ ...formData, medications: e.target.value })}
+          placeholder="Ej: Ampicilina (100mg/kg/día), Salbutamol, Paracetamol"
+          rows={3}
         />
+        <p className="text-sm text-muted-foreground mt-1">
+          Incluir todos los medicamentos y antibióticos con sus dosis si corresponde
+        </p>
       </div>
 
       <div>
@@ -195,17 +217,6 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
           value={formData.pendingTasks}
           onChange={(e) => setFormData({ ...formData, pendingTasks: e.target.value })}
           placeholder="Ej: Control de hemograma, Evaluación por cirugía"
-          rows={2}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="medications">Medicamentos</Label>
-        <Textarea
-          id="medications"
-          value={formData.medications}
-          onChange={(e) => setFormData({ ...formData, medications: e.target.value })}
-          placeholder="Ej: Salbutamol, Paracetamol"
           rows={2}
         />
       </div>
