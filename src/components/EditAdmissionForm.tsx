@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { ScoreSelector } from "@/components/ScoreSelector";
 
 interface EditAdmissionFormProps {
   admissionId: string;
@@ -184,6 +185,17 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
             <SelectItem value="Pulmonary">Pulmonary</SelectItem>
           </SelectContent>
         </Select>
+        
+        {/* Mostrar tabla interactiva del score seleccionado */}
+        {(formData.respiratoryScore === "TAL" || formData.respiratoryScore === "Pulmonary") && (
+          <ScoreSelector 
+            scoreType={formData.respiratoryScore as "TAL" | "Pulmonary"}
+            onScoreCalculated={(result) => {
+              // Opcional: guardar el resultado para usarlo después
+              console.log("Score calculado:", result);
+            }}
+          />
+        )}
       </div>
 
       <div>
