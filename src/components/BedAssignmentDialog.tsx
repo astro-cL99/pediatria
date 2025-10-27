@@ -56,13 +56,20 @@ export function BedAssignmentDialog({
 
   const fetchPatientsWithoutBed = async () => {
     try {
-      // Obtener pacientes con admisión activa
-      const { data: admissions, error: admissionsError } = await supabase
+      // Obtener admisiones activas con los IDs de pacientes
+      const { data: activeAdmissions, error: admissionsError } = await supabase
         .from("admissions")
-        .select("patient_id, patients(*)")
+        .select("patient_id")
         .eq("status", "active");
 
       if (admissionsError) throw admissionsError;
+
+      if (!activeAdmissions || activeAdmissions.length === 0) {
+        setPatientsWithoutBed([]);
+        return;
+      }
+
+      const activePatientIds = activeAdmissions.map(a => a.patient_id).filter(Boolean);
 
       // Obtener asignaciones de cama activas
       const { data: bedAssignments, error: bedError } = await supabase
@@ -74,13 +81,25 @@ export function BedAssignmentDialog({
 
       const assignedPatientIds = new Set(bedAssignments?.map(a => a.patient_id) || []);
       
-      // Filtrar pacientes que tienen admisión activa pero NO tienen cama asignada
-      const patientsWithoutBed = (admissions || [])
-        .filter(admission => !assignedPatientIds.has(admission.patient_id))
-        .map(admission => admission.patients)
-        .filter(Boolean) as Patient[];
+      // Filtrar IDs de pacientes que tienen admisión activa pero NO tienen cama asignada
+      const patientIdsWithoutBed = activePatientIds.filter(
+        patientId => !assignedPatientIds.has(patientId)
+      );
 
-      setPatientsWithoutBed(patientsWithoutBed);
+      if (patientIdsWithoutBed.length === 0) {
+        setPatientsWithoutBed([]);
+        return;
+      }
+
+      // Obtener los datos completos de los pacientes
+      const { data: patients, error: patientsError } = await supabase
+        .from("patients")
+        .select("id, name, rut, date_of_birth")
+        .in("id", patientIdsWithoutBed);
+
+      if (patientsError) throw patientsError;
+
+      setPatientsWithoutBed(patients || []);
     } catch (error) {
       console.error("Error fetching patients:", error);
       toast.error("Error al cargar pacientes");
