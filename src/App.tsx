@@ -51,175 +51,175 @@ const App = () => (
     <ToastProvider>
       <Toaster />
       <Sonner />
-    <BrowserRouter>
-      <ErrorBoundary>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          
-          {/* Protected routes with AppLayout */}
-          <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
-          <Route 
-            path="/patients" 
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <PatientsUnified />
-                </Suspense>
-              </AppLayout>
-            } 
-          />
-          <Route path="/patient/new" element={<AppLayout><NewPatient /></AppLayout>} />
-          <Route path="/admission/new" element={<AppLayout><NewAdmission /></AppLayout>} />
-          <Route path="/patient/:id" element={<AppLayout><PatientDetail /></AppLayout>} />
-          <Route path="/patients/:id" element={<AppLayout><PatientDetail /></AppLayout>} />
-          <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
-          <Route 
-            path="/patient/:id/anthropometry" 
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <AddAnthropometry />
-                </Suspense>
-              </AppLayout>
-            } 
-          />
-          
-          {/* Documentos del paciente */}
-          <Route 
-            path="/patient/:patientId/documents" 
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <DocumentsPage />
-                </Suspense>
-              </AppLayout>
-            } 
-          />
-          
-          <Route path="/admission/:id/print" element={<AdmissionPrint />} />
-          
-          {/* Lazy loaded routes */}
-          <Route
-            path="/protocols"
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <ClinicalProtocols />
-                </Suspense>
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/stats"
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <Statistics />
-                </Suspense>
-              </AppLayout>
-            }
-          />
-          <Route path="/documents" element={<Navigate to="/documents/upload" replace />} />
-          <Route
-            path="/documents/upload"
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <DocumentUpload />
-                </Suspense>
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/search"
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <SemanticSearch />
-                </Suspense>
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/assistant"
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <ClinicalAssistant />
-                </Suspense>
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/epicrisis"
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <Epicrisis />
-                </Suspense>
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/epicrisis/new"
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <NewEpicrisis />
-                </Suspense>
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/epicrisis/:id"
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <EpicrisisView />
-                </Suspense>
-              </AppLayout>
-            }
-          />
-          <Route path="/handover" element={<Navigate to="/patients" replace />} />
-          <Route
-            path="/beds"
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <BedManagement />
-                </Suspense>
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/calculator"
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <Calculator />
-                </Suspense>
-              </AppLayout>
-            }
-          />
-          <Route
-            path="/nursing"
-            element={
-              <AppLayout>
-                <Suspense fallback={<LoadingFallback />}>
-                  <NursingCare />
-                </Suspense>
-              </AppLayout>
-            }
-          />
-          
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </ErrorBoundary>
-    </BrowserRouter>
+      <BrowserRouter>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            
+            {/* Protected routes with AppLayout */}
+            <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
+            <Route 
+              path="/patients" 
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PatientsUnified />
+                  </Suspense>
+                </AppLayout>
+              } 
+            />
+            <Route path="/patient/new" element={<AppLayout><NewPatient /></AppLayout>} />
+            <Route path="/admission/new" element={<AppLayout><NewAdmission /></AppLayout>} />
+            <Route path="/patient/:id" element={<AppLayout><PatientDetail /></AppLayout>} />
+            <Route path="/patients/:id" element={<AppLayout><PatientDetail /></AppLayout>} />
+            <Route path="/profile" element={<AppLayout><Profile /></AppLayout>} />
+            <Route 
+              path="/patient/:id/anthropometry" 
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <AddAnthropometry />
+                  </Suspense>
+                </AppLayout>
+              } 
+            />
+            
+            {/* Documentos del paciente */}
+            <Route 
+              path="/patient/:patientId/documents" 
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <DocumentsPage />
+                  </Suspense>
+                </AppLayout>
+              } 
+            />
+            
+            <Route path="/admission/:id/print" element={<AdmissionPrint />} />
+            
+            {/* Lazy loaded routes */}
+            <Route
+              path="/protocols"
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <ClinicalProtocols />
+                  </Suspense>
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/stats"
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Statistics />
+                  </Suspense>
+                </AppLayout>
+              }
+            />
+            <Route path="/documents" element={<Navigate to="/documents/upload" replace />} />
+            <Route
+              path="/documents/upload"
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <DocumentUpload />
+                  </Suspense>
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/search"
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <SemanticSearch />
+                  </Suspense>
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/assistant"
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <ClinicalAssistant />
+                  </Suspense>
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/epicrisis"
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Epicrisis />
+                  </Suspense>
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/epicrisis/new"
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <NewEpicrisis />
+                  </Suspense>
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/epicrisis/:id"
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <EpicrisisView />
+                  </Suspense>
+                </AppLayout>
+              }
+            />
+            <Route path="/handover" element={<Navigate to="/patients" replace />} />
+            <Route
+              path="/beds"
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <BedManagement />
+                  </Suspense>
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/calculator"
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Calculator />
+                  </Suspense>
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/nursing"
+              element={
+                <AppLayout>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <NursingCare />
+                  </Suspense>
+                </AppLayout>
+              }
+            />
+            
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </ErrorBoundary>
+      </BrowserRouter>
     </ToastProvider>
-</QueryClientProvider>
+  </QueryClientProvider>
 );
 
 export default App;
