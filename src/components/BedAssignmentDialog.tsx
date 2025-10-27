@@ -56,42 +56,49 @@ export function BedAssignmentDialog({
 
   const fetchPatientsWithoutBed = async () => {
     try {
-      // Obtener admisiones activas con los IDs de pacientes
+      console.log('[BedAssignmentDialog] Cargando pacientes sin cama...');
+      // Admisiones activas: status=active o sin fecha de alta
       const { data: activeAdmissions, error: admissionsError } = await supabase
         .from("admissions")
-        .select("patient_id")
-        .eq("status", "active");
+        .select("patient_id, discharge_date, status")
+        .or('status.eq.active,discharge_date.is.null');
 
       if (admissionsError) throw admissionsError;
+      console.log('[BedAssignmentDialog] Admisiones activas:', activeAdmissions?.length || 0);
 
-      if (!activeAdmissions || activeAdmissions.length === 0) {
+      // Asegurar IDs válidos de paciente
+      const activePatientIds = (activeAdmissions || [])
+        .map(a => a.patient_id)
+        .filter((id): id is string => Boolean(id));
+
+      if (activePatientIds.length === 0) {
+        console.log('[BedAssignmentDialog] Sin pacientes con admisión activa');
         setPatientsWithoutBed([]);
         return;
       }
 
-      const activePatientIds = activeAdmissions.map(a => a.patient_id).filter(Boolean);
-
-      // Obtener asignaciones de cama activas
+      // Asignaciones de cama activas
       const { data: bedAssignments, error: bedError } = await supabase
         .from("bed_assignments")
         .select("patient_id")
         .eq("is_active", true);
 
       if (bedError) throw bedError;
-
-      const assignedPatientIds = new Set(bedAssignments?.map(a => a.patient_id) || []);
+      const assignedPatientIds = new Set((bedAssignments || []).map(a => a.patient_id).filter(Boolean));
+      console.log('[BedAssignmentDialog] Con cama activa:', assignedPatientIds.size);
       
-      // Filtrar IDs de pacientes que tienen admisión activa pero NO tienen cama asignada
+      // Filtrar IDs sin cama
       const patientIdsWithoutBed = activePatientIds.filter(
-        patientId => !assignedPatientIds.has(patientId)
+        (patientId) => !assignedPatientIds.has(patientId)
       );
+      console.log('[BedAssignmentDialog] Sin cama:', patientIdsWithoutBed.length);
 
       if (patientIdsWithoutBed.length === 0) {
         setPatientsWithoutBed([]);
         return;
       }
 
-      // Obtener los datos completos de los pacientes
+      // Traer datos de pacientes
       const { data: patients, error: patientsError } = await supabase
         .from("patients")
         .select("id, name, rut, date_of_birth")

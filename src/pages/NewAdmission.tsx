@@ -356,8 +356,42 @@ export default function NewAdmission() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No autenticado");
 
+      // Vincular automáticamente al paciente si no se seleccionó explícitamente
+      let patientId = formData.patientId;
+      if (!patientId) {
+        // Intentar buscar por RUT exacto
+        if (formData.rut) {
+          const { data: pByRut } = await supabase
+            .from("patients")
+            .select("id")
+            .eq("rut", formData.rut)
+            .maybeSingle();
+          if (pByRut?.id) patientId = pByRut.id;
+        }
+        // Intentar buscar por nombre si aún no hay id
+        if (!patientId && formData.patientName) {
+          const { data: pByName } = await supabase
+            .from("patients")
+            .select("id")
+            .ilike("name", formData.patientName)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (pByName?.id) patientId = pByName.id;
+        }
+        if (!patientId) {
+          toast({
+            title: "Falta vincular paciente",
+            description: "Selecciona o ingresa un paciente (idealmente con RUT) antes de crear el ingreso.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const { error } = await supabase.from("admissions").insert({
-        patient_id: formData.patientId || null,
+        patient_id: patientId,
         admission_source: formData.admissionSource,
         present_illness: formData.presentIllness,
         personal_history: formData.personalHistory,
