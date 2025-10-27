@@ -38,7 +38,26 @@ serve(async (req) => {
   const startTime = Date.now();
   
   try {
-    const body = await req.json();
+    // Validate content type and body
+    const contentType = req.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('Content-Type debe ser application/json');
+    }
+
+    const text = await req.text();
+    if (!text || text.trim() === '') {
+      throw new Error('Body vacío - no se recibieron datos');
+    }
+
+    let body;
+    try {
+      body = JSON.parse(text);
+    } catch (parseError) {
+      console.error('[extract-dau-data] Error al parsear body:', parseError);
+      console.error('[extract-dau-data] Body recibido (primeros 200 chars):', text.substring(0, 200));
+      throw new Error('Body no es JSON válido');
+    }
+
     const { imageBase64, fileName } = validateRequest(body);
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');

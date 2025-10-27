@@ -131,17 +131,29 @@ export default function NewAdmission() {
       // Convert canvas to base64 image (PNG)
       const imageBase64 = canvas.toDataURL('image/png').split(',')[1];
 
+      console.log('Enviando imagen al servidor:', {
+        fileSize: file.size,
+        base64Length: imageBase64.length,
+        fileName: file.name
+      });
+
       // Call edge function to extract data with image
-      const response = await supabase.functions.invoke(
+      const { data: responseData, error: invokeError } = await supabase.functions.invoke(
         'extract-dau-data',
         { 
-          body: { imageBase64, fileName: file.name },
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+          body: { 
+            imageBase64, 
+            fileName: file.name 
           }
         }
       );
+
+      if (invokeError) {
+        console.error('Error al invocar función:', invokeError);
+        throw new Error(invokeError.message || 'Error al comunicarse con el servidor');
+      }
+
+      const response = { data: responseData, error: null };
 
       // Handle non-JSON responses
       if (response.error) {
