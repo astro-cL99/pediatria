@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -10,12 +10,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { differenceInDays, differenceInYears, differenceInMonths } from "date-fns";
-import { Wind, Pill, Activity, AlertCircle, FileText, Pencil, UserCircle, LogOut, ArrowRightLeft } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { differenceInDays, format } from "date-fns";
+import { Wind, Pill, Activity, AlertCircle, FileText, Pencil, UserCircle, LogOut, ArrowRightLeft, Calendar, Check, X } from "lucide-react";
 import { EditAdmissionForm } from "./EditAdmissionForm";
 import { ExternalLinksPanel } from "./ExternalLinksPanel";
 import { ChangeBedDialog } from "./ChangeBedDialog";
 import { toast } from "sonner";
+import { calculatePediatricAge } from "@/utils/calculatePediatricAge";
+import { calculateDaysHospitalized, formatDaysHospitalized } from "@/utils/calculateDaysHospitalized";
 
 interface BedPatientDetailProps {
   bed: {
@@ -51,20 +54,65 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
   const [isEditing, setIsEditing] = useState(false);
   const [isDischarging, setIsDischarging] = useState(false);
   const [showChangeBed, setShowChangeBed] = useState(false);
+  const [isEditingBirthDate, setIsEditingBirthDate] = useState(false);
+  const [editedBirthDate, setEditedBirthDate] = useState(bed.patient.date_of_birth);
+  const [anthropometricData, setAnthropometricData] = useState<{ weight_kg: number; height_cm: number } | null>(null);
+  const [vitalSigns, setVitalSigns] = useState<any>(null);
 
-  const calculateAge = () => {
-    const birth = new Date(bed.patient.date_of_birth);
-    const years = differenceInYears(new Date(), birth);
-    const months = differenceInMonths(new Date(), birth);
-    
-    if (years < 1) {
-      return `${months} meses`;
+  useEffect(() => {
+    if (open) {
+      loadAnthropometricData();
+      loadVitalSigns();
+      setEditedBirthDate(bed.patient.date_of_birth);
+      setIsEditingBirthDate(false);
     }
-    return `${years} año${years !== 1 ? 's' : ''}`;
+  }, [open, bed.patient.id]);
+
+  const loadAnthropometricData = async () => {
+    const { data, error } = await supabase
+      .from("anthropometric_data")
+      .select("weight_kg, height_cm")
+      .eq("patient_id", bed.patient.id)
+      .order("measured_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!error && data) {
+      setAnthropometricData(data);
+    }
   };
 
-  const getDaysHospitalized = () => {
-    return differenceInDays(new Date(), new Date(bed.admission.admission_date));
+  const loadVitalSigns = async () => {
+    const { data, error } = await supabase
+      .from("daily_evolutions")
+      .select("vital_signs")
+      .eq("patient_id", bed.patient.id)
+      .order("evolution_date", { ascending: false })
+      .order("evolution_time", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!error && data?.vital_signs) {
+      setVitalSigns(data.vital_signs);
+    }
+  };
+
+  const handleSaveBirthDate = async () => {
+    try {
+      const { error } = await supabase
+        .from("patients")
+        .update({ date_of_birth: editedBirthDate })
+        .eq("id", bed.patient.id);
+
+      if (error) throw error;
+
+      toast.success("Fecha de nacimiento actualizada");
+      setIsEditingBirthDate(false);
+      onUpdate();
+    } catch (error: any) {
+      console.error("Error al actualizar fecha de nacimiento:", error);
+      toast.error("Error al actualizar: " + error.message);
+    }
   };
 
   const handleEditSuccess = () => {
@@ -178,7 +226,7 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
               <CardHeader>
                 <CardTitle className="text-lg">Información del Paciente</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Nombre</p>
@@ -188,20 +236,120 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
                     <p className="text-sm text-muted-foreground">RUT</p>
                     <p className="font-semibold">{bed.patient.rut}</p>
                   </div>
+                  
                   <div>
-                    <p className="text-sm text-muted-foreground">Edad</p>
-                    <p className="font-semibold">{calculateAge()}</p>
+                    <p className="text-sm text-muted-foreground">Fecha de Ingreso</p>
+                    <p className="font-semibold">
+                      {format(new Date(bed.admission.admission_date), "dd/MM/yyyy")}
+                      <span className="text-muted-foreground ml-2">
+                        ({formatDaysHospitalized(calculateDaysHospitalized(bed.admission.admission_date))})
+                      </span>
+                    </p>
                   </div>
+
                   <div>
-                    <p className="text-sm text-muted-foreground">Días Hospitalizado</p>
-                    <p className="font-semibold">{getDaysHospitalized()} días</p>
+                    <p className="text-sm text-muted-foreground mb-1">Fecha de Nacimiento</p>
+                    {isEditingBirthDate ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="date"
+                          value={editedBirthDate}
+                          onChange={(e) => setEditedBirthDate(e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleSaveBirthDate}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Check className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditedBirthDate(bed.patient.date_of_birth);
+                            setIsEditingBirthDate(false);
+                          }}
+                          className="h-8 w-8 p-0"
+                        >
+                          <X className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold">
+                          {format(new Date(bed.patient.date_of_birth), "dd/MM/yyyy")}
+                          <span className="text-muted-foreground ml-2">
+                            ({calculatePediatricAge(bed.patient.date_of_birth)})
+                          </span>
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setIsEditingBirthDate(true)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Calendar className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
+
+                  {anthropometricData && (
+                    <>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Último Peso</p>
+                        <p className="font-semibold">{anthropometricData.weight_kg} kg</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Última Talla</p>
+                        <p className="font-semibold">{anthropometricData.height_cm} cm</p>
+                      </div>
+                    </>
+                  )}
+
+                  {vitalSigns && (
+                    <>
+                      {vitalSigns.temperature && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Temperatura</p>
+                          <p className="font-semibold">{vitalSigns.temperature}°C</p>
+                        </div>
+                      )}
+                      {vitalSigns.heartRate && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">FC</p>
+                          <p className="font-semibold">{vitalSigns.heartRate} lpm</p>
+                        </div>
+                      )}
+                      {vitalSigns.respiratoryRate && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">FR</p>
+                          <p className="font-semibold">{vitalSigns.respiratoryRate} rpm</p>
+                        </div>
+                      )}
+                      {vitalSigns.bloodPressure && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">PA</p>
+                          <p className="font-semibold">{vitalSigns.bloodPressure}</p>
+                        </div>
+                      )}
+                      {vitalSigns.oxygenSaturation && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">SatO₂</p>
+                          <p className="font-semibold">{vitalSigns.oxygenSaturation}%</p>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
                 
                 {bed.patient.allergies && (
-                  <div className="mt-4">
-                    <p className="text-sm text-muted-foreground">Alergias</p>
-                    <Badge variant="destructive" className="mt-1">
+                  <div className="pt-2 border-t">
+                    <p className="text-sm text-muted-foreground mb-1">Alergias</p>
+                    <Badge variant="destructive">
                       {bed.patient.allergies}
                     </Badge>
                   </div>
