@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Activity } from "lucide-react";
@@ -13,6 +14,8 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [position, setPosition] = useState<string>("");
+  const [biologicalSex, setBiologicalSex] = useState<string>("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +25,13 @@ const Login = () => {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        if (!position || !biologicalSex) {
+          toast.error("Por favor completa todos los campos del estamento");
+          setLoading(false);
+          return;
+        }
+
+        const { data: authData, error: authError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -33,7 +42,24 @@ const Login = () => {
           },
         });
 
-        if (error) throw error;
+        if (authError) throw authError;
+
+        // Actualizar el perfil con el estamento y sexo biológico
+        if (authData.user) {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update({
+              position: position as any,
+              biological_sex: biologicalSex as any,
+            })
+            .eq("id", authData.user.id);
+
+          if (profileError) {
+            console.error("Error updating profile:", profileError);
+            toast.error("Cuenta creada pero hubo un error al configurar el estamento");
+          }
+        }
+
         toast.success("Cuenta creada exitosamente");
         navigate("/dashboard");
       } else {
@@ -68,17 +94,56 @@ const Login = () => {
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
             {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Nombre Completo</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  placeholder="Dr. Juan Pérez"
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Nombre Completo</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    placeholder="Ej: Juan Pérez González"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="biologicalSex">Sexo Biológico</Label>
+                  <Select value={biologicalSex} onValueChange={setBiologicalSex} required>
+                    <SelectTrigger id="biologicalSex">
+                      <SelectValue placeholder="Selecciona tu sexo biológico" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="masculino">Masculino</SelectItem>
+                      <SelectItem value="femenino">Femenino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="position">Estamento Profesional</Label>
+                  <Select value={position} onValueChange={setPosition} required>
+                    <SelectTrigger id="position">
+                      <SelectValue placeholder="Selecciona tu estamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="medico">
+                        {biologicalSex === "femenino" ? "Médica" : "Médico"}
+                      </SelectItem>
+                      <SelectItem value="medico_becado">
+                        {biologicalSex === "femenino" ? "Médica Becada" : "Médico Becado"}
+                      </SelectItem>
+                      <SelectItem value="interno">
+                        {biologicalSex === "femenino" ? "Interna" : "Interno"}
+                      </SelectItem>
+                      <SelectItem value="enfermera">
+                        {biologicalSex === "femenino" ? "Enfermera" : "Enfermero"}
+                      </SelectItem>
+                      <SelectItem value="tens">TENS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
             )}
             
             <div className="space-y-2">

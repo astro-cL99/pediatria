@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, User, Lock } from "lucide-react";
+import { ArrowLeft, User, Lock, AlertCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -15,6 +17,10 @@ export default function Profile() {
   const [fullName, setFullName] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [email, setEmail] = useState("");
+  const [position, setPosition] = useState<string>("");
+  const [biologicalSex, setBiologicalSex] = useState<string>("");
+  const [positionConfigured, setPositionConfigured] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -32,15 +38,22 @@ export default function Profile() {
 
     setEmail(user.email || "");
 
+    // Verificar si es admin
+    const { data: adminCheck } = await supabase.rpc("is_admin", { _user_id: user.id });
+    setIsAdmin(adminCheck || false);
+
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, specialty")
+      .select("full_name, specialty, position, biological_sex, position_configured_at")
       .eq("id", user.id)
       .single();
 
     if (profile) {
       setFullName(profile.full_name || "");
       setSpecialty(profile.specialty || "");
+      setPosition(profile.position || "");
+      setBiologicalSex(profile.biological_sex || "");
+      setPositionConfigured(!!profile.position_configured_at);
     }
   };
 
@@ -52,17 +65,26 @@ export default function Profile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
 
+      const updateData: any = {
+        full_name: fullName,
+        specialty: specialty,
+      };
+
+      // Solo permitir actualizar position y biological_sex si no están configurados o si es admin
+      if (!positionConfigured || isAdmin) {
+        if (position) updateData.position = position;
+        if (biologicalSex) updateData.biological_sex = biologicalSex;
+      }
+
       const { error } = await supabase
         .from("profiles")
-        .update({
-          full_name: fullName,
-          specialty: specialty,
-        })
+        .update(updateData)
         .eq("id", user.id);
 
       if (error) throw error;
 
       toast.success("Perfil actualizado exitosamente");
+      fetchUserProfile(); // Refrescar datos
     } catch (error: any) {
       console.error("Error updating profile:", error);
       toast.error("Error al actualizar perfil: " + error.message);
@@ -163,6 +185,72 @@ export default function Profile() {
                 onChange={(e) => setSpecialty(e.target.value)}
                 placeholder="Pediatría"
               />
+            </div>
+
+            <Separator className="my-4" />
+
+            {positionConfigured && !isAdmin && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  El estamento profesional ya está configurado y solo puede ser modificado por un administrador.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div>
+              <Label htmlFor="biologicalSex">Sexo Biológico</Label>
+              <Select 
+                value={biologicalSex} 
+                onValueChange={setBiologicalSex}
+                disabled={positionConfigured && !isAdmin}
+              >
+                <SelectTrigger id="biologicalSex">
+                  <SelectValue placeholder="Selecciona tu sexo biológico" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="masculino">Masculino</SelectItem>
+                  <SelectItem value="femenino">Femenino</SelectItem>
+                </SelectContent>
+              </Select>
+              {positionConfigured && !isAdmin && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Solo administradores pueden modificar este campo
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="position">Estamento Profesional</Label>
+              <Select 
+                value={position} 
+                onValueChange={setPosition}
+                disabled={positionConfigured && !isAdmin}
+              >
+                <SelectTrigger id="position">
+                  <SelectValue placeholder="Selecciona tu estamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="medico">
+                    {biologicalSex === "femenino" ? "Médica" : "Médico"}
+                  </SelectItem>
+                  <SelectItem value="medico_becado">
+                    {biologicalSex === "femenino" ? "Médica Becada" : "Médico Becado"}
+                  </SelectItem>
+                  <SelectItem value="interno">
+                    {biologicalSex === "femenino" ? "Interna" : "Interno"}
+                  </SelectItem>
+                  <SelectItem value="enfermera">
+                    {biologicalSex === "femenino" ? "Enfermera" : "Enfermero"}
+                  </SelectItem>
+                  <SelectItem value="tens">TENS</SelectItem>
+                </SelectContent>
+              </Select>
+              {positionConfigured && !isAdmin && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Solo administradores pueden modificar este campo
+                </p>
+              )}
             </div>
 
             <Button type="submit" disabled={loading}>

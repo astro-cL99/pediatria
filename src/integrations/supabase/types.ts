@@ -878,25 +878,34 @@ export type Database = {
       }
       profiles: {
         Row: {
+          biological_sex: Database["public"]["Enums"]["biological_sex"] | null
           created_at: string | null
           full_name: string
           id: string
+          position: Database["public"]["Enums"]["professional_position"] | null
+          position_configured_at: string | null
           role: string
           specialty: string | null
           updated_at: string | null
         }
         Insert: {
+          biological_sex?: Database["public"]["Enums"]["biological_sex"] | null
           created_at?: string | null
           full_name: string
           id: string
+          position?: Database["public"]["Enums"]["professional_position"] | null
+          position_configured_at?: string | null
           role?: string
           specialty?: string | null
           updated_at?: string | null
         }
         Update: {
+          biological_sex?: Database["public"]["Enums"]["biological_sex"] | null
           created_at?: string | null
           full_name?: string
           id?: string
+          position?: Database["public"]["Enums"]["professional_position"] | null
+          position_configured_at?: string | null
           role?: string
           specialty?: string | null
           updated_at?: string | null
@@ -968,6 +977,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_position_label: {
+        Args: {
+          pos: Database["public"]["Enums"]["professional_position"]
+          sex: Database["public"]["Enums"]["biological_sex"]
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1005,8 +1021,15 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "doctor" | "nurse" | "viewer"
+      biological_sex: "masculino" | "femenino"
       blood_type: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-"
       patient_status: "active" | "discharged" | "transferred" | "deceased"
+      professional_position:
+        | "medico"
+        | "medico_becado"
+        | "interno"
+        | "enfermera"
+        | "tens"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1135,8 +1158,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "doctor", "nurse", "viewer"],
+      biological_sex: ["masculino", "femenino"],
       blood_type: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
       patient_status: ["active", "discharged", "transferred", "deceased"],
+      professional_position: [
+        "medico",
+        "medico_becado",
+        "interno",
+        "enfermera",
+        "tens",
+      ],
     },
   },
 } as const
