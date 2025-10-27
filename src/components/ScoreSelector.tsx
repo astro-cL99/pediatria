@@ -29,6 +29,12 @@ export function ScoreSelector({
     cianosis: '' as any,
   });
 
+  // Actualizar la edad cuando cambie el prop
+  useEffect(() => {
+    setTalParams(prev => ({ ...prev, age: patientAge }));
+    setWoodParams(prev => ({ ...prev, age: patientAge }));
+  }, [patientAge]);
+
   // Estado para rastrear qué fila está seleccionada por cada columna
   const [selectedRows, setSelectedRows] = useState({
     frecuenciaRespiratoria: -1, // -1 = no seleccionado, 0-3 = fila seleccionada

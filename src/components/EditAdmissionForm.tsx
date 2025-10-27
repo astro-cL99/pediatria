@@ -25,11 +25,12 @@ interface EditAdmissionFormProps {
     diet?: any;
     iv_therapy?: any;
   };
+  patientAge?: number; // edad en meses
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCancel }: EditAdmissionFormProps) {
+export function EditAdmissionForm({ admissionId, currentData, patientAge = 24, onSuccess, onCancel }: EditAdmissionFormProps) {
   const [loading, setLoading] = useState(false);
   const [diagnoses, setDiagnoses] = useState<string[]>(currentData.admission_diagnoses || []);
   const [diagnosisInput, setDiagnosisInput] = useState("");
@@ -198,6 +199,8 @@ export function EditAdmissionForm({ admissionId, currentData, onSuccess, onCance
         {(formData.respiratoryScore === "TAL" || formData.respiratoryScore === "Pulmonary") && (
           <ScoreSelector 
             scoreType={formData.respiratoryScore as "TAL" | "Pulmonary"}
+            patientAge={patientAge}
+            hasSupplementalOxygen={!!formData.oxygenType}
             onScoreCalculated={(result) => {
               console.log("Score calculado:", result);
             }}

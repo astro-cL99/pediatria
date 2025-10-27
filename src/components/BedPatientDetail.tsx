@@ -11,8 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { differenceInDays, format } from "date-fns";
-import { Wind, Pill, Activity, AlertCircle, FileText, Pencil, UserCircle, LogOut, ArrowRightLeft, Calendar, Check, X } from "lucide-react";
+import { differenceInDays, differenceInMonths, format } from "date-fns";
+import { Wind, Pill, Activity, AlertCircle, FileText, Pencil, UserCircle, LogOut, ArrowRightLeft, Calendar, Check, X, CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { EditAdmissionForm } from "./EditAdmissionForm";
 import { ExternalLinksPanel } from "./ExternalLinksPanel";
 import { ChangeBedDialog } from "./ChangeBedDialog";
@@ -55,7 +58,8 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
   const [isDischarging, setIsDischarging] = useState(false);
   const [showChangeBed, setShowChangeBed] = useState(false);
   const [isEditingBirthDate, setIsEditingBirthDate] = useState(false);
-  const [editedBirthDate, setEditedBirthDate] = useState(bed.patient.date_of_birth);
+  const [editedBirthDate, setEditedBirthDate] = useState<Date>(new Date(bed.patient.date_of_birth));
+  const [currentPatientData, setCurrentPatientData] = useState(bed.patient);
   const [anthropometricData, setAnthropometricData] = useState<{ weight_kg: number; height_cm: number } | null>(null);
   const [vitalSigns, setVitalSigns] = useState<any>(null);
 
@@ -63,7 +67,8 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
     if (open) {
       loadAnthropometricData();
       loadVitalSigns();
-      setEditedBirthDate(bed.patient.date_of_birth);
+      setEditedBirthDate(new Date(bed.patient.date_of_birth));
+      setCurrentPatientData(bed.patient);
       setIsEditingBirthDate(false);
     }
   }, [open, bed.patient.id]);
@@ -99,13 +104,20 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
 
   const handleSaveBirthDate = async () => {
     try {
+      const formattedDate = format(editedBirthDate, "yyyy-MM-dd");
       const { error } = await supabase
         .from("patients")
-        .update({ date_of_birth: editedBirthDate })
+        .update({ date_of_birth: formattedDate })
         .eq("id", bed.patient.id);
 
       if (error) throw error;
 
+      // Actualizar el estado local inmediatamente
+      setCurrentPatientData({
+        ...currentPatientData,
+        date_of_birth: formattedDate,
+      });
+      
       toast.success("Fecha de nacimiento actualizada");
       setIsEditingBirthDate(false);
       onUpdate();
@@ -216,6 +228,7 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
           <EditAdmissionForm
             admissionId={bed.admission.id}
             currentData={bed.admission}
+            patientAge={differenceInMonths(new Date(), new Date(currentPatientData.date_of_birth))}
             onSuccess={handleEditSuccess}
             onCancel={() => setIsEditing(false)}
           />
@@ -251,12 +264,30 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
                     <p className="text-sm text-muted-foreground mb-1">Fecha de Nacimiento</p>
                     {isEditingBirthDate ? (
                       <div className="flex items-center gap-2">
-                        <Input
-                          type="date"
-                          value={editedBirthDate}
-                          onChange={(e) => setEditedBirthDate(e.target.value)}
-                          className="h-8 text-sm"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "h-8 text-sm justify-start text-left font-normal",
+                                !editedBirthDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {editedBirthDate ? format(editedBirthDate, "dd/MM/yyyy") : "Seleccionar fecha"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={editedBirthDate}
+                              onSelect={(date) => date && setEditedBirthDate(date)}
+                              disabled={(date) => date > new Date()}
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -269,7 +300,7 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
                           size="sm"
                           variant="ghost"
                           onClick={() => {
-                            setEditedBirthDate(bed.patient.date_of_birth);
+                            setEditedBirthDate(new Date(currentPatientData.date_of_birth));
                             setIsEditingBirthDate(false);
                           }}
                           className="h-8 w-8 p-0"
@@ -280,9 +311,9 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
                     ) : (
                       <div className="flex items-center gap-2">
                         <p className="font-semibold">
-                          {format(new Date(bed.patient.date_of_birth), "dd/MM/yyyy")}
+                          {format(new Date(currentPatientData.date_of_birth), "dd/MM/yyyy")}
                           <span className="text-muted-foreground ml-2">
-                            ({calculatePediatricAge(bed.patient.date_of_birth)})
+                            ({calculatePediatricAge(currentPatientData.date_of_birth)})
                           </span>
                         </p>
                         <Button
@@ -291,7 +322,7 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
                           onClick={() => setIsEditingBirthDate(true)}
                           className="h-6 w-6 p-0"
                         >
-                          <Calendar className="h-3 w-3" />
+                          <CalendarIcon className="h-3 w-3" />
                         </Button>
                       </div>
                     )}
