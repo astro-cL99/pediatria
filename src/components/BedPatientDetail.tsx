@@ -321,7 +321,7 @@ export function BedPatientDetail({ bed, open, onOpenChange, onUpdate }: BedPatie
                 </CardHeader>
                 <CardContent>
                   <Badge 
-                    variant={bed.admission.viral_panel.toLowerCase().includes("positivo") ? "destructive" : "secondary"}
+                    variant={bed.admission.viral_panel.toLowerCase().includes("positivo") ? "default" : "secondary"}
                     className="text-sm"
                   >
                     {bed.admission.viral_panel}

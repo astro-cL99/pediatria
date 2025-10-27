@@ -141,22 +141,13 @@ export function ScoreSelector({
                 {/* Score 0 */}
                 <tr 
                   className={cn(
-                    "cursor-pointer hover:bg-accent transition-colors",
+                    "transition-colors",
                     talParams.frecuenciaRespiratoria > 0 && talParams.frecuenciaRespiratoria <= (isUnder6Months ? 40 : 30) &&
                     talParams.sibilancias === 'ausentes' &&
                     talParams.cianosis === 'ausente' &&
                     talParams.usoMuscAccesorios === 'ausente' &&
                     "bg-green-100 dark:bg-green-900/20"
                   )}
-                  onClick={() => {
-                    setTalParams({
-                      ...talParams,
-                      frecuenciaRespiratoria: isUnder6Months ? 35 : 25,
-                      sibilancias: 'ausentes',
-                      cianosis: hasSupplementalOxygen ? 'generalizada' : 'ausente',
-                      usoMuscAccesorios: 'ausente',
-                    });
-                  }}
                 >
                   <td className="border border-border p-2 text-center font-bold">0</td>
                   <td className="border border-border p-2 text-center text-sm">
@@ -170,7 +161,7 @@ export function ScoreSelector({
                 {/* Score 1 */}
                 <tr 
                   className={cn(
-                    "cursor-pointer hover:bg-accent transition-colors",
+                    "transition-colors",
                     ((isUnder6Months && talParams.frecuenciaRespiratoria >= 41 && talParams.frecuenciaRespiratoria <= 55) ||
                     (!isUnder6Months && talParams.frecuenciaRespiratoria >= 31 && talParams.frecuenciaRespiratoria <= 45)) &&
                     talParams.sibilancias === 'fin_espiracion' &&
@@ -178,15 +169,6 @@ export function ScoreSelector({
                     talParams.usoMuscAccesorios === 'leve' &&
                     "bg-yellow-100 dark:bg-yellow-900/20"
                   )}
-                  onClick={() => {
-                    setTalParams({
-                      ...talParams,
-                      frecuenciaRespiratoria: isUnder6Months ? 48 : 38,
-                      sibilancias: 'fin_espiracion',
-                      cianosis: hasSupplementalOxygen ? 'generalizada' : 'perioral_llanto',
-                      usoMuscAccesorios: 'leve',
-                    });
-                  }}
                 >
                   <td className="border border-border p-2 text-center font-bold">1</td>
                   <td className="border border-border p-2 text-center text-sm">
@@ -200,7 +182,7 @@ export function ScoreSelector({
                 {/* Score 2 */}
                 <tr 
                   className={cn(
-                    "cursor-pointer hover:bg-accent transition-colors",
+                    "transition-colors",
                     ((isUnder6Months && talParams.frecuenciaRespiratoria >= 56 && talParams.frecuenciaRespiratoria <= 70) ||
                     (!isUnder6Months && talParams.frecuenciaRespiratoria >= 46 && talParams.frecuenciaRespiratoria <= 60)) &&
                     talParams.sibilancias === 'toda_espiracion' &&
@@ -208,15 +190,6 @@ export function ScoreSelector({
                     talParams.usoMuscAccesorios === 'moderado' &&
                     "bg-orange-100 dark:bg-orange-900/20"
                   )}
-                  onClick={() => {
-                    setTalParams({
-                      ...talParams,
-                      frecuenciaRespiratoria: isUnder6Months ? 63 : 53,
-                      sibilancias: 'toda_espiracion',
-                      cianosis: hasSupplementalOxygen ? 'generalizada' : 'perioral_reposo',
-                      usoMuscAccesorios: 'moderado',
-                    });
-                  }}
                 >
                   <td className="border border-border p-2 text-center font-bold">2</td>
                   <td className="border border-border p-2 text-center text-sm">
@@ -230,22 +203,13 @@ export function ScoreSelector({
                 {/* Score 3 */}
                 <tr 
                   className={cn(
-                    "cursor-pointer hover:bg-accent transition-colors",
+                    "transition-colors",
                     talParams.frecuenciaRespiratoria > (isUnder6Months ? 70 : 60) &&
                     talParams.sibilancias === 'audibles' &&
                     (talParams.cianosis === 'generalizada' || hasSupplementalOxygen) &&
                     talParams.usoMuscAccesorios === 'grave' &&
                     "bg-red-100 dark:bg-red-900/20"
                   )}
-                  onClick={() => {
-                    setTalParams({
-                      ...talParams,
-                      frecuenciaRespiratoria: isUnder6Months ? 75 : 65,
-                      sibilancias: 'audibles',
-                      cianosis: 'generalizada',
-                      usoMuscAccesorios: 'grave',
-                    });
-                  }}
                 >
                   <td className="border border-border p-2 text-center font-bold">3</td>
                   <td className="border border-border p-2 text-center text-sm">
@@ -257,10 +221,6 @@ export function ScoreSelector({
                 </tr>
               </tbody>
             </table>
-          </div>
-          
-          <div className="mt-4 text-xs text-muted-foreground italic p-3 bg-muted/30 rounded">
-            💡 Click en cada fila para seleccionar todos los parámetros correspondientes a ese puntaje
           </div>
 
           {/* Sibilancias */}
@@ -484,7 +444,7 @@ export function ScoreSelector({
                 {/* Score 0 */}
                 <tr 
                   className={cn(
-                    "cursor-pointer hover:bg-accent transition-colors",
+                    "transition-colors",
                     woodParams.frecuenciaRespiratoria > 0 && woodParams.frecuenciaRespiratoria <= (isUnder6Years ? 30 : 20) &&
                     woodParams.frecuenciaCardiaca > 0 && woodParams.frecuenciaCardiaca <= 80 &&
                     woodParams.tiraje === 'ausente' &&
@@ -492,16 +452,6 @@ export function ScoreSelector({
                     woodParams.cianosis === 'ausente' &&
                     "bg-green-100 dark:bg-green-900/20"
                   )}
-                  onClick={() => {
-                    setWoodParams({
-                      ...woodParams,
-                      frecuenciaRespiratoria: isUnder6Years ? 25 : 18,
-                      frecuenciaCardiaca: 75,
-                      tiraje: 'ausente',
-                      sibilancias: 'ausentes',
-                      cianosis: 'ausente',
-                    });
-                  }}
                 >
                   <td className="border border-border p-2 text-center font-bold">0</td>
                   <td className="border border-border p-2 text-center text-sm">
@@ -515,7 +465,7 @@ export function ScoreSelector({
                 {/* Score 1 */}
                 <tr 
                   className={cn(
-                    "cursor-pointer hover:bg-accent transition-colors",
+                    "transition-colors",
                     ((isUnder6Years && woodParams.frecuenciaRespiratoria >= 31 && woodParams.frecuenciaRespiratoria <= 45) ||
                     (!isUnder6Years && woodParams.frecuenciaRespiratoria >= 21 && woodParams.frecuenciaRespiratoria <= 35)) &&
                     woodParams.frecuenciaCardiaca >= 81 && woodParams.frecuenciaCardiaca <= 100 &&
@@ -524,16 +474,6 @@ export function ScoreSelector({
                     woodParams.cianosis === 'ausente' &&
                     "bg-yellow-100 dark:bg-yellow-900/20"
                   )}
-                  onClick={() => {
-                    setWoodParams({
-                      ...woodParams,
-                      frecuenciaRespiratoria: isUnder6Years ? 38 : 28,
-                      frecuenciaCardiaca: 90,
-                      tiraje: 'leve',
-                      sibilancias: 'fin_espiracion',
-                      cianosis: 'ausente',
-                    });
-                  }}
                 >
                   <td className="border border-border p-2 text-center font-bold">1</td>
                   <td className="border border-border p-2 text-center text-sm">
@@ -547,7 +487,7 @@ export function ScoreSelector({
                 {/* Score 2 */}
                 <tr 
                   className={cn(
-                    "cursor-pointer hover:bg-accent transition-colors",
+                    "transition-colors",
                     ((isUnder6Years && woodParams.frecuenciaRespiratoria >= 46 && woodParams.frecuenciaRespiratoria <= 60) ||
                     (!isUnder6Years && woodParams.frecuenciaRespiratoria >= 36 && woodParams.frecuenciaRespiratoria <= 50)) &&
                     woodParams.frecuenciaCardiaca >= 101 && woodParams.frecuenciaCardiaca <= 120 &&
@@ -556,16 +496,6 @@ export function ScoreSelector({
                     woodParams.cianosis === 'aire_ambiente' &&
                     "bg-orange-100 dark:bg-orange-900/20"
                   )}
-                  onClick={() => {
-                    setWoodParams({
-                      ...woodParams,
-                      frecuenciaRespiratoria: isUnder6Years ? 53 : 43,
-                      frecuenciaCardiaca: 110,
-                      tiraje: 'moderado',
-                      sibilancias: 'toda_espiracion',
-                      cianosis: 'aire_ambiente',
-                    });
-                  }}
                 >
                   <td className="border border-border p-2 text-center font-bold">2</td>
                   <td className="border border-border p-2 text-center text-sm">
@@ -579,7 +509,7 @@ export function ScoreSelector({
                 {/* Score 3 */}
                 <tr 
                   className={cn(
-                    "cursor-pointer hover:bg-accent transition-colors",
+                    "transition-colors",
                     woodParams.frecuenciaRespiratoria > (isUnder6Years ? 60 : 50) &&
                     woodParams.frecuenciaCardiaca > 120 &&
                     woodParams.tiraje === 'grave' &&
@@ -587,16 +517,6 @@ export function ScoreSelector({
                     woodParams.cianosis === 'fio2_40' &&
                     "bg-red-100 dark:bg-red-900/20"
                   )}
-                  onClick={() => {
-                    setWoodParams({
-                      ...woodParams,
-                      frecuenciaRespiratoria: isUnder6Years ? 65 : 55,
-                      frecuenciaCardiaca: 130,
-                      tiraje: 'grave',
-                      sibilancias: 'audibles',
-                      cianosis: 'fio2_40',
-                    });
-                  }}
                 >
                   <td className="border border-border p-2 text-center font-bold">3</td>
                   <td className="border border-border p-2 text-center text-sm">
@@ -610,9 +530,6 @@ export function ScoreSelector({
             </table>
           </div>
           
-          <div className="mt-4 text-xs text-muted-foreground italic p-3 bg-muted/30 rounded">
-            💡 Click en cada fila para seleccionar todos los parámetros correspondientes a ese puntaje
-          </div>
           {/* Cianosis */}
           <div>
             <Label className="text-base font-semibold mb-3 block">Cianosis</Label>
