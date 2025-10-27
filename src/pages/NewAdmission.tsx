@@ -359,21 +359,35 @@ export default function NewAdmission() {
       // Vincular automáticamente al paciente si no se seleccionó explícitamente
       let patientId = formData.patientId;
       if (!patientId) {
-        // Intentar buscar por RUT exacto
+        // Intentar buscar por RUT (normalizando puntos/espacios)
         if (formData.rut) {
-          const { data: pByRut } = await supabase
+          const cleanRut = formData.rut.replace(/[.\s]/g, '').toUpperCase();
+          // 1) intento exacto tal como está guardado
+          const { data: pByRutExact } = await supabase
             .from("patients")
-            .select("id")
+            .select("id, rut")
             .eq("rut", formData.rut)
             .maybeSingle();
-          if (pByRut?.id) patientId = pByRut.id;
+          if (pByRutExact?.id) patientId = pByRutExact.id;
+
+          // 2) si no, buscar por coincidencia parcial del RUT sin puntos
+          if (!patientId) {
+            const { data: pByRutLike } = await supabase
+              .from("patients")
+              .select("id, rut")
+              .ilike("rut", `%${cleanRut}%`)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (pByRutLike?.id) patientId = pByRutLike.id;
+          }
         }
         // Intentar buscar por nombre si aún no hay id
         if (!patientId && formData.patientName) {
           const { data: pByName } = await supabase
             .from("patients")
             .select("id")
-            .ilike("name", formData.patientName)
+            .ilike("name", `%${formData.patientName}%`)
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
