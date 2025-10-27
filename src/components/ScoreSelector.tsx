@@ -29,6 +29,14 @@ export function ScoreSelector({
     cianosis: '' as any,
   });
 
+  // Estado para rastrear qué fila está seleccionada por cada columna
+  const [selectedRows, setSelectedRows] = useState({
+    frecuenciaRespiratoria: -1, // -1 = no seleccionado, 0-3 = fila seleccionada
+    sibilancias: -1,
+    cianosis: -1,
+    retencion: -1,
+  });
+
   const [woodParams, setWoodParams] = useState({
     age: patientAge,
     cianosis: '' as any,
@@ -100,6 +108,38 @@ export function ScoreSelector({
     }
   };
 
+  // Función para manejar el clic en una celda de la tabla TAL
+  const handleCellClick = (column: string, rowIndex: number, isUnder6Months: boolean) => {
+    setSelectedRows(prev => ({ ...prev, [column]: rowIndex }));
+    
+    // Actualizar talParams basado en la celda seleccionada
+    const newParams = { ...talParams };
+    
+    // Mapear el rowIndex a los valores correspondientes
+    if (column === 'frecuenciaRespiratoria') {
+      if (rowIndex === 0) {
+        newParams.frecuenciaRespiratoria = isUnder6Months ? 40 : 30;
+      } else if (rowIndex === 1) {
+        newParams.frecuenciaRespiratoria = isUnder6Months ? 41 : 31;
+      } else if (rowIndex === 2) {
+        newParams.frecuenciaRespiratoria = isUnder6Months ? 56 : 46;
+      } else if (rowIndex === 3) {
+        newParams.frecuenciaRespiratoria = isUnder6Months ? 71 : 61;
+      }
+    } else if (column === 'sibilancias') {
+      const values = ['ausentes', 'fin_espiracion', 'toda_espiracion', 'audibles'];
+      newParams.sibilancias = values[rowIndex];
+    } else if (column === 'cianosis') {
+      const values = ['ausente', 'perioral_llanto', 'perioral_reposo', 'generalizada'];
+      newParams.cianosis = values[rowIndex];
+    } else if (column === 'retencion') {
+      const values = ['ausente', 'leve', 'moderado', 'grave'];
+      newParams.usoMuscAccesorios = values[rowIndex];
+    }
+    
+    setTalParams(newParams);
+  };
+
   if (scoreType === "TAL") {
     const isUnder6Months = talParams.age < 6;
     
@@ -137,196 +177,170 @@ export function ScoreSelector({
               </thead>
               <tbody>
                 {/* Score 0 */}
-                <tr 
-                  className={cn(
-                    "transition-colors",
-                    talParams.frecuenciaRespiratoria > 0 && talParams.frecuenciaRespiratoria <= (isUnder6Months ? 40 : 30) &&
-                    talParams.sibilancias === 'ausentes' &&
-                    talParams.cianosis === 'ausente' &&
-                    talParams.usoMuscAccesorios === 'ausente' &&
-                    "bg-green-100 dark:bg-green-900/20"
-                  )}
-                >
-                  <td className="border border-border p-2 text-center font-bold">0</td>
-                  <td className="border border-border p-2 text-center text-sm">
+                <tr>
+                  <td className="border border-border p-2 text-center font-bold bg-muted/50">0</td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-center text-sm cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.frecuenciaRespiratoria === 0 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('frecuenciaRespiratoria', 0, isUnder6Months)}
+                  >
                     {isUnder6Months ? '≤40' : '≤30'}
                   </td>
-                  <td className="border border-border p-2 text-xs">NO</td>
-                  <td className="border border-border p-2 text-xs">NO</td>
-                  <td className="border border-border p-2 text-xs">NO</td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.sibilancias === 0 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('sibilancias', 0, isUnder6Months)}
+                  >
+                    NO
+                  </td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.cianosis === 0 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('cianosis', 0, isUnder6Months)}
+                  >
+                    NO
+                  </td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.retencion === 0 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('retencion', 0, isUnder6Months)}
+                  >
+                    NO
+                  </td>
                 </tr>
                 
                 {/* Score 1 */}
-                <tr 
-                  className={cn(
-                    "transition-colors",
-                    ((isUnder6Months && talParams.frecuenciaRespiratoria >= 41 && talParams.frecuenciaRespiratoria <= 55) ||
-                    (!isUnder6Months && talParams.frecuenciaRespiratoria >= 31 && talParams.frecuenciaRespiratoria <= 45)) &&
-                    talParams.sibilancias === 'fin_espiracion' &&
-                    talParams.cianosis === 'perioral_llanto' &&
-                    talParams.usoMuscAccesorios === 'leve' &&
-                    "bg-yellow-100 dark:bg-yellow-900/20"
-                  )}
-                >
-                  <td className="border border-border p-2 text-center font-bold">1</td>
-                  <td className="border border-border p-2 text-center text-sm">
+                <tr>
+                  <td className="border border-border p-2 text-center font-bold bg-muted/50">1</td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-center text-sm cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.frecuenciaRespiratoria === 1 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('frecuenciaRespiratoria', 1, isUnder6Months)}
+                  >
                     {isUnder6Months ? '41-55' : '31-45'}
                   </td>
-                  <td className="border border-border p-2 text-xs">Fin de espir. c/fonendoscopio</td>
-                  <td className="border border-border p-2 text-xs">Peri-oral al llorar</td>
-                  <td className="border border-border p-2 text-xs">Subcostal (+)</td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.sibilancias === 1 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('sibilancias', 1, isUnder6Months)}
+                  >
+                    Fin de espir. c/fonendoscopio
+                  </td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.cianosis === 1 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('cianosis', 1, isUnder6Months)}
+                  >
+                    Peri-oral al llorar
+                  </td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.retencion === 1 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('retencion', 1, isUnder6Months)}
+                  >
+                    Subcostal (+)
+                  </td>
                 </tr>
                 
                 {/* Score 2 */}
-                <tr 
-                  className={cn(
-                    "transition-colors",
-                    ((isUnder6Months && talParams.frecuenciaRespiratoria >= 56 && talParams.frecuenciaRespiratoria <= 70) ||
-                    (!isUnder6Months && talParams.frecuenciaRespiratoria >= 46 && talParams.frecuenciaRespiratoria <= 60)) &&
-                    talParams.sibilancias === 'toda_espiracion' &&
-                    talParams.cianosis === 'perioral_reposo' &&
-                    talParams.usoMuscAccesorios === 'moderado' &&
-                    "bg-orange-100 dark:bg-orange-900/20"
-                  )}
-                >
-                  <td className="border border-border p-2 text-center font-bold">2</td>
-                  <td className="border border-border p-2 text-center text-sm">
+                <tr>
+                  <td className="border border-border p-2 text-center font-bold bg-muted/50">2</td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-center text-sm cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.frecuenciaRespiratoria === 2 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('frecuenciaRespiratoria', 2, isUnder6Months)}
+                  >
                     {isUnder6Months ? '56-70' : '46-60'}
                   </td>
-                  <td className="border border-border p-2 text-xs">Insp. y espir. c/fonendoscopio</td>
-                  <td className="border border-border p-2 text-xs">Peri-oral en reposo</td>
-                  <td className="border border-border p-2 text-xs">Intercostal (++)</td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.sibilancias === 2 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('sibilancias', 2, isUnder6Months)}
+                  >
+                    Insp. y espir. c/fonendoscopio
+                  </td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.cianosis === 2 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('cianosis', 2, isUnder6Months)}
+                  >
+                    Peri-oral en reposo
+                  </td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.retencion === 2 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('retencion', 2, isUnder6Months)}
+                  >
+                    Intercostal (++)
+                  </td>
                 </tr>
                 
                 {/* Score 3 */}
-                <tr 
-                  className={cn(
-                    "transition-colors",
-                    talParams.frecuenciaRespiratoria > (isUnder6Months ? 70 : 60) &&
-                    talParams.sibilancias === 'audibles' &&
-                    (talParams.cianosis === 'generalizada' || hasSupplementalOxygen) &&
-                    talParams.usoMuscAccesorios === 'grave' &&
-                    "bg-red-100 dark:bg-red-900/20"
-                  )}
-                >
-                  <td className="border border-border p-2 text-center font-bold">3</td>
-                  <td className="border border-border p-2 text-center text-sm">
+                <tr>
+                  <td className="border border-border p-2 text-center font-bold bg-muted/50">3</td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-center text-sm cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.frecuenciaRespiratoria === 3 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('frecuenciaRespiratoria', 3, isUnder6Months)}
+                  >
                     {isUnder6Months ? '>70' : '>60'}
                   </td>
-                  <td className="border border-border p-2 text-xs">Audibles a distancia</td>
-                  <td className="border border-border p-2 text-xs">Generalizada en reposo</td>
-                  <td className="border border-border p-2 text-xs">Supraclavicular (+++)</td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.sibilancias === 3 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('sibilancias', 3, isUnder6Months)}
+                  >
+                    Audibles a distancia
+                  </td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.cianosis === 3 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('cianosis', 3, isUnder6Months)}
+                  >
+                    Generalizada en reposo
+                  </td>
+                  <td 
+                    className={cn(
+                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
+                      selectedRows.retencion === 3 && "bg-primary/20 font-semibold"
+                    )}
+                    onClick={() => handleCellClick('retencion', 3, isUnder6Months)}
+                  >
+                    Supraclavicular (+++)
+                  </td>
                 </tr>
               </tbody>
             </table>
-          </div>
-
-          {/* Sibilancias */}
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Sibilancias</Label>
-            <RadioGroup
-              value={talParams.sibilancias}
-              onValueChange={(val) => setTalParams({ ...talParams, sibilancias: val as any })}
-            >
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="ausentes" id="sib-0" />
-                  <Label htmlFor="sib-0" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">0:</span> NO
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="fin_espiracion" id="sib-1" />
-                  <Label htmlFor="sib-1" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">1:</span> Fin espir.
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="toda_espiracion" id="sib-2" />
-                  <Label htmlFor="sib-2" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">2:</span> Insp+Esp
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="audibles" id="sib-3" />
-                  <Label htmlFor="sib-3" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">3:</span> Audibles
-                  </Label>
-                </div>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {/* Retracción/Uso de músculos accesorios */}
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Retracción</Label>
-            <RadioGroup
-              value={talParams.usoMuscAccesorios}
-              onValueChange={(val) => setTalParams({ ...talParams, usoMuscAccesorios: val as any })}
-            >
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="ausente" id="retr-0" />
-                  <Label htmlFor="retr-0" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">0:</span> NO
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="leve" id="retr-1" />
-                  <Label htmlFor="retr-1" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">1:</span> Leve (+)
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="moderado" id="retr-2" />
-                  <Label htmlFor="retr-2" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">2:</span> Subcostal
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="grave" id="retr-3" />
-                  <Label htmlFor="retr-3" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">3:</span> Supraclav
-                  </Label>
-                </div>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {/* Cianosis */}
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Cianosis</Label>
-            <RadioGroup
-              value={talParams.cianosis}
-              onValueChange={(val) => setTalParams({ ...talParams, cianosis: val as any })}
-            >
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="ausente" id="cian-0" />
-                  <Label htmlFor="cian-0" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">0:</span> NO
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="perioral_llanto" id="cian-1" />
-                  <Label htmlFor="cian-1" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">1:</span> Llanto
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="perioral_reposo" id="cian-2" />
-                  <Label htmlFor="cian-2" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">2:</span> Reposo
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="generalizada" id="cian-3" />
-                  <Label htmlFor="cian-3" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">3:</span> Generalizada
-                  </Label>
-                </div>
-              </div>
-            </RadioGroup>
           </div>
 
           {/* Resultado */}
