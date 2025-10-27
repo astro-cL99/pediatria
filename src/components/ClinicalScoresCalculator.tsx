@@ -23,8 +23,7 @@ export function ClinicalScoresCalculator() {
     frecuenciaRespiratoria: 40,
     sibilancias: 'ausentes',
     usoMuscAccesorios: 'ausente',
-    cianosis: 'ausente',
-    nivelConciencia: 'normal'
+    cianosis: 'ausente'
   });
 
   const [woodParams, setWoodParams] = useState<WoodDownesParams>({
@@ -176,24 +175,6 @@ export function ClinicalScoresCalculator() {
                     <SelectItem value="perioral_llanto">Perioral al llanto</SelectItem>
                     <SelectItem value="perioral_reposo">Perioral en reposo</SelectItem>
                     <SelectItem value="generalizada">Generalizada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Nivel de conciencia</Label>
-                <Select
-                  value={talParams.nivelConciencia}
-                  onValueChange={(value: any) => setTalParams({ ...talParams, nivelConciencia: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="hiporeactivo">Hiporeactivo</SelectItem>
-                    <SelectItem value="agitado">Agitado</SelectItem>
-                    <SelectItem value="confuso_letargico">Confuso/Letárgico</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

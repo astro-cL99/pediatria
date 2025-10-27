@@ -27,7 +27,6 @@ export function ScoreSelector({
     sibilancias: '' as any,
     usoMuscAccesorios: '' as any,
     cianosis: '' as any,
-    nivelConciencia: '' as any,
   });
 
   const [woodParams, setWoodParams] = useState({
@@ -64,8 +63,7 @@ export function ScoreSelector({
           talParams.frecuenciaRespiratoria > 0 &&
           talParams.sibilancias &&
           talParams.usoMuscAccesorios &&
-          talParams.cianosis &&
-          talParams.nivelConciencia
+          talParams.cianosis
         ) {
           calculatedResult = calculateTAL(talParams);
         }
@@ -325,42 +323,6 @@ export function ScoreSelector({
                   <RadioGroupItem value="generalizada" id="cian-3" />
                   <Label htmlFor="cian-3" className="flex-1 cursor-pointer text-sm">
                     <span className="font-medium">3:</span> Generalizada
-                  </Label>
-                </div>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {/* Nivel de Conciencia */}
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Nivel de Conciencia</Label>
-            <RadioGroup
-              value={talParams.nivelConciencia}
-              onValueChange={(val) => setTalParams({ ...talParams, nivelConciencia: val as any })}
-            >
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="normal" id="conc-0" />
-                  <Label htmlFor="conc-0" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">0:</span> Normal
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="hiporeactivo" id="conc-1" />
-                  <Label htmlFor="conc-1" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">1:</span> Hiporeact.
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="agitado" id="conc-2" />
-                  <Label htmlFor="conc-2" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">2:</span> Agitado
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-accent">
-                  <RadioGroupItem value="confuso_letargico" id="conc-3" />
-                  <Label htmlFor="conc-3" className="flex-1 cursor-pointer text-sm">
-                    <span className="font-medium">3:</span> Confuso
                   </Label>
                 </div>
               </div>

@@ -19,7 +19,6 @@ export interface ScoreResult {
  * - Sibilancias (0-3 puntos)
  * - Uso de músculos accesorios (0-3 puntos)
  * - Cianosis (0-3 puntos)
- * - Nivel de conciencia (0-3 puntos)
  */
 export interface TALParams {
   age: number; // en meses o años
@@ -27,7 +26,6 @@ export interface TALParams {
   sibilancias: 'ausentes' | 'fin_espiracion' | 'toda_espiracion' | 'insp_y_esp' | 'audibles';
   usoMuscAccesorios: 'ausente' | 'leve' | 'moderado' | 'grave';
   cianosis: 'ausente' | 'perioral_llanto' | 'perioral_reposo' | 'generalizada';
-  nivelConciencia: 'normal' | 'hiporeactivo' | 'agitado' | 'confuso_letargico';
 }
 
 export function calculateTAL(params: TALParams): ScoreResult {
@@ -70,15 +68,6 @@ export function calculateTAL(params: TALParams): ScoreResult {
     'generalizada': 3
   };
   score += cianosisScore[params.cianosis];
-
-  // Nivel de conciencia
-  const concienciaScore: Record<string, number> = {
-    'normal': 0,
-    'hiporeactivo': 1,
-    'agitado': 2,
-    'confuso_letargico': 3
-  };
-  score += concienciaScore[params.nivelConciencia];
 
   // Interpretación
   let severity: 'leve' | 'moderado' | 'grave' | 'crítico';
