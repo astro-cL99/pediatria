@@ -34,13 +34,15 @@ export function EditAdmissionForm({ admissionId, currentData, patientAge = 24, o
   const [loading, setLoading] = useState(false);
   const [diagnoses, setDiagnoses] = useState<string[]>(currentData.admission_diagnoses || []);
   const [diagnosisInput, setDiagnosisInput] = useState("");
+  const [viralPanelItems, setViralPanelItems] = useState<string[]>(
+    currentData.viral_panel ? currentData.viral_panel.split(", ").filter(Boolean) : []
+  );
   const [formData, setFormData] = useState({
     oxygenType: currentData.oxygen_requirement?.type || "",
     oxygenFlow: currentData.oxygen_requirement?.flow || "",
     oxygenPeep: currentData.oxygen_requirement?.peep || "",
     oxygenFio2: currentData.oxygen_requirement?.fio2 || "",
     respiratoryScore: currentData.respiratory_score || "",
-    viralPanel: currentData.viral_panel || "",
     pendingTasks: currentData.pending_tasks || "",
     antibiotics: currentData.antibiotics?.map((a: any) => `${a.name} (${a.dose})`).join(", ") || "",
     medications: currentData.current_medications || "",
@@ -100,7 +102,7 @@ export function EditAdmissionForm({ admissionId, currentData, patientAge = 24, o
           admission_diagnoses: diagnoses,
           oxygen_requirement: oxygenRequirement,
           respiratory_score: formData.respiratoryScore || null,
-          viral_panel: formData.viralPanel || null,
+          viral_panel: viralPanelItems.length > 0 ? viralPanelItems.join(", ") : null,
           pending_tasks: formData.pendingTasks || null,
           antibiotics: antibioticsArray.length > 0 ? antibioticsArray : null,
           current_medications: formData.medications || null,
@@ -131,6 +133,16 @@ export function EditAdmissionForm({ admissionId, currentData, patientAge = 24, o
 
   const removeDiagnosis = (index: number) => {
     setDiagnoses(diagnoses.filter((_, i) => i !== index));
+  };
+
+  const addViralPanelItem = (value: string) => {
+    if (value && !viralPanelItems.includes(value)) {
+      setViralPanelItems([...viralPanelItems, value]);
+    }
+  };
+
+  const removeViralPanelItem = (index: number) => {
+    setViralPanelItems(viralPanelItems.filter((_, i) => i !== index));
   };
 
   return (
@@ -212,28 +224,39 @@ export function EditAdmissionForm({ admissionId, currentData, patientAge = 24, o
       <div>
         <Label htmlFor="viralPanel">Panel Respiratorio</Label>
         <Select
-          value={formData.viralPanel}
-          onValueChange={(value) => setFormData({ ...formData, viralPanel: value })}
+          value=""
+          onValueChange={(value) => addViralPanelItem(value)}
         >
           <SelectTrigger id="viralPanel">
-            <SelectValue placeholder="Seleccionar resultado" />
+            <SelectValue placeholder="Seleccionar agente etiológico" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-background">
             <SelectItem value="Pendiente">Pendiente</SelectItem>
-            <SelectItem value="VRS positivo">VRS (Virus Respiratorio Sincicial) +</SelectItem>
-            <SelectItem value="Influenza A positivo">Influenza A +</SelectItem>
-            <SelectItem value="Influenza B positivo">Influenza B +</SelectItem>
-            <SelectItem value="Adenovirus positivo">Adenovirus +</SelectItem>
-            <SelectItem value="Parainfluenza positivo">Parainfluenza +</SelectItem>
-            <SelectItem value="Metapneumovirus positivo">Metapneumovirus +</SelectItem>
-            <SelectItem value="Rinovirus positivo">Rinovirus +</SelectItem>
-            <SelectItem value="SARS-CoV-2 positivo">SARS-CoV-2 (COVID-19) +</SelectItem>
-            <SelectItem value="Neumococo positivo">Neumococo +</SelectItem>
-            <SelectItem value="H. influenzae positivo">H. influenzae +</SelectItem>
-            <SelectItem value="M. pneumoniae positivo">M. pneumoniae +</SelectItem>
+            <SelectItem value="VRS +">VRS (Virus Respiratorio Sincicial) +</SelectItem>
+            <SelectItem value="Influenza A +">Influenza A +</SelectItem>
+            <SelectItem value="Influenza B +">Influenza B +</SelectItem>
+            <SelectItem value="Adenovirus +">Adenovirus +</SelectItem>
+            <SelectItem value="Parainfluenza +">Parainfluenza +</SelectItem>
+            <SelectItem value="Metapneumovirus +">Metapneumovirus +</SelectItem>
+            <SelectItem value="Rinovirus +">Rinovirus +</SelectItem>
+            <SelectItem value="SARS-CoV-2 (COVID-19) +">SARS-CoV-2 (COVID-19) +</SelectItem>
+            <SelectItem value="Neumococo +">Neumococo +</SelectItem>
+            <SelectItem value="H. influenzae +">H. influenzae +</SelectItem>
+            <SelectItem value="M. pneumoniae +">M. pneumoniae +</SelectItem>
             <SelectItem value="Panel negativo">Panel Negativo</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {viralPanelItems.map((item, index) => (
+            <Badge key={index} variant="default" className="gap-1 bg-primary">
+              {item}
+              <X
+                className="h-3 w-3 cursor-pointer hover:text-destructive"
+                onClick={() => removeViralPanelItem(index)}
+              />
+            </Badge>
+          ))}
+        </div>
       </div>
 
       {/* Alimentación */}
