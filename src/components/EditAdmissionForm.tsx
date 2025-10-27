@@ -136,7 +136,22 @@ export function EditAdmissionForm({ admissionId, currentData, patientAge = 24, o
   };
 
   const addViralPanelItem = (value: string) => {
-    if (value && !viralPanelItems.includes(value)) {
+    if (!value) return;
+    
+    // Si se selecciona "Panel negativo", limpiar todo y solo agregar ese
+    if (value === "Panel negativo") {
+      setViralPanelItems(["Panel negativo"]);
+      return;
+    }
+    
+    // Si ya existe "Panel negativo", no permitir agregar otros items
+    if (viralPanelItems.includes("Panel negativo")) {
+      toast.error("Debe eliminar 'Panel negativo' antes de agregar otros agentes");
+      return;
+    }
+    
+    // Agregar el item si no existe ya
+    if (!viralPanelItems.includes(value)) {
       setViralPanelItems([...viralPanelItems, value]);
     }
   };
