@@ -29,11 +29,26 @@ export function ScoreSelector({
     cianosis: '' as any,
   });
 
+  const [usesSupplementalOxygen, setUsesSupplementalOxygen] = useState(hasSupplementalOxygen);
+
   // Actualizar la edad cuando cambie el prop
   useEffect(() => {
     setTalParams(prev => ({ ...prev, age: patientAge }));
     setWoodParams(prev => ({ ...prev, age: patientAge }));
   }, [patientAge]);
+
+  // Actualizar oxígeno suplementario cuando cambie el prop
+  useEffect(() => {
+    setUsesSupplementalOxygen(hasSupplementalOxygen);
+  }, [hasSupplementalOxygen]);
+
+  // Auto-ajuste de cianosis cuando hay O2 suplementario
+  useEffect(() => {
+    if (scoreType === "TAL" && usesSupplementalOxygen) {
+      setTalParams(prev => ({ ...prev, cianosis: 'generalizada' }));
+      setSelectedRows(prev => ({ ...prev, cianosis: 3 }));
+    }
+  }, [usesSupplementalOxygen, scoreType]);
 
   // Estado para rastrear qué fila está seleccionada por cada columna
   const [selectedRows, setSelectedRows] = useState({
@@ -55,12 +70,6 @@ export function ScoreSelector({
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // Auto-ajuste de cianosis para TAL si hay O2 suplementario
-  useEffect(() => {
-    if (scoreType === "TAL" && hasSupplementalOxygen) {
-      setTalParams(prev => ({ ...prev, cianosis: 'generalizada' }));
-    }
-  }, [hasSupplementalOxygen, scoreType]);
 
   useEffect(() => {
     calculateScore();
@@ -116,6 +125,11 @@ export function ScoreSelector({
 
   // Función para manejar el clic en una celda de la tabla TAL
   const handleCellClick = (column: string, rowIndex: number, isUnder6Months: boolean) => {
+    // Bloquear cianosis si hay oxígeno suplementario
+    if (column === 'cianosis' && usesSupplementalOxygen) {
+      return;
+    }
+
     setSelectedRows(prev => ({ ...prev, [column]: rowIndex }));
     
     // Actualizar talParams basado en la celda seleccionada
@@ -205,10 +219,13 @@ export function ScoreSelector({
                   </td>
                   <td 
                     className={cn(
-                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
-                      selectedRows.cianosis === 0 && "bg-primary/20 font-semibold"
+                      "border border-border p-2 text-xs transition-colors",
+                      usesSupplementalOxygen 
+                        ? "bg-muted/50 cursor-not-allowed opacity-50" 
+                        : "cursor-pointer hover:bg-accent",
+                      selectedRows.cianosis === 0 && !usesSupplementalOxygen && "bg-primary/20 font-semibold"
                     )}
-                    onClick={() => handleCellClick('cianosis', 0, isUnder6Months)}
+                    onClick={() => !usesSupplementalOxygen && handleCellClick('cianosis', 0, isUnder6Months)}
                   >
                     NO
                   </td>
@@ -246,10 +263,13 @@ export function ScoreSelector({
                   </td>
                   <td 
                     className={cn(
-                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
-                      selectedRows.cianosis === 1 && "bg-primary/20 font-semibold"
+                      "border border-border p-2 text-xs transition-colors",
+                      usesSupplementalOxygen 
+                        ? "bg-muted/50 cursor-not-allowed opacity-50" 
+                        : "cursor-pointer hover:bg-accent",
+                      selectedRows.cianosis === 1 && !usesSupplementalOxygen && "bg-primary/20 font-semibold"
                     )}
-                    onClick={() => handleCellClick('cianosis', 1, isUnder6Months)}
+                    onClick={() => !usesSupplementalOxygen && handleCellClick('cianosis', 1, isUnder6Months)}
                   >
                     Peri-oral al llorar
                   </td>
@@ -287,10 +307,13 @@ export function ScoreSelector({
                   </td>
                   <td 
                     className={cn(
-                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
-                      selectedRows.cianosis === 2 && "bg-primary/20 font-semibold"
+                      "border border-border p-2 text-xs transition-colors",
+                      usesSupplementalOxygen 
+                        ? "bg-muted/50 cursor-not-allowed opacity-50" 
+                        : "cursor-pointer hover:bg-accent",
+                      selectedRows.cianosis === 2 && !usesSupplementalOxygen && "bg-primary/20 font-semibold"
                     )}
-                    onClick={() => handleCellClick('cianosis', 2, isUnder6Months)}
+                    onClick={() => !usesSupplementalOxygen && handleCellClick('cianosis', 2, isUnder6Months)}
                   >
                     Peri-oral en reposo
                   </td>
@@ -328,10 +351,14 @@ export function ScoreSelector({
                   </td>
                   <td 
                     className={cn(
-                      "border border-border p-2 text-xs cursor-pointer hover:bg-accent transition-colors",
-                      selectedRows.cianosis === 3 && "bg-primary/20 font-semibold"
+                      "border border-border p-2 text-xs transition-colors",
+                      usesSupplementalOxygen 
+                        ? "bg-destructive/20 cursor-not-allowed font-semibold border-destructive/50" 
+                        : "cursor-pointer hover:bg-accent",
+                      selectedRows.cianosis === 3 && !usesSupplementalOxygen && "bg-primary/20 font-semibold",
+                      selectedRows.cianosis === 3 && usesSupplementalOxygen && "bg-destructive/30"
                     )}
-                    onClick={() => handleCellClick('cianosis', 3, isUnder6Months)}
+                    onClick={() => !usesSupplementalOxygen && handleCellClick('cianosis', 3, isUnder6Months)}
                   >
                     Generalizada en reposo
                   </td>
@@ -347,6 +374,38 @@ export function ScoreSelector({
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          {/* Oxígeno Suplementario */}
+          <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-border">
+            <div className="flex items-start gap-3">
+              <span className="text-destructive font-bold text-lg">*</span>
+              <div className="flex-1">
+                <Label className="text-sm font-semibold mb-2 block">
+                  ¿El paciente utiliza oxígeno suplementario?
+                </Label>
+                <RadioGroup
+                  value={usesSupplementalOxygen ? "si" : "no"}
+                  onValueChange={(value) => setUsesSupplementalOxygen(value === "si")}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="no" id="oxygen-no" />
+                    <Label htmlFor="oxygen-no" className="cursor-pointer">No</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="si" id="oxygen-si" />
+                    <Label htmlFor="oxygen-si" className="cursor-pointer">Sí</Label>
+                  </div>
+                </RadioGroup>
+                {usesSupplementalOxygen && (
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    La columna de cianosis se ha bloqueado automáticamente con puntaje máximo (3 puntos)
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Resultado */}
