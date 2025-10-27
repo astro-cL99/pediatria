@@ -56,11 +56,29 @@ export function exportHandoverToExcel(bedAssignments: any[]) {
         "Diagnóstico Principal": admission.admission_diagnoses?.[0] || "",
         "Panel Viral": admission.viral_panel || "No realizado",
         "Requerimiento O2": admission.oxygen_requirement
-          ? JSON.stringify(admission.oxygen_requirement)
+          ? (() => {
+              try {
+                return typeof admission.oxygen_requirement === 'string' 
+                  ? admission.oxygen_requirement 
+                  : JSON.stringify(admission.oxygen_requirement);
+              } catch (e) {
+                console.error('Error stringifying oxygen_requirement:', e);
+                return 'Error al procesar';
+              }
+            })()
           : "No",
         "Score Respiratorio": admission.respiratory_score || "",
         Antibióticos: admission.antibiotics
-          ? JSON.stringify(admission.antibiotics)
+          ? (() => {
+              try {
+                return typeof admission.antibiotics === 'string'
+                  ? admission.antibiotics
+                  : JSON.stringify(admission.antibiotics);
+              } catch (e) {
+                console.error('Error stringifying antibiotics:', e);
+                return 'Error al procesar';
+              }
+            })()
           : "No",
         Pendientes: admission.pending_tasks || "",
         Alergias: patient.allergies || "Ninguna",

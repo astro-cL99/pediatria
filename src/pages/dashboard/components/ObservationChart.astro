@@ -1,29 +1,75 @@
 ---
-import Chart from 'chart.js/auto';
-const { observations } = Astro.props;
----
+// src/pages/dashboard/components/ObservationChart.astro
+const { observations = [] } = Astro.props;
 
-<canvas id="obsChart"></canvas>
-
-<script is:inline>
-const ctx = document.getElementById('obsChart').getContext('2d');
-const obsData = {
-  labels: observations.map(o => new Date(o.effectiveDateTime).toLocaleTimeString()),
-  datasets: [
-    {
-      label: 'Frecuencia cardíaca',
-      data: observations.filter(o => o.code.coding[0].code === '8867-4').map(o => o.valueQuantity.value),
-      borderColor: 'red',
-      fill: false
-    },
-    {
-      label: 'Temperatura',
-      data: observations.filter(o => o.code.coding[0].code === '8310-5').map(o => o.valueQuantity.value),
-      borderColor: 'orange',
-      fill: false
-    }
-  ]
+// Filter and prepare data safely
+const getObservationData = (code) => {
+  return observations
+    .filter(o => o?.code?.coding?.[0]?.code === code)
+    .map(o => ({
+      x: o.effectiveDateTime ? new Date(o.effectiveDateTime) : new Date(),
+      y: o.valueQuantity?.value || 0
+    }))
+    .sort((a, b) => a.x - b.x); // Sort by date
 };
 
-new Chart(ctx, { type: 'line', data: obsData });
-</script>
+const heartRateData = getObservationData('8867-4');
+const tempData = getObservationData('8310-5');
+
+const hasData = heartRateData.length > 0 || tempData.length > 0;
+---
+
+{hasData ? (
+  <div class="mt-4">
+    <canvas id={`chart-${Math.random().toString(36).substr(2, 9)}`} height="200"></canvas>
+    <script is:inline>
+      {
+        `
+        document.addEventListener('DOMContentLoaded', () => {
+          const canvas = document.currentScript.previousElementSibling;
+          const ctx = canvas.getContext('2d');
+          
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ${JSON.stringify(
+                [...heartRateData, ...tempData]
+                  .map(d => d.x.toLocaleTimeString())
+                  .filter((v, i, a) => a.indexOf(v) === i) // Unique values
+                  .sort()
+              )},
+              datasets: [
+                ${heartRateData.length > 0 ? JSON.stringify({
+                  label: 'Frecuencia cardíaca (lpm)',
+                  data: heartRateData,
+                  borderColor: 'rgb(255, 99, 132)',
+                  tension: 0.1
+                }) : 'null'}.filter(Boolean),
+                ${tempData.length > 0 ? JSON.stringify({
+                  label: 'Temperatura (°C)',
+                  data: tempData,
+                  borderColor: 'rgb(54, 162, 235)',
+                  tension: 0.1
+                }) : 'null'}.filter(Boolean)
+              ].filter(Boolean)
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: false
+                }
+              }
+            }
+          });
+        });
+        `
+      }
+    </script>
+  </div>
+) : (
+  <p class="text-gray-500 text-sm text-center py-4">
+    No hay datos de observaciones disponibles
+  </p>
+)}

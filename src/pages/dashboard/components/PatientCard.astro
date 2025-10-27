@@ -1,14 +1,40 @@
 ---
+// src/pages/dashboard/components/PatientCard.astro
 import ObservationChart from './ObservationChart.astro';
-const { patient } = Astro.props;
+const { patient = {} } = Astro.props;
 
-const latestHeartRate = patient.observations?.find(o => o.code.coding[0].code === '8867-4')?.valueQuantity.value || 0;
-const latestTemp = patient.observations?.find(o => o.code.coding[0].code === '8310-5')?.valueQuantity.value || 0;
+// Safely access nested properties with fallbacks
+const name = patient?.name?.[0] || {};
+const givenName = Array.isArray(name.given) ? name.given[0] : '';
+const familyName = name.family || 'Sin nombre';
+const identifier = patient?.identifier?.[0]?.value || 'Sin RUT';
+const observations = Array.isArray(patient.observations) ? patient.observations : [];
+
+const latestHeartRate = observations.find(o => 
+  o?.code?.coding?.[0]?.code === '8867-4'
+)?.valueQuantity?.value || 0;
+
+const latestTemp = observations.find(o => 
+  o?.code?.coding?.[0]?.code === '8310-5'
+)?.valueQuantity?.value || 0;
+
 const critical = latestHeartRate > 160 || latestTemp > 39;
 ---
+
 <div class={`card p-4 border ${critical ? 'border-red-500' : 'border-gray-200'} rounded shadow`}>
-  <h3 class="text-lg font-bold">{patient.name[0].given[0]} {patient.name[0].family}</h3>
-  <p>RUT: {patient.identifier[0].value}</p>
-  {critical && <p class="text-red-600 font-bold">¡Signos vitales críticos!</p>}
-  {patient.observations && <ObservationChart observations={patient.observations} />}
+  <h3 class="text-lg font-bold">
+    {givenName} {familyName}
+  </h3>
+  <p class="text-sm text-gray-600">RUT: {identifier}</p>
+  
+  {critical && (
+    <div class="mt-2 p-2 bg-red-100 text-red-800 rounded">
+      <i class="fas fa-exclamation-triangle mr-1"></i>
+      ¡Signos vitales críticos!
+    </div>
+  )}
+  
+  <div class="mt-4">
+    <ObservationChart observations={observations} />
+  </div>
 </div>
