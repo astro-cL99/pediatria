@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Save } from "lucide-react";
 
@@ -14,6 +15,12 @@ interface VitalSigns {
   respiratoryRate?: string;
   bloodPressure?: string;
   oxygenSaturation?: string;
+}
+
+interface PainScores {
+  scale?: 'VAS' | 'FLACC' | 'Wong-Baker';
+  score?: number;
+  observations?: string;
 }
 
 interface DailyEvolutionFormProps {
@@ -36,6 +43,11 @@ export function DailyEvolutionForm({ patientId, admissionId, onSuccess }: DailyE
     respiratoryRate: "",
     bloodPressure: "",
     oxygenSaturation: "",
+  });
+  const [painScores, setPainScores] = useState<PainScores>({
+    scale: undefined,
+    score: undefined,
+    observations: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,6 +72,7 @@ export function DailyEvolutionForm({ patientId, admissionId, onSuccess }: DailyE
         assessment: formData.assessment,
         plan: formData.plan,
         vital_signs: vitalSigns as any,
+        pain_scores: painScores as any,
         created_by: user.id,
       }]);
 
@@ -89,6 +102,11 @@ export function DailyEvolutionForm({ patientId, admissionId, onSuccess }: DailyE
         respiratoryRate: "",
         bloodPressure: "",
         oxygenSaturation: "",
+      });
+      setPainScores({
+        scale: undefined,
+        score: undefined,
+        observations: "",
       });
 
       onSuccess?.();
@@ -151,6 +169,51 @@ export function DailyEvolutionForm({ patientId, admissionId, onSuccess }: DailyE
               onChange={(e) => setVitalSigns({ ...vitalSigns, oxygenSaturation: e.target.value })}
               placeholder="98"
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Evaluación del Dolor</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Escala de Dolor</Label>
+              <Select 
+                value={painScores.scale || ""} 
+                onValueChange={(value) => setPainScores({ ...painScores, scale: value as any })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar escala..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="VAS">EVA (Escala Visual Analógica) 0-10</SelectItem>
+                  <SelectItem value="FLACC">FLACC (0-3 años)</SelectItem>
+                  <SelectItem value="Wong-Baker">Wong-Baker FACES (3+ años)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Puntaje</Label>
+              <Input
+                type="number"
+                min="0"
+                max={painScores.scale === 'FLACC' ? 10 : 10}
+                value={painScores.score || ""}
+                onChange={(e) => setPainScores({ ...painScores, score: Number(e.target.value) })}
+                placeholder="0-10"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Observaciones</Label>
+              <Input
+                value={painScores.observations || ""}
+                onChange={(e) => setPainScores({ ...painScores, observations: e.target.value })}
+                placeholder="Opcional..."
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -476,6 +476,7 @@ export type Database = {
           fluid_calculations: Json | null
           id: string
           objective: string | null
+          pain_scores: Json | null
           patient_id: string
           plan: string | null
           respiratory_scores: Json | null
@@ -493,6 +494,7 @@ export type Database = {
           fluid_calculations?: Json | null
           id?: string
           objective?: string | null
+          pain_scores?: Json | null
           patient_id: string
           plan?: string | null
           respiratory_scores?: Json | null
@@ -510,6 +512,7 @@ export type Database = {
           fluid_calculations?: Json | null
           id?: string
           objective?: string | null
+          pain_scores?: Json | null
           patient_id?: string
           plan?: string | null
           respiratory_scores?: Json | null
@@ -755,6 +758,72 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "medical_documents_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nursing_records: {
+        Row: {
+          activities_performed: string | null
+          admission_id: string
+          braden_score: Json | null
+          care_plan: string | null
+          created_at: string | null
+          created_by: string
+          humpty_dumpty_score: Json | null
+          id: string
+          observations: string | null
+          patient_id: string
+          record_date: string
+          record_time: string
+          record_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          activities_performed?: string | null
+          admission_id: string
+          braden_score?: Json | null
+          care_plan?: string | null
+          created_at?: string | null
+          created_by: string
+          humpty_dumpty_score?: Json | null
+          id?: string
+          observations?: string | null
+          patient_id: string
+          record_date?: string
+          record_time?: string
+          record_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          activities_performed?: string | null
+          admission_id?: string
+          braden_score?: Json | null
+          care_plan?: string | null
+          created_at?: string | null
+          created_by?: string
+          humpty_dumpty_score?: Json | null
+          id?: string
+          observations?: string | null
+          patient_id?: string
+          record_date?: string
+          record_time?: string
+          record_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nursing_records_admission_id_fkey"
+            columns: ["admission_id"]
+            isOneToOne: false
+            referencedRelation: "admissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nursing_records_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"

@@ -1,4 +1,4 @@
-import { Home, Users, FileText, BookOpen, BarChart3, Settings, Upload, Search, Bot, FileCheck, Bed, UserCircle, Calculator } from "lucide-react";
+import { Home, Users, FileText, BookOpen, BarChart3, Settings, Upload, Search, Bot, FileCheck, Bed, UserCircle, Calculator, Heart } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -32,23 +32,25 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isNurse, setIsNurse] = useState(false);
 
   useEffect(() => {
-    checkAdminRole();
+    checkUserRoles();
   }, []);
 
-  const checkAdminRole = async () => {
+  const checkUserRoles = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { data } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .single();
+      .eq("user_id", user.id);
 
-    setIsAdmin(!!data);
+    if (data) {
+      setIsAdmin(data.some(r => r.role === "admin"));
+      setIsNurse(data.some(r => r.role === "nurse" || r.role === "admin"));
+    }
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -70,6 +72,16 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {isNurse && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/nursing")}>
+                    <NavLink to="/nursing">
+                      <Heart />
+                      <span>Enfermería</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               {isAdmin && (
                 <>
                   <SidebarMenuItem>
