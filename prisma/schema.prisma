@@ -1,0 +1,158 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo de Usuario para autenticación
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  password      String
+  image         String?
+  role          Role      @default(USER)
+  accounts      Account[]
+  sessions      Session[]
+  patients      Patient[]
+  appointments  Appointment[]
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token         String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// Modelo de Paciente
+model Patient {
+  id              String         @id @default(cuid())
+  firstName       String         @map("first_name")
+  lastName        String         @map("last_name")
+  dateOfBirth     DateTime       @map("date_of_birth")
+  gender          Gender
+  bloodType       String?        @map("blood_type")
+  allergies       String[]
+  medicalHistory  String?        @map("medical_history") @db.Text
+  address         String?
+  phone           String?
+  email           String?        @unique
+  parentName      String?        @map("parent_name")
+  parentPhone     String?        @map("parent_phone")
+  parentEmail     String?        @map("parent_email")
+  notes           String?        @db.Text
+  createdById     String         @map("created_by_id")
+  createdBy       User           @relation("CreatedPatients", fields: [createdById], references: [id])
+  appointments    Appointment[]
+  medicalRecords  MedicalRecord[]
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  @@map("patients")
+}
+
+// Modelo de Cita
+model Appointment {
+  id              String     @id @default(cuid())
+  patientId       String     @map("patient_id")
+  patient         Patient    @relation(fields: [patientId], references: [id])
+  doctorId        String     @map("doctor_id")
+  doctor          User       @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  appointmentDate DateTime   @map("appointment_date")
+  status          AppointmentStatus @default(SCHEDULED)
+  reason          String
+  notes           String?    @db.Text
+  diagnosis       String?    @db.Text
+  prescription   String?    @db.Text
+  followUpDate    DateTime?  @map("follow_up_date")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  @@map("appointments")
+}
+
+// Modelo de Registro Médico
+model MedicalRecord {
+  id              String     @id @default(cuid())
+  patientId       String     @map("patient_id")
+  patient         Patient    @relation(fields: [patientId], references: [id])
+  recordDate      DateTime   @default(now()) @map("record_date")
+  diagnosis       String
+  treatment       String     @db.Text
+  notes           String?    @db.Text
+  attachments     String[]
+  createdBy       String     @map("created_by")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  @@map("medical_records")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  DOCTOR
+  NURSE
+  RECEPTIONIST
+  USER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
