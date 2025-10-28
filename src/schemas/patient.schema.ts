@@ -7,11 +7,11 @@ export const patientFormSchema = z.object({
   lastName: z.string().min(2, {
     message: 'El apellido debe tener al menos 2 caracteres.',
   }),
-  birthDate: z.date({
-    required_error: 'La fecha de nacimiento es requerida.',
+  birthDate: z.string({
+    message: 'La fecha de nacimiento es requerida.',
   }),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER'], {
-    required_error: 'Debes seleccionar un género.',
+    message: 'Debes seleccionar un género.',
   }),
   rut: z.string().regex(/^\d{7,8}-[\dkK]$/, {
     message: 'El RUT no es válido.',
