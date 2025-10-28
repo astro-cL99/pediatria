@@ -33,12 +33,11 @@ const AddAnthropometry = lazy(() => import("./pages/AddAnthropometry"));
 const Calculator = lazy(() => import("./pages/Calculator"));
 const NursingCare = lazy(() => import("./pages/NursingCare"));
 
-// Query client configuration
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
       retry: 3,
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
