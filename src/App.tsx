@@ -1,20 +1,15 @@
-import { Toaster } from "@/components/ui/sonner";
-
 function App() {
   return (
-    <>
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto p-8">
-          <h1 className="text-4xl font-bold text-primary mb-4">
-            PedIAtrics - Sistema de Gestión Pediátrica
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Sistema integral de gestión pediátrica para hospitales de alta complejidad
-          </p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-foreground mb-4">
+          PediAtrics
+        </h1>
+        <p className="text-lg text-foreground/70">
+          Sistema de Gestión Pediátrica
+        </p>
       </div>
-      <Toaster />
-    </>
+    </div>
   );
 }
 
