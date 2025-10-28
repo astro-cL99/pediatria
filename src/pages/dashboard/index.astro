@@ -1,0 +1,29 @@
+---
+import DashboardHeader from './components/DashboardHeader.astro';
+import PatientFilter from './components/PatientFilter.astro';
+import PatientCard from './components/PatientCard.astro';
+import { onMount } from 'solid-js';
+
+let patients = [];
+
+onMount(async () => {
+  const res = await fetch('/fhir/Patient');
+  patients = await res.json();
+});
+
+function handleFilter(query) {
+  if (!query) return patients;
+  patients = patients.filter(p => 
+    p.name[0].given[0].toLowerCase().includes(query.toLowerCase()) || 
+    p.identifier[0].value.includes(query)
+  );
+}
+---
+
+<DashboardHeader title="Visor Clínico Pediátrico" />
+
+<PatientFilter onFilter={handleFilter} />
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+  {patients.map(patient => <PatientCard patient={patient} />)}
+</div>

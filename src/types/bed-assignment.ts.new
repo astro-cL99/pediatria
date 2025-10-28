@@ -1,0 +1,35 @@
+export interface BedAssignment {
+  id: string;
+  room_number: string;
+  bed_number: number;
+  patient_id: string;
+  admission_id: string;
+  assigned_at: string;
+  service: 'pediatria' | 'cirugia' | 'ucip';
+  patient: {
+    id: string;
+    name: string;
+    rut: string;
+    date_of_birth: string;
+    gender?: string;
+    allergies: string | null;
+  };
+  admission: {
+    id: string;
+    admission_date: string;
+    admission_diagnoses: string[];
+    discharge_date?: string;
+    discharge_diagnoses?: string[];
+    status: 'active' | 'discharged' | 'transferred';
+    oxygen_requirement?: {
+      type: string;
+      flow?: number;
+      fio2?: number;
+    };
+    antibiotics?: Array<{
+      name: string;
+      start_date: string;
+      end_date?: string;
+    }>;
+  };
+}

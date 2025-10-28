@@ -1,0 +1,50 @@
+---
+interface Observation {
+  id: string;
+  code: string;
+  display: string;
+  value: string;
+  date: string;
+  status: string;
+}
+
+interface Props {
+  observations: Observation[];
+}
+
+const { observations = [] } = Astro.props;
+---
+
+<div class="overflow-x-auto">
+  <table class="table w-full">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Descripción</th>
+        <th>Valor</th>
+        <th>Fecha</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {observations.map((obs) => (
+        <tr key={obs.id} class="hover">
+          <td class="font-mono">{obs.code}</td>
+          <td>{obs.display}</td>
+          <td class="font-medium">{obs.value}</td>
+          <td>{new Date(obs.date).toLocaleDateString()}</td>
+          <td>
+            <span class={`badge ${obs.status === 'final' ? 'badge-success' : 'badge-warning'}`}>
+              {obs.status}
+            </span>
+          </td>
+        </tr>
+      ))}
+      {observations.length === 0 && (
+        <tr>
+          <td colspan="5" class="text-center py-4">No hay observaciones registradas</td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>

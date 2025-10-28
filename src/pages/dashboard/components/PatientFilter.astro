@@ -1,0 +1,18 @@
+---
+const { onFilter } = Astro.props;
+let query = '';
+
+function handleInput(e) {
+  query = e.target.value;
+  onFilter(query);
+}
+---
+<div class="my-4">
+  <input
+    type="text"
+    placeholder="Buscar paciente por nombre o RUT"
+    value={query}
+    onInput={handleInput}
+    class="input input-bordered w-full"
+  />
+</div>
